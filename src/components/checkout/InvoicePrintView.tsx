@@ -22,14 +22,14 @@ export const InvoicePrintView: React.FC<InvoicePrintViewProps> = ({ invoice, onC
       <div className="bg-white rounded-2xl shadow-2xl max-w-xl w-full max-h-[92vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
         {/* Top Control Bar (Hidden when printing) */}
         <div className="no-print px-3 sm:px-6 py-3.5 bg-slate-900 text-white flex flex-wrap gap-2 items-center justify-between shrink-0">
-          <span className="text-xs font-semibold">Hóa đơn thanh toán - {invoice.code}</span>
+          <span className="text-xs font-semibold">Phiếu thu thanh toán - {invoice.code}</span>
           <div className="flex items-center gap-2">
             {canPrint && <button
               onClick={handlePrint}
               className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors"
             >
               <Printer className="w-3.5 h-3.5" />
-              <span>In hóa đơn / Lưu PDF</span>
+              <span>In phiếu thu / Lưu PDF</span>
             </button>}
             <button
               onClick={onClose}
@@ -68,7 +68,7 @@ export const InvoicePrintView: React.FC<InvoicePrintViewProps> = ({ invoice, onC
           {/* Invoice Title */}
           <div className="text-center py-1">
             <h1 className="text-base font-bold uppercase tracking-wider text-slate-900">
-              HÓA ĐƠN THANH TOÁN DỊCH VỤ
+              PHIẾU THU THANH TOÁN DỊCH VỤ
             </h1>
             <p className="text-slate-500 text-[11px]">Guest Folio & Receipt</p>
           </div>
@@ -80,7 +80,7 @@ export const InvoicePrintView: React.FC<InvoicePrintViewProps> = ({ invoice, onC
               <p className="mt-1"><strong className="text-slate-700">Số điện thoại:</strong> {invoice.phone || 'Chưa lưu'}</p>
             </div>
             <div className="text-right">
-              <p><strong className="text-slate-700">{invoice.kind === 'SERVICE' ? 'Loại hóa đơn:' : 'Phòng:'}</strong> <span className="font-bold font-mono text-emerald-800 text-sm">{invoice.kind === 'SERVICE' ? 'Dịch vụ khách ngoài' : `Phòng ${invoice.roomNumber}`}</span></p>
+              <p><strong className="text-slate-700">{invoice.kind === 'SERVICE' ? 'Loại phiếu thu:' : 'Phòng:'}</strong> <span className="font-bold font-mono text-emerald-800 text-sm">{invoice.kind === 'SERVICE' ? 'Dịch vụ khách ngoài' : `Phòng ${invoice.roomNumber}`}</span></p>
               <p className="mt-1 text-slate-500 text-[11px]">
                 {invoice.checkInDateTime} → {invoice.checkOutDateTime}
               </p>

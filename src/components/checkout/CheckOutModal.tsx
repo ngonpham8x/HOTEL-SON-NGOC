@@ -96,7 +96,7 @@ export const CheckOutModal: React.FC<CheckOutModalProps> = ({ room, onClose, onP
           dueDateForDebt: debtDueDate,
         });
 
-        showToast(`Đã hoàn tất trả Phòng ${room.number} và tạo hóa đơn ${invoice.code}!`, 'success');
+        showToast(`Đã hoàn tất trả Phòng ${room.number} và tạo phiếu thu ${invoice.code}!`, 'success');
 
         if (onPrintInvoice) {
           onPrintInvoice(invoice);

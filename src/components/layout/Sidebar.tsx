@@ -42,12 +42,12 @@ export const Sidebar: React.FC<{ onLogout: () => void; onPasswordChanged: () => 
   const unpaidDebts = debts.filter(d => d.remainingAmount > 0).length;
 
   const navItems = [
-    { id: 'sales', label: 'Bán vé / khách ngoài', icon: Ticket },
     {
       id: 'dashboard',
       label: 'Trang chủ',
       icon: Home,
     },
+    { id: 'sales', label: 'Bán vé / khách ngoài', icon: Ticket },
     {
       id: 'rooms',
       label: 'Sơ đồ phòng',

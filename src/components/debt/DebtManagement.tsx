@@ -63,7 +63,7 @@ export const DebtManagement: React.FC = () => {
   const handleOpenCollectModal = (debt: DebtRecord) => {
     setCollectingDebt(debt);
     setPayAmount(debt.remainingAmount);
-    setPayNotes(`Thu nợ hóa đơn ${debt.invoiceCode}`);
+    setPayNotes(`Thu nợ phiếu thu ${debt.invoiceCode}`);
   };
 
   const handleConfirmPayment = async (e: React.FormEvent) => {
@@ -222,7 +222,7 @@ export const DebtManagement: React.FC = () => {
             <table className="w-full text-left text-xs">
               <thead className="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold border-b border-slate-200">
                 <tr>
-                  <th className="px-4 py-3">Mã HĐ & Ngày lập</th>
+                  <th className="px-4 py-3">Mã PT & Ngày lập</th>
                   <th className="px-4 py-3">Khách hàng / Đơn vị</th>
                   <th className="px-4 py-3">Phòng đã ở</th>
                   <th className="px-4 py-3">Hạn thanh toán</th>

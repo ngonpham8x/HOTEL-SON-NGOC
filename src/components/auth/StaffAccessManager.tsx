@@ -100,7 +100,7 @@ function StaffAccessEditor() {
     if (!input.password) delete input.password;
     const current = accounts.find(account => account.id === input.id);
     if (current?.active && !input.active) {
-      requestConfirm({ title: 'Khóa tài khoản lễ tân?', message: `${current.displayName} sẽ không thể đăng nhập và các phiên đang dùng sẽ hết hiệu lực. Đặt phòng, hóa đơn và công nợ vẫn được giữ nguyên.`, confirmLabel: 'Khóa và lưu', isDangerous: true, onConfirm: () => persist(input) });
+      requestConfirm({ title: 'Khóa tài khoản lễ tân?', message: `${current.displayName} sẽ không thể đăng nhập và các phiên đang dùng sẽ hết hiệu lực. Đặt phòng, phiếu thu và công nợ vẫn được giữ nguyên.`, confirmLabel: 'Khóa và lưu', isDangerous: true, onConfirm: () => persist(input) });
     } else void persist(input);
   };
 
@@ -109,7 +109,7 @@ function StaffAccessEditor() {
       <div className="min-w-0"><div className="flex items-center gap-2"><ShieldCheck className="h-5 w-5 shrink-0 text-teal-700" /><h2 id="staff-access-title" className="text-lg font-bold text-slate-900">Phân quyền lễ tân</h2></div><p className="mt-2 max-w-2xl text-xs leading-5 text-slate-500">Tạo tài khoản riêng, chọn nội dung được xem và thao tác được phép thực hiện cho từng lễ tân.</p></div>
       <button type="button" disabled={busy} onClick={create} className="flex min-h-10 items-center gap-2 rounded-xl bg-teal-800 px-4 py-2 text-xs font-semibold text-white hover:bg-teal-900 disabled:opacity-50"><Plus className="h-4 w-4" />Thêm lễ tân</button>
     </div>
-    <div className="flex items-start gap-3 rounded-2xl border border-teal-200 bg-teal-50 p-4 text-xs leading-5 text-teal-900"><ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" /><p>Quyền xóa chỉ áp dụng với nội dung được phép xóa an toàn. Phòng và dịch vụ đã có dữ liệu liên quan được giữ lại; hóa đơn, lịch sử thanh toán và công nợ không bị xóa. Lễ tân không được cấp quyền khôi phục dữ liệu hoặc quản lý tài khoản.</p></div>
+    <div className="flex items-start gap-3 rounded-2xl border border-teal-200 bg-teal-50 p-4 text-xs leading-5 text-teal-900"><ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" /><p>Quyền xóa chỉ áp dụng với nội dung được phép xóa an toàn. Phòng và dịch vụ đã có dữ liệu liên quan được giữ lại; phiếu thu, lịch sử thanh toán và công nợ không bị xóa. Lễ tân không được cấp quyền khôi phục dữ liệu hoặc quản lý tài khoản.</p></div>
     <div className="grid min-w-0 items-start gap-5 lg:grid-cols-[minmax(15rem,0.85fr)_minmax(0,2fr)]">
       <div className="min-w-0 rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="flex items-center justify-between gap-2 border-b border-slate-100 px-4 py-4"><h3 className="flex items-center gap-2 text-sm font-semibold text-slate-800"><Users className="h-4 w-4 text-teal-700" />Tài khoản ({accounts.length})</h3><button type="button" aria-label="Tải lại danh sách lễ tân" title="Tải lại danh sách" disabled={loading || busy} onClick={() => void refresh()} className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 disabled:opacity-40"><RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} /></button></div>

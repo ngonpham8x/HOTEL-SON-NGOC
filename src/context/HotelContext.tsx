@@ -327,7 +327,7 @@ export const HotelProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const editService = (id: string, updated: Partial<ServiceItem>) => { if (updated.price !== undefined) money(updated.price, 'Giá dịch vụ'); return commit({ ...dataRef.current, services: dataRef.current.services.map(s => s.id === id ? { ...s, ...updated, id } : s) }, 'service.configure'); };
   const deleteService = async (id: string) => {
     const db = dataRef.current;
-    if (db.stays.some(s => s.services.some(u => u.serviceId === id)) || db.invoices.some(i => i.services?.some(u => u.serviceId === id))) throw new Error('Dịch vụ đã được sử dụng. Không thể xóa để giữ chi tiết hóa đơn và lịch sử lưu trú.');
+    if (db.stays.some(s => s.services.some(u => u.serviceId === id)) || db.invoices.some(i => i.services?.some(u => u.serviceId === id))) throw new Error('Dịch vụ đã được sử dụng. Không thể xóa để giữ chi tiết phiếu thu và lịch sử lưu trú.');
     await commit({ ...db, services: db.services.filter(s => s.id !== id) }, 'service.delete');
   };
   const updateRoomTypePricing = (roomType: RoomType, pricePerNight: number, pricePerHour: number) => {
@@ -339,11 +339,11 @@ export const HotelProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (dateTime(date, time) > Date.now() + 60000) throw new Error('Thời gian trả phòng thực tế không thể ở tương lai.');
     const duration = stayDuration(stay, date, time), roomCharge = duration * stay.rateApplied, serviceCharge = stay.services.reduce((sum, s) => sum + s.totalPrice, 0);
     const surcharge = money(params.surcharge, 'Phụ thu'), discount = money(params.discount, 'Giảm giá');
-    if (discount > roomCharge + serviceCharge + surcharge) throw new Error('Giảm giá vượt tổng tiền hóa đơn.');
+    if (discount > roomCharge + serviceCharge + surcharge) throw new Error('Giảm giá vượt tổng tiền phiếu thu.');
     const gross = roomCharge + serviceCharge + surcharge - discount, deposit = Math.min(stay.deposit, gross), total = gross - deposit;
-    if (params.roomCharge !== roomCharge || params.serviceCharge !== serviceCharge || params.depositDeducted !== deposit || params.totalAmount !== total) throw new Error('Thông tin tính tiền đã thay đổi. Hãy kiểm tra lại hóa đơn trước khi xác nhận.');
+    if (params.roomCharge !== roomCharge || params.serviceCharge !== serviceCharge || params.depositDeducted !== deposit || params.totalAmount !== total) throw new Error('Thông tin tính tiền đã thay đổi. Hãy kiểm tra lại phiếu thu trước khi xác nhận.');
     const paid = money(params.paidAmount, 'Số tiền thu'); if (paid > total || (params.paymentMethod === 'DEBT' && paid > 0)) throw new Error('Số tiền thanh toán không hợp lệ.');
-    if (params.debtAmount !== total - paid) throw new Error('Số tiền công nợ không khớp hóa đơn.');
+    if (params.debtAmount !== total - paid) throw new Error('Số tiền công nợ không khớp phiếu thu.');
     if (total > paid && params.dueDateForDebt && !Number.isFinite(dateTime(params.dueDateForDebt, '12:00'))) throw new Error('Ngày hẹn thu nợ không hợp lệ.');
     const debtAmount = total - paid, id = newId();
     const invoice: Invoice = { createdBy: access.actor.id, id, code: `HD-${id.slice(0, 8).toUpperCase()}`, stayId: stay.id, roomNumber: stay.roomNumber, customerName: stay.customerName, phone: stay.phone, checkInDateTime: `${stay.checkInDate} ${stay.checkInTime}`, checkOutDateTime: `${date} ${time}`, durationNightsOrHours: duration, pricingType: stay.pricingType, roomCharge, serviceCharge, massageCharge: stay.services.filter(s => db.services.find(v => v.id === s.serviceId)?.category === 'MASSAGE' || s.name.toLowerCase().includes('massage')).reduce((sum, s) => sum + s.totalPrice, 0), services: stay.services, surcharge, discount, depositDeducted: deposit, refundAmount: Math.max(0, stay.deposit - gross), totalAmount: total, paidAmount: paid, debtAmount, paymentMethod: params.paymentMethod, status: debtAmount === 0 ? 'PAID' : paid > 0 ? 'PARTIAL' : 'DEBT', date, time, notes: params.notes };

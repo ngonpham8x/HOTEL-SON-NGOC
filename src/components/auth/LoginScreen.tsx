@@ -7,7 +7,7 @@ import type { AccessActor } from '../../types/access';
 
 const features = [
   { icon: BedDouble, title: 'Phòng & đặt phòng', detail: 'Nhận phòng, trả phòng, theo dõi lưu trú' },
-  { icon: ReceiptText, title: 'Dịch vụ & thanh toán', detail: 'Giá phòng, dịch vụ và hóa đơn' },
+  { icon: ReceiptText, title: 'Dịch vụ & thanh toán', detail: 'Giá phòng, dịch vụ và phiếu thu' },
   { icon: ChartNoAxesCombined, title: 'Báo cáo & công nợ', detail: 'Nắm doanh thu, quản lý khoản cần thu' },
 ];
 

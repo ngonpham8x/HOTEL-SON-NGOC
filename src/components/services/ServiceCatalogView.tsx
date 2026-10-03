@@ -161,7 +161,7 @@ export const ServiceCatalogView: React.FC<ServiceCatalogViewProps> = ({
   const handleDeleteService = (srv: ServiceItem) => {
     requestConfirm({
       title: 'Xác nhận xóa dịch vụ',
-      message: `Xóa dịch vụ "${srv.name}" khỏi bảng giá? Dịch vụ đã được sử dụng trong đặt phòng, lượt ở hoặc hóa đơn không thể xóa.`,
+      message: `Xóa dịch vụ "${srv.name}" khỏi bảng giá? Dịch vụ đã được sử dụng trong đặt phòng, lượt ở hoặc phiếu thu không thể xóa.`,
       confirmLabel: 'Xác nhận xóa',
       cancelLabel: 'Giữ lại',
       isDangerous: true,
@@ -179,7 +179,7 @@ export const ServiceCatalogView: React.FC<ServiceCatalogViewProps> = ({
     }
     requestConfirm({
       title: 'Xác nhận xóa phòng',
-      message: `Xóa phòng ${room.number} (Tầng ${room.floor}) khỏi khách sạn? Phòng có đặt phòng, lượt ở, hóa đơn hoặc công nợ liên quan không thể xóa.`,
+      message: `Xóa phòng ${room.number} (Tầng ${room.floor}) khỏi khách sạn? Phòng có đặt phòng, lượt ở, phiếu thu hoặc công nợ liên quan không thể xóa.`,
       confirmLabel: 'Xác nhận xóa',
       cancelLabel: 'Giữ lại',
       isDangerous: true,

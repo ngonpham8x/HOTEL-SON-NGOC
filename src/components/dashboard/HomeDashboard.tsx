@@ -231,7 +231,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
         <div
           onClick={() => setDetailModal('TODAY_REVENUE')}
           className="bg-white p-3.5 rounded-xl border border-teal-200/90 shadow-2xs hover:shadow-md hover:border-teal-500 transition-all cursor-pointer group"
-          title="Bấm để xem danh sách hóa đơn và nguồn thu hôm nay"
+          title="Bấm để xem danh sách phiếu thu và nguồn thu hôm nay"
         >
           <div className="flex items-center justify-between text-slate-500 text-xs">
             <span className="font-semibold text-slate-700">Doanh thu hôm nay ({formatDate(today).slice(0, 5)})</span>
@@ -609,7 +609,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
                       <strong className="text-base font-mono text-slate-900 block mt-0.5">{formatCurrency(todayRevenue)}</strong>
                     </div>
                     <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200">
-                      <span className="text-[11px] text-emerald-700 block">Đã thu cho hóa đơn (gồm cọc)</span>
+                      <span className="text-[11px] text-emerald-700 block">Đã thu cho phiếu thu (gồm cọc)</span>
                       <strong className="text-base font-mono text-emerald-800 block mt-0.5">{formatCurrency(todayPaid)}</strong>
                     </div>
                     <div className="p-3 bg-blue-50 rounded-xl border border-blue-200">
@@ -622,12 +622,12 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
                     </div>
                   </div>
 
-                  <h4 className="font-bold text-slate-900 text-sm pt-2">Danh sách hóa đơn trong ngày hôm nay:</h4>
+                  <h4 className="font-bold text-slate-900 text-sm pt-2">Danh sách phiếu thu trong ngày hôm nay:</h4>
                   <div className="border border-slate-200 rounded-xl overflow-hidden">
                     <table className="w-full text-left border-collapse">
                       <thead className="bg-slate-100 text-[11px] font-bold text-slate-700 uppercase">
                         <tr>
-                          <th className="py-2.5 px-3">Mã HĐ</th>
+                          <th className="py-2.5 px-3">Mã PT</th>
                           <th className="py-2.5 px-3">Phòng</th>
                           <th className="py-2.5 px-3">Khách hàng</th>
                           <th className="py-2.5 px-3">Tiền phòng</th>
@@ -847,7 +847,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
                           <th className="py-2.5 px-3">Số điện thoại</th>
                           <th className="py-2.5 px-3">Ngày nợ</th>
                           <th className="py-2.5 px-3">Hạn thanh toán</th>
-                          <th className="py-2.5 px-3 text-right">Tổng HĐ</th>
+                          <th className="py-2.5 px-3 text-right">Tổng PT</th>
                           <th className="py-2.5 px-3 text-right">Còn nợ</th>
                         </tr>
                       </thead>

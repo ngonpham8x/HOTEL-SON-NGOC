@@ -63,13 +63,13 @@ function validUsage(usage: ServiceUsage, data: HotelData) {
 }
 function financialAddition(invoice: Invoice, next: HotelData) {
   const fields: (keyof Invoice)[] = ['roomCharge', 'serviceCharge', 'surcharge', 'discount', 'depositDeducted', 'totalAmount', 'paidAmount', 'debtAmount'];
-  if (fields.some(key => !Number.isSafeInteger(invoice[key]) || (invoice[key] as number) < 0)) deny('Số tiền hóa đơn không hợp lệ.');
+  if (fields.some(key => !Number.isSafeInteger(invoice[key]) || (invoice[key] as number) < 0)) deny('Số tiền phiếu thu không hợp lệ.');
   const gross = invoice.roomCharge + invoice.serviceCharge + invoice.surcharge - invoice.discount;
-  if (gross < 0 || invoice.depositDeducted > gross || invoice.totalAmount !== gross - invoice.depositDeducted || invoice.paidAmount + invoice.debtAmount !== invoice.totalAmount || invoice.status !== (invoice.debtAmount ? invoice.paidAmount ? 'PARTIAL' : 'DEBT' : 'PAID')) deny('Số tiền hóa đơn không khớp.');
+  if (gross < 0 || invoice.depositDeducted > gross || invoice.totalAmount !== gross - invoice.depositDeducted || invoice.paidAmount + invoice.debtAmount !== invoice.totalAmount || invoice.status !== (invoice.debtAmount ? invoice.paidAmount ? 'PARTIAL' : 'DEBT' : 'PAID')) deny('Số tiền phiếu thu không khớp.');
   if (!['CASH', 'TRANSFER', 'CARD', 'DEBT', 'MIXED'].includes(invoice.paymentMethod) || invoice.paymentMethod === 'DEBT' && invoice.paidAmount > 0 || invoice.kind === 'SERVICE' && !['CASH', 'TRANSFER', 'CARD'].includes(invoice.paymentMethod)) deny('Phương thức thanh toán không hợp lệ.');
   const debts = next.debts.filter(debt => debt.invoiceId === invoice.id);
-  if (invoice.debtAmount === 0 ? debts.length !== 0 : debts.length !== 1 || debts[0].originalDebt !== invoice.debtAmount || debts[0].remainingAmount !== invoice.debtAmount || debts[0].paidAmount !== 0 || debts[0].paymentHistory.length !== 0) deny('Công nợ không khớp hóa đơn.');
-  if (debts.some(debt => debt.invoiceCode !== invoice.code || debt.customerName !== invoice.customerName || debt.phone !== invoice.phone || debt.roomNumber !== invoice.roomNumber || debt.totalInvoiceAmount !== gross || !Number.isFinite(dateTime(debt.dueDate, '12:00')) || debt.status !== 'UNPAID' || invoice.kind === 'SERVICE' && (!debt.customerName.trim() || !debt.phone.trim()))) deny('Thông tin công nợ không khớp hóa đơn.');
+  if (invoice.debtAmount === 0 ? debts.length !== 0 : debts.length !== 1 || debts[0].originalDebt !== invoice.debtAmount || debts[0].remainingAmount !== invoice.debtAmount || debts[0].paidAmount !== 0 || debts[0].paymentHistory.length !== 0) deny('Công nợ không khớp phiếu thu.');
+  if (debts.some(debt => debt.invoiceCode !== invoice.code || debt.customerName !== invoice.customerName || debt.phone !== invoice.phone || debt.roomNumber !== invoice.roomNumber || debt.totalInvoiceAmount !== gross || !Number.isFinite(dateTime(debt.dueDate, '12:00')) || debt.status !== 'UNPAID' || invoice.kind === 'SERVICE' && (!debt.customerName.trim() || !debt.phone.trim()))) deny('Thông tin công nợ không khớp phiếu thu.');
 }
 
 /** One declared operation may change only its own fields, including dependent records. */
@@ -80,7 +80,7 @@ export function authorizeHotelMutation(actor: AccessActor, before: HotelData, ne
   if (action === 'data.export') deny('Xuất dữ liệu không phải thao tác ghi dữ liệu.');
   const d = { rooms: changes(before.rooms, next.rooms), services: changes(before.services, next.services), stays: changes(before.stays, next.stays), reservations: changes(before.reservations, next.reservations), invoices: changes(before.invoices, next.invoices), debts: changes(before.debts, next.debts) };
   if (Object.values(d).every(emptyChange)) return; // Idempotent network retry.
-  if (d.stays.removed.length || d.reservations.removed.length || d.invoices.removed.length || d.debts.removed.length) deny('Không được xóa lịch sử khách, đặt phòng, hóa đơn hoặc công nợ.');
+  if (d.stays.removed.length || d.reservations.removed.length || d.invoices.removed.length || d.debts.removed.length) deny('Không được xóa lịch sử khách, đặt phòng, phiếu thu hoặc công nợ.');
   const scope = (...fields: (keyof HotelData)[]) => { for (const field of Object.keys(d) as (keyof HotelData)[]) if (!fields.includes(field) && !emptyChange(d[field])) deny(); };
   const updatesOnly = (value: ReturnType<typeof changes>) => { if (value.added.length || value.removed.length) deny(); };
   const roomUpdates = (ids: string[], fields: string[]) => { updatesOnly(d.rooms); for (const item of d.rooms.updated) if (!ids.includes(item.old.id) || !onlyFields(item.old, item.next, fields)) deny(); };
@@ -173,7 +173,7 @@ export function authorizeHotelMutation(actor: AccessActor, before: HotelData, ne
       if (!stay.actualCheckOutDate || !stay.actualCheckOutTime || !Number.isFinite(dateTime(stay.actualCheckOutDate, stay.actualCheckOutTime))) deny();
       if (dateTime(stay.actualCheckOutDate, stay.actualCheckOutTime) > Date.now() + 60000) deny();
       const duration = stayDuration(old, stay.actualCheckOutDate, stay.actualCheckOutTime), gross = invoice.roomCharge + invoice.serviceCharge + invoice.surcharge - invoice.discount;
-      if (invoice.roomCharge !== duration * old.rateApplied || invoice.durationNightsOrHours !== duration || invoice.depositDeducted !== Math.min(old.deposit, gross) || (invoice.refundAmount || 0) !== Math.max(0, old.deposit - gross) || invoice.checkInDateTime !== `${old.checkInDate} ${old.checkInTime}` || invoice.checkOutDateTime !== `${stay.actualCheckOutDate} ${stay.actualCheckOutTime}` || invoice.date !== stay.actualCheckOutDate || invoice.time !== stay.actualCheckOutTime || invoice.pricingType !== old.pricingType || invoice.phone !== old.phone) deny('Hóa đơn không khớp lượt ở và tiền cọc.');
+      if (invoice.roomCharge !== duration * old.rateApplied || invoice.durationNightsOrHours !== duration || invoice.depositDeducted !== Math.min(old.deposit, gross) || (invoice.refundAmount || 0) !== Math.max(0, old.deposit - gross) || invoice.checkInDateTime !== `${old.checkInDate} ${old.checkInTime}` || invoice.checkOutDateTime !== `${stay.actualCheckOutDate} ${stay.actualCheckOutTime}` || invoice.date !== stay.actualCheckOutDate || invoice.time !== stay.actualCheckOutTime || invoice.pricingType !== old.pricingType || invoice.phone !== old.phone) deny('Phiếu thu không khớp lượt ở và tiền cọc.');
       roomUpdates([old.roomId], ['status', 'cleanStatus', 'currentStayId', 'currentGuestName']); const room = next.rooms.find(row => row.id === old.roomId); if (!room || room.status !== 'CLEANING' || room.cleanStatus !== 'DIRTY' || room.currentStayId || room.currentGuestName) deny();
       break;
     }

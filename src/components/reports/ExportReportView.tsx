@@ -164,7 +164,7 @@ export const ExportReportView: React.FC = () => {
                 : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
             }`}
           >
-            Tất cả thời gian ({invoices.length} HĐ)
+            Tất cả thời gian ({invoices.length} PT)
           </button>
         </div>
 
@@ -173,7 +173,7 @@ export const ExportReportView: React.FC = () => {
           <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between">
             <div>
               <p className="font-bold text-xs text-slate-900">Báo cáo Doanh thu ({periodTitle})</p>
-              <p className="text-[11px] text-slate-500 mt-0.5">{filteredInvoices.length} lượt hóa đơn</p>
+              <p className="text-[11px] text-slate-500 mt-0.5">{filteredInvoices.length} lượt phiếu thu</p>
             </div>
             <AccessGuard action="data.export"><button
               onClick={handleExportExcelRevenue}
@@ -246,7 +246,7 @@ export const ExportReportView: React.FC = () => {
         {/* Report Main Title */}
         <div className="text-center space-y-1 py-2">
           <h2 className="text-lg font-extrabold uppercase tracking-wide text-slate-900">
-            BÁO CÁO DOANH THU & THANH TOÁN HÓA ĐƠN
+            BÁO CÁO DOANH THU & THANH TOÁN PHIẾU THU
           </h2>
           <p className="text-sm font-semibold text-emerald-800">
             Kỳ báo cáo: {periodTitle}
@@ -299,7 +299,7 @@ export const ExportReportView: React.FC = () => {
               </tr>
               <tr>
                 <td className="py-2.5 px-4 text-emerald-800 font-semibold pl-8">
-                  - Đã thu cho hóa đơn (gồm cọc và thu nợ)
+                  - Đã thu cho phiếu thu (gồm cọc và thu nợ)
                 </td>
                 <td className="py-2.5 px-4 text-center font-mono text-emerald-800">
                   {totalRev > 0 ? Math.round((paidTotal / totalRev) * 100) : 0}%
@@ -326,13 +326,13 @@ export const ExportReportView: React.FC = () => {
         {/* Invoices list preview snippet */}
         <div className="space-y-2 pt-2">
           <h4 className="font-bold uppercase tracking-wider text-[11px] text-slate-800">
-            Trích lục danh sách hóa đơn kỳ báo cáo (Hiển thị 10 giao dịch gần nhất)
+            Trích lục danh sách phiếu thu kỳ báo cáo (Hiển thị 10 giao dịch gần nhất)
           </h4>
           <div className="border border-slate-200 rounded-lg overflow-x-auto">
             <table className="w-full min-w-[680px] text-left text-[11px]">
               <thead className="bg-slate-100 text-slate-700 font-bold uppercase text-[10px]">
                 <tr>
-                  <th className="py-2 px-3">Mã HĐ</th>
+                  <th className="py-2 px-3">Mã PT</th>
                   <th className="py-2 px-3">Ngày</th>
                   <th className="py-2 px-3">Phòng</th>
                   <th className="py-2 px-3">Khách hàng</th>

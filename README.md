@@ -1,6 +1,6 @@
 # Hotel Sơn Ngọc
 
-Ứng dụng quản lý phòng, đặt phòng, khách lưu trú, dịch vụ, hóa đơn và công nợ bằng React + TypeScript + Vite.
+Ứng dụng quản lý phòng, đặt phòng, khách lưu trú, dịch vụ, phiếu thu và công nợ bằng React + TypeScript + Vite.
 
 ## Chạy dự án
 
@@ -64,12 +64,12 @@ Các kiểm thử trình duyệt và kiểm thử chứng thực ban đầu nh�
 
 Đăng nhập quản lý rồi vào **Menu → Phân quyền lễ tân** để tạo tài khoản riêng bằng tên đăng nhập và mật khẩu. Chọn mẫu **Chỉ xem** hoặc **Lễ tân nghiệp vụ**, rồi bật/tắt quyền xem từng mục và quyền thao tác. Lễ tân chọn **Lễ tân** trên màn hình đăng nhập. Không có tài khoản lễ tân mặc định.
 
-Mặc định lễ tân được xem phòng, lịch đặt, khách đang ở, bảng giá và hóa đơn bán lẻ của mình; được đặt/nhận/trả phòng, cập nhật khách đi cùng, thêm dịch vụ, cập nhật dọn phòng và bán vé. Doanh thu tổng, công nợ, sửa giá, xóa phòng/dịch vụ và xuất dữ liệu cần quyền riêng. Quyền xem phòng/lịch/khách bao gồm dữ liệu liên quan để kiểm tra phòng còn trống và xử lý lưu trú. Trang chủ bao gồm thống kê tài chính.
+Mặc định lễ tân được xem phòng, lịch đặt, khách đang ở, bảng giá và phiếu thu bán lẻ của mình; được đặt/nhận/trả phòng, cập nhật khách đi cùng, thêm dịch vụ, cập nhật dọn phòng và bán vé. Doanh thu tổng, công nợ, sửa giá, xóa phòng/dịch vụ và xuất dữ liệu cần quyền riêng. Quyền xem phòng/lịch/khách bao gồm dữ liệu liên quan để kiểm tra phòng còn trống và xử lý lưu trú. Trang chủ bao gồm thống kê tài chính.
 
-- Xóa phòng chỉ khi chưa có bất kỳ lượt ở, phiếu đặt, hóa đơn hoặc công nợ liên quan, kể cả lịch sử.
-- Xóa dịch vụ chỉ khi chưa được sử dụng trong lượt ở hoặc hóa đơn. Xóa dịch vụ đang ghi vào phòng chỉ áp dụng trước khi thanh toán và cần quyền riêng.
+- Xóa phòng chỉ khi chưa có bất kỳ lượt ở, phiếu đặt, phiếu thu hoặc công nợ liên quan, kể cả lịch sử.
+- Xóa dịch vụ chỉ khi chưa được sử dụng trong lượt ở hoặc phiếu thu. Xóa dịch vụ đang ghi vào phòng chỉ áp dụng trước khi thanh toán và cần quyền riêng.
 - Phiếu đã hủy, không có cọc và chưa nhận phòng có thể **Lưu trữ**. Phiếu vẫn nằm trong dữ liệu, bản sao lưu và có thể xem lại bằng **Hiện phiếu đã lưu trữ**.
-- Không xóa lịch sử khách, hóa đơn, thanh toán hay công nợ qua thao tác nghiệp vụ. Lễ tân không được quản lý tài khoản hoặc khôi phục bản sao lưu.
+- Không xóa lịch sử khách, phiếu thu, thanh toán hay công nợ qua thao tác nghiệp vụ. Lễ tân không được quản lý tài khoản hoặc khôi phục bản sao lưu.
 
 Khóa tài khoản hoặc sửa quyền/mật khẩu làm hết hiệu lực phiên lễ tân cũ. Mỗi tài khoản tự đổi mật khẩu của mình; không thay mật khẩu quản lý hoặc chứng thực cố định. Mật khẩu tài khoản được băm PBKDF2 và không đưa vào bản sao lưu khách sạn. Biểu mẫu cũ không ghi đè quyền vừa cập nhật ở cửa sổ khác.
 
@@ -83,7 +83,7 @@ Chế độ cục bộ lưu tài khoản và quyền ở trình duyệt hiện t
 - Giờ nhận thực tế được nhập khi check-in. Giờ trả thực tế có thể sửa khi tính tiền.
 - Theo giờ: làm tròn lên mỗi giờ, tối thiểu 1 giờ. Theo đêm: chênh lệch ngày nhận/trả, tối thiểu 1 đêm. Phụ thu được nhập riêng.
 - Doanh thu = tiền phòng + dịch vụ + phụ thu − giảm giá. Tiền cọc được khấu trừ vào số còn phải thanh toán, phần dư được ghi là tiền hoàn cho khách.
-- Báo cáo thanh toán gồm cọc đã dùng và các khoản thu nợ cho những hóa đơn trong kỳ; đây không phải sổ thu tiền theo ngày giao dịch độc lập.
+- Báo cáo thanh toán gồm cọc đã dùng và các khoản thu nợ cho những phiếu thu trong kỳ; đây không phải sổ thu tiền theo ngày giao dịch độc lập.
 
 ## Dữ liệu
 
@@ -92,7 +92,7 @@ Chế độ cục bộ lưu tài khoản và quyền ở trình duyệt hiện t
 - Phòng N07 có thể nhận nhiều phiếu đặt vào hai tuần khác nhau. So sánh toàn bộ ngày **và giờ** nhận–trả; khoảng lưu trú giao nhau bị chặn trước khi lưu phiếu và cọc. Hai lịch nối tiếp đúng giờ trả/nhận được phép; lễ tân vẫn cần bố trí dọn phòng.
 - Phiếu đặt hiển thị lịch giữ phòng, mã phiếu/khách gây trùng và trạng thái từng phòng theo khoảng thời gian chọn. Đổi phòng hoặc đổi ngày rồi kiểm tra lại. Hủy phiếu giải phóng lịch; nhận phòng loại trừ đúng phiếu đang chuyển và kiểm tra các phiếu khác.
 - Khách đang ở quá giờ trả dự kiến phải được xác nhận trả phòng trước khi giữ lịch mới. Sơ đồ phòng hiển thị phiếu gần nhất theo thời gian nhận, thay vì phiếu mới nhập gần nhất.
-- **Bán vé / khách ngoài**: thêm vé massage/dịch vụ, số lượng, giảm giá và phương thức thu. Không cần tạo phòng hay lượt ở. Lưu hóa đơn DV riêng, giữ đơn giá tại lúc bán, có chi tiết để xem/in. Thanh toán một phần tạo công nợ; cần tên và điện thoại khách. Doanh thu dịch vụ và báo cáo Excel/PDF bao gồm các hóa đơn này; công suất phòng không tính khách mua vé lẻ.
+- **Bán vé / khách ngoài**: thêm vé massage/dịch vụ, số lượng, giảm giá và phương thức thu. Không cần tạo phòng hay lượt ở. Lưu phiếu thu DV riêng, giữ đơn giá tại lúc bán, có chi tiết để xem/in. Thanh toán một phần tạo công nợ; cần tên và điện thoại khách. Doanh thu dịch vụ và báo cáo Excel/PDF bao gồm các phiếu thu này; công suất phòng không tính khách mua vé lẻ.
 
 ### Chế độ Supabase
 
@@ -102,7 +102,7 @@ Máy chủ lưu chứng thực băm riêng, cấp token ngẫu nhiên có hạn 
 
 Mọi lần ghi dùng khóa giao dịch, phiên bản và mã thao tác chống ghi lặp. Hai thiết bị cùng giữ phòng: thiết bị ghi sau nhận lỗi, tải lại lịch và kiểm tra lại, không ghi đè cọc của thiết bị đầu. Ràng buộc GiST ở cơ sở dữ liệu chặn các khoảng lưu trú giao nhau. Khi mất mạng, app giữ dữ liệu đã xác nhận nhưng không báo lưu thành công; cần mạng để ghi dữ liệu chung. Không tự chuyển sang dữ liệu cục bộ khi máy chủ lỗi.
 
-Chạy `npm run supabase:seed` để tạo `supabase/seed.sql`: 15 phòng trống, danh mục dịch vụ và chứng thực băm; không nạp khách/hóa đơn mẫu. Khởi tạo dùng `ON CONFLICT DO NOTHING`, không đặt lại mật khẩu hay ghi đè dữ liệu đã có. Dữ liệu cục bộ cũ vẫn được giữ trên thiết bị; muốn chuyển dữ liệu thật hãy tải bản sao lưu rồi khôi phục có xác nhận vào chế độ chung. Không tự nhập dữ liệu khách hàng lên cloud.
+Chạy `npm run supabase:seed` để tạo `supabase/seed.sql`: 15 phòng trống, danh mục dịch vụ và chứng thực băm; không nạp khách/phiếu thu mẫu. Khởi tạo dùng `ON CONFLICT DO NOTHING`, không đặt lại mật khẩu hay ghi đè dữ liệu đã có. Dữ liệu cục bộ cũ vẫn được giữ trên thiết bị; muốn chuyển dữ liệu thật hãy tải bản sao lưu rồi khôi phục có xác nhận vào chế độ chung. Không tự nhập dữ liệu khách hàng lên cloud.
 
 `npm run dev` và `npm run build -- --mode local` dùng dữ liệu cục bộ nếu không đặt `VITE_HOTEL_API_URL` trong môi trường chạy. Biến môi trường của nhà cung cấp có thể ghi đè URL trong `.env.production`; nếu cấu hình khác thì cần build lại. Tài khoản lễ tân, mật khẩu đã đổi và dữ liệu từ chế độ cục bộ không được tự nhập vào cloud; tạo tài khoản lễ tân trong bản cloud để dùng trên nhiều thiết bị.
 

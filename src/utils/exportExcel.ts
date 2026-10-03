@@ -58,7 +58,7 @@ export const exportRevenueToExcel = async (
   wb.creator = 'Hotel Sơn Ngọc';
   wb.created = new Date();
 
-  // SHEET 1: Chi tiết hóa đơn
+  // SHEET 1: Chi tiết phiếu thu
   const ws = wb.addWorksheet('Chi Tiết Doanh Thu', {
     views: [{ showGridLines: true }],
   });
@@ -83,7 +83,7 @@ export const exportRevenueToExcel = async (
   const headerRowIdx = 4;
   const headers = [
     'STT',
-    'Mã Hóa Đơn',
+    'Mã Phiếu Thu',
     'Ngày Xuất',
     'Giờ',
     'Số Phòng',
@@ -210,7 +210,7 @@ export const exportRevenueToExcel = async (
   // Adjust column widths automatically
   ws.columns = [
     { width: 7 },  // STT
-    { width: 16 }, // Mã HĐ
+    { width: 16 }, // Mã PT
     { width: 13 }, // Ngày
     { width: 9 },  // Giờ
     { width: 11 }, // Phòng
@@ -263,13 +263,13 @@ export const exportDebtsToExcel = async (
   const headerRow = ws.getRow(4);
   const headers = [
     'STT',
-    'Mã HĐ',
+    'Mã PT',
     'Khách Hàng / Đơn Vị',
     'Số Điện Thoại',
     'Phòng Đã Ở',
     'Ngày Phát Sinh',
     'Hạn Thanh Toán',
-    'Tổng Giá Trị HĐ (VNĐ)',
+    'Tổng Giá Trị PT (VNĐ)',
     'Số Nợ Ban Đầu (VNĐ)',
     'Đã Thu Hồi (VNĐ)',
     'Còn Phải Thu (VNĐ)',

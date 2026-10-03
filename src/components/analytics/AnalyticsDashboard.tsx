@@ -463,7 +463,7 @@ export const AnalyticsDashboard: React.FC = () => {
             </div>
 
             <div className="text-xs text-slate-500">
-              Tổng số hóa đơn phát sinh trong ngày: <strong className="font-mono text-slate-900">{dailyData.count}</strong> lượt
+              Tổng số phiếu thu phát sinh trong ngày: <strong className="font-mono text-slate-900">{dailyData.count}</strong> lượt
             </div>
           </div>
 
@@ -478,7 +478,7 @@ export const AnalyticsDashboard: React.FC = () => {
             </div>
 
             <div className="bg-white p-4 rounded-xl border border-emerald-200 shadow-2xs">
-              <span className="text-xs font-semibold text-emerald-700 block">Đã thu cho hóa đơn (gồm cọc và thu nợ)</span>
+              <span className="text-xs font-semibold text-emerald-700 block">Đã thu cho phiếu thu (gồm cọc và thu nợ)</span>
               <p className="text-2xl font-bold font-mono text-emerald-800 mt-1">
                 {formatCurrency(dailyData.paidAmount)}
               </p>
@@ -557,20 +557,20 @@ export const AnalyticsDashboard: React.FC = () => {
             <div className="px-5 py-3.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
               <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center gap-2">
                 <Receipt className="w-4 h-4 text-slate-500" />
-                Danh sách hóa đơn phát sinh ngày {formatDate(selectedDate)} ({dailyData.count})
+                Danh sách phiếu thu phát sinh ngày {formatDate(selectedDate)} ({dailyData.count})
               </h4>
             </div>
 
             {dailyData.invoices.length === 0 ? (
               <div className="p-8 text-center text-slate-400 text-xs">
-                Không có hóa đơn thanh toán nào phát sinh trong ngày {formatDate(selectedDate)}
+                Không có phiếu thu thanh toán nào phát sinh trong ngày {formatDate(selectedDate)}
               </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs">
                   <thead className="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold border-b border-slate-200">
                     <tr>
-                      <th className="px-4 py-2.5">Mã HĐ</th>
+                      <th className="px-4 py-2.5">Mã PT</th>
                       <th className="px-4 py-2.5">Phòng</th>
                       <th className="px-4 py-2.5">Khách hàng</th>
                       <th className="px-4 py-2.5 text-right">Tiền phòng</th>
