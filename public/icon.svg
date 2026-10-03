@@ -1,0 +1,185 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <!-- Background Gradient: Deep Oceanic Royal Jade -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#021519" />
+      <stop offset="40%" stop-color="#062831" />
+      <stop offset="85%" stop-color="#0d3f4c" />
+      <stop offset="100%" stop-color="#114f5e" />
+    </linearGradient>
+
+    <!-- 24K Luxury Gold Metallic Gradient -->
+    <linearGradient id="goldMetallic" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fffbeb" />
+      <stop offset="25%" stop-color="#fde047" />
+      <stop offset="50%" stop-color="#eab308" />
+      <stop offset="75%" stop-color="#ca8a04" />
+      <stop offset="100%" stop-color="#854d0e" />
+    </linearGradient>
+
+    <!-- Bright Gold Ribbon -->
+    <linearGradient id="goldBright" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#eab308" />
+      <stop offset="45%" stop-color="#fef08a" />
+      <stop offset="75%" stop-color="#facc15" />
+      <stop offset="100%" stop-color="#ca8a04" />
+    </linearGradient>
+
+    <!-- Emerald Jade Glow -->
+    <linearGradient id="jadeGlow" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#5eead4" />
+      <stop offset="50%" stop-color="#14b8a6" />
+      <stop offset="100%" stop-color="#0f766e" />
+    </linearGradient>
+
+    <!-- Inner Radial Glow -->
+    <radialGradient id="centerHalo" cx="50%" cy="45%" r="45%">
+      <stop offset="0%" stop-color="#2dd4bf" stop-opacity="0.32" />
+      <stop offset="55%" stop-color="#0d9488" stop-opacity="0.12" />
+      <stop offset="100%" stop-color="#041a1f" stop-opacity="0" />
+    </radialGradient>
+
+    <!-- Soft Glow Filter -->
+    <filter id="softGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="6" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- 1. Base Squircle / Rounded Container -->
+  <rect width="512" height="512" rx="118" fill="url(#bgGrad)" />
+
+  <!-- Radial Halo behind Crest -->
+  <circle cx="256" cy="240" r="180" fill="url(#centerHalo)" />
+
+  <!-- 2. Dual Luxury Filigree Border Rings -->
+  <rect x="20" y="20" width="472" height="472" rx="100" fill="none" stroke="url(#goldMetallic)" stroke-width="3" stroke-opacity="0.55" />
+  <rect x="28" y="28" width="456" height="456" rx="92" fill="none" stroke="#2dd4bf" stroke-width="1.2" stroke-opacity="0.3" stroke-dasharray="8 6" />
+
+  <!-- Corner Flourish Accents -->
+  <g fill="url(#goldMetallic)" opacity="0.8">
+    <circle cx="56" cy="56" r="4.5" />
+    <circle cx="456" cy="56" r="4.5" />
+    <circle cx="56" cy="456" r="4.5" />
+    <circle cx="456" cy="456" r="4.5" />
+  </g>
+
+  <!-- 3. Top Royal 5-Star Hotel Arch -->
+  <g transform="translate(256, 95)" text-anchor="middle">
+    <!-- 5 Stars in an elegant arc -->
+    <!-- Star -2 -->
+    <g transform="translate(-76, 12) rotate(-16) scale(0.85)" fill="url(#goldMetallic)">
+      <polygon points="0,-12 3.5,-3.5 12,-3.5 5,2 7.5,10 0,5 -7.5,10 -5,2 -12,-3.5 -3.5,-3.5" />
+    </g>
+    <!-- Star -1 -->
+    <g transform="translate(-38, 3) rotate(-8) scale(0.95)" fill="url(#goldMetallic)">
+      <polygon points="0,-12 3.5,-3.5 12,-3.5 5,2 7.5,10 0,5 -7.5,10 -5,2 -12,-3.5 -3.5,-3.5" />
+    </g>
+    <!-- Center Star (Largest) -->
+    <g transform="translate(0, 0) scale(1.15)" fill="url(#goldBright)" filter="url(#softGlow)">
+      <polygon points="0,-12 3.5,-3.5 12,-3.5 5,2 7.5,10 0,5 -7.5,10 -5,2 -12,-3.5 -3.5,-3.5" />
+    </g>
+    <!-- Star 1 -->
+    <g transform="translate(38, 3) rotate(8) scale(0.95)" fill="url(#goldMetallic)">
+      <polygon points="0,-12 3.5,-3.5 12,-3.5 5,2 7.5,10 0,5 -7.5,10 -5,2 -12,-3.5 -3.5,-3.5" />
+    </g>
+    <!-- Star 2 -->
+    <g transform="translate(76, 12) rotate(16) scale(0.85)" fill="url(#goldMetallic)">
+      <polygon points="0,-12 3.5,-3.5 12,-3.5 5,2 7.5,10 0,5 -7.5,10 -5,2 -12,-3.5 -3.5,-3.5" />
+    </g>
+  </g>
+
+  <!-- 4. Royal Hotel Crown Motif -->
+  <g transform="translate(256, 150)" filter="url(#softGlow)">
+    <path d="M-55 22 L-65 -4 L-28 6 L0 -16 L28 6 L65 -4 L55 22 Z" fill="url(#goldMetallic)" />
+    <!-- Crown Jewels Pearls -->
+    <circle cx="-65" cy="-7" r="4.5" fill="#ffffff" />
+    <circle cx="0" cy="-19" r="6" fill="#fef08a" />
+    <circle cx="65" cy="-7" r="4.5" fill="#ffffff" />
+    <circle cx="-28" cy="4" r="3.5" fill="#2dd4bf" />
+    <circle cx="28" cy="4" r="3.5" fill="#2dd4bf" />
+    <!-- Crown Base Band -->
+    <rect x="-56" y="22" width="112" height="7" rx="3.5" fill="url(#goldBright)" />
+  </g>
+
+  <!-- 5. Central Grand Emblem: Ornate Shield with Interlocking "SN" Monogram & Jade Diamond -->
+  <g transform="translate(256, 260)">
+    <!-- Ornate Laurel / Jade Wings framing the shield -->
+    <g fill="none" stroke="url(#goldMetallic)" stroke-width="2.5" opacity="0.85">
+      <!-- Left Laurel Leaf Branch -->
+      <path d="M-85 45 C-115 15 -118 -35 -90 -75 C-96 -45 -88 -15 -68 12" />
+      <path d="M-105 -15 Q-120 -30 -108 -45 Q-98 -30 -105 -15" fill="url(#goldMetallic)" opacity="0.6" />
+      <path d="M-85 -55 Q-98 -72 -84 -82 Q-76 -68 -85 -55" fill="url(#goldMetallic)" opacity="0.6" />
+
+      <!-- Right Laurel Leaf Branch -->
+      <path d="M85 45 C115 15 118 -35 90 -75 C96 -45 88 -15 68 12" />
+      <path d="M105 -15 Q120 -30 108 -45 Q98 -30 105 -15" fill="url(#goldMetallic)" opacity="0.6" />
+      <path d="M85 -55 Q98 -72 84 -82 Q76 -68 85 -55" fill="url(#goldMetallic)" opacity="0.6" />
+    </g>
+
+    <!-- Outer Shield Frame -->
+    <path d="M0 -78 L72 -38 C72 38 42 78 0 98 C-42 78 -72 38 -72 -38 Z"
+          fill="#06262e"
+          stroke="url(#goldBright)"
+          stroke-width="4.5"
+          filter="url(#softGlow)" />
+
+    <!-- Inner Shield Inset -->
+    <path d="M0 -70 L64 -34 C64 34 37 68 0 86 C-37 68 -64 34 -64 -34 Z"
+          fill="url(#bgGrad)"
+          stroke="#14b8a6"
+          stroke-width="1.8"
+          stroke-opacity="0.5" />
+
+    <!-- Centerpiece: Brilliant Sparkling Jade Gem (Sơn Ngọc = Núi & Ngọc Bích) -->
+    <g transform="translate(0, -6)">
+      <!-- Diamond cuts -->
+      <polygon points="0,-42 36,-12 24,32 0,46 -24,32 -36,-12" fill="url(#jadeGlow)" stroke="url(#goldMetallic)" stroke-width="2.5" />
+      <!-- Facet Reflections -->
+      <polygon points="0,-42 0,46 24,32 36,-12" fill="#ffffff" opacity="0.18" />
+      <polygon points="0,-42 -36,-12 0,-12" fill="#ffffff" opacity="0.25" />
+      <polygon points="0,-12 36,-12 0,46" fill="#042f2e" opacity="0.3" />
+      <!-- Center Star Reflection -->
+      <circle cx="0" cy="-3" r="5" fill="#ffffff" opacity="0.9" />
+
+      <!-- Sparkling Glints -->
+      <path d="M-26 -28 Q-26 -35 -33 -35 Q-26 -35 -26 -42 Q-26 -35 -19 -35 Q-26 -35 -26 -28 Z" fill="#ffffff" />
+      <path d="M28 -22 Q28 -28 22 -28 Q28 -28 28 -34 Q28 -28 34 -28 Q28 -28 28 -22 Z" fill="url(#goldBright)" />
+    </g>
+
+    <!-- Monogram letters: S & N in Classical Serif -->
+    <g transform="translate(0, 16)" text-anchor="middle">
+      <text y="8" font-family="'Cinzel', 'Times New Roman', 'Playfair Display', Georgia, serif" font-size="44" font-weight="800" fill="url(#goldBright)" letter-spacing="4" filter="url(#softGlow)">
+        SN
+      </text>
+    </g>
+  </g>
+
+  <!-- 6. Bottom Banner Ribbon: SƠN NGỌC -->
+  <g transform="translate(256, 400)">
+    <!-- Ribbon Shadow & Base -->
+    <path d="M-150 14 L-125 -6 L125 -6 L150 14 L138 24 L125 18 L-125 18 L-138 24 Z" fill="#021316" opacity="0.6" />
+
+    <!-- Ribbon Main Body -->
+    <path d="M-135 12 L-118 -10 L118 -10 L135 12 L122 18 L-122 18 Z" fill="url(#goldMetallic)" stroke="#fef08a" stroke-width="1.2" />
+
+    <!-- Ribbon Fold Ribbon tails -->
+    <polygon points="-135,12 -155,22 -148,-2 -118,-10" fill="#a16207" />
+    <polygon points="135,12 155,22 148,-2 118,-10" fill="#a16207" />
+
+    <!-- Typography: SƠN NGỌC -->
+    <text y="8" text-anchor="middle" font-family="'Plus Jakarta Sans', system-ui, -apple-system, sans-serif" font-size="22" font-weight="900" fill="#041a1f" letter-spacing="5">
+      SƠN NGỌC
+    </text>
+  </g>
+
+  <!-- Subtitle: LUXURY HOTEL & SPA -->
+  <g transform="translate(256, 448)" text-anchor="middle">
+    <text y="0" font-family="'Plus Jakarta Sans', system-ui, -apple-system, sans-serif" font-size="13" font-weight="800" fill="url(#goldBright)" letter-spacing="6">
+      HOTEL &amp; SPA
+    </text>
+    <!-- Little Accent Line under Hotel -->
+    <line x1="-55" y1="12" x2="55" y2="12" stroke="url(#goldMetallic)" stroke-width="1.5" stroke-opacity="0.7" />
+    <circle cx="0" cy="12" r="3" fill="url(#goldBright)" />
+  </g>
+</svg>

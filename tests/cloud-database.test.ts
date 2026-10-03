@@ -1,0 +1,67 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { PGlite } from '@electric-sql/pglite';
+import { btree_gist } from '@electric-sql/pglite/contrib/btree_gist';
+
+test('PostgreSQL migration protects hotel transactions, room schedules, credentials and permissions', async () => {
+  const db = new PGlite({ extensions: { btree_gist } });
+  try {
+    await db.exec('create schema extensions; create role anon; create role authenticated; create role service_role bypassrls;');
+    await db.exec(readFileSync('supabase/migrations/20261003080620_hotel_backend.sql', 'utf8'));
+    await db.exec(readFileSync('supabase/seed.sql', 'utf8'));
+    const scalar = async (sql: string, params: unknown[] = []) => (await db.query<{ value: any }>(sql, params)).rows[0].value;
+    const initial = await scalar('select data as value from hotel_state');
+    assert.equal(initial.rooms.length, 15);
+    assert.ok(initial.rooms.every((r: any) => r.status === 'AVAILABLE' && !r.currentStayId && !r.currentGuestName));
+    for (const field of ['reservations', 'stays', 'invoices', 'debts']) assert.deepEqual(initial[field], []);
+    assert.equal(await scalar("select has_table_privilege('anon', 'hotel_auth', 'select') as value"), false);
+    assert.equal(await scalar("select has_table_privilege('authenticated', 'hotel_state', 'update') as value"), false);
+    assert.equal(await scalar("select has_function_privilege('anon', 'hotel_save(bigint,jsonb,text,text)', 'execute') as value"), false);
+    assert.equal(await scalar("select bool_and(relrowsecurity) as value from pg_class where relname in ('hotel_auth','hotel_state','hotel_sessions','hotel_login_limits','hotel_room_intervals','hotel_mutations')"), true);
+    const beforeAuth = await scalar('select to_jsonb(a) as value from hotel_auth a');
+    const token = 'test-session-hash';
+    assert.equal(await scalar('select hotel_open_session(1, $1) as value', [token]), true);
+    await db.exec('set role service_role;');
+    const booking = { id: 'a', roomId: 'room-n07', status: 'CONFIRMED', checkInDate: '2099-10-11', checkInTime: '14:00', checkOutDate: '2099-10-12', checkOutTime: '12:00' };
+    const nextWeek = { ...booking, id: 'b', checkInDate: '2099-10-18', checkOutDate: '2099-10-19' };
+    const data = { ...initial, reservations: [booking, nextWeek] };
+    const save = (revision: number, payload: unknown, requestId: string) => scalar('select hotel_save($1, $2::jsonb, $3, $4) as value', [revision, JSON.stringify(payload), token, requestId]);
+    assert.equal((await save(0, data, 'first')).revision, 1);
+    assert.equal((await save(0, data, 'first')).revision, 1, 'retry returns the committed state without another revision');
+    await assert.rejects(save(0, initial, 'stale'), /STALE_REVISION/);
+    await assert.rejects(save(1, { ...data, reservations: [...data.reservations, { ...booking, id: 'overlap' }] }, 'overlap'), /exclusion constraint/);
+    assert.equal(await scalar('select revision as value from hotel_state'), 1);
+    assert.equal(await scalar('select count(*)::int as value from hotel_room_intervals'), 2, 'failed rebuild rolls back all intervals');
+    assert.deepEqual(await scalar('select data as value from hotel_state'), data);
+    const adjacent = { ...booking, id: 'adjacent', checkInDate: booking.checkOutDate, checkInTime: booking.checkOutTime, checkOutDate: '2099-10-13' };
+    assert.equal((await save(1, { ...data, reservations: [...data.reservations, adjacent] }, 'adjacent')).revision, 2);
+    const stay = { id: 'active', roomId: booking.roomId, status: 'ACTIVE', checkInDate: booking.checkInDate, checkInTime: booking.checkInTime, expectedCheckOutDate: booking.checkOutDate, expectedCheckOutTime: booking.checkOutTime };
+    assert.equal((await save(2, { ...data, reservations: [{ ...booking, status: 'CHECKED_IN' }, nextWeek], stays: [stay] }, 'checkin')).revision, 3);
+    assert.equal(await scalar('select count(*)::int as value from hotel_room_intervals'), 2);
+    const overdue = { ...stay, checkInDate: '2000-01-01', expectedCheckOutDate: '2000-01-02' };
+    await assert.rejects(save(3, { ...data, reservations: [nextWeek], stays: [overdue] }, 'overdue'), /exclusion constraint/);
+    await assert.rejects(save(3, { ...data, reservations: [{ ...booking, checkOutDate: '2099-10-10' }] }, 'invalid'), /INVALID_PERIOD/);
+    // Simulate the clock passing the old guest's promised checkout time.
+    const elapsed = { ...data, reservations: [{ ...booking, status: 'CHECKED_IN' }, nextWeek], stays: [overdue] };
+    await db.query('update hotel_state set data = $1::jsonb', [JSON.stringify(elapsed)]);
+    const unrelated = { ...elapsed, services: [{ ...elapsed.services[0], price: 100001 }, ...elapsed.services.slice(1)] };
+    assert.equal((await save(3, unrelated, 'unrelated')).revision, 4, 'overdue guests do not block independent sales or catalog changes');
+    const later = { ...nextWeek, id: 'later', checkInDate: '2099-10-25', checkOutDate: '2099-10-26' };
+    await assert.rejects(save(4, { ...unrelated, reservations: [...unrelated.reservations, later] }, 'new-overdue-conflict'), /OVERDUE_STAY/);
+    assert.equal(await scalar('select revision as value from hotel_state'), 4);
+    const replacement = { salt: 'qa-salt', iterations: 210000, hash: 'qa-new-hash' };
+    assert.equal(await scalar('select hotel_change_password(1, $1::jsonb, $2) as value', [JSON.stringify(replacement), token]), true);
+    const afterAuth = await scalar('select to_jsonb(a) as value from hotel_auth a');
+    assert.deepEqual(afterAuth.fixed_credential, beforeAuth.fixed_credential);
+    assert.deepEqual(afterAuth.primary_credential, replacement);
+    assert.equal(afterAuth.version, 2);
+    assert.equal(await scalar('select count(*)::int as value from hotel_sessions'), 0);
+    await assert.rejects(save(4, data, 'logged-out'), /SESSION_EXPIRED/);
+    assert.equal(await scalar('select hotel_open_session(1, $1) as value', [token]), false);
+    await db.exec('reset role;');
+    await db.exec(readFileSync('supabase/seed.sql', 'utf8'));
+    assert.deepEqual(await scalar('select to_jsonb(a) as value from hotel_auth a'), afterAuth, 'initialization does not reset changed credentials');
+    assert.equal(await scalar('select revision as value from hotel_state'), 4, 'initialization never overwrites hotel transactions');
+  } finally { await db.close(); }
+});

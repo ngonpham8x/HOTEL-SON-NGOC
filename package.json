@@ -1,0 +1,55 @@
+{
+  "name": "son-ngoc-hotel",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "scripts": {
+    "dev": "vite --port=3000 --host=0.0.0.0",
+    "build": "npm run icons && vite build",
+    "icons": "node scripts/generate-pwa-icons.js",
+    "preview": "vite preview",
+    "lint": "tsc --noEmit",
+    "test": "tsx --test tests/*.test.ts",
+    "test:mobile": "node scripts/browser-review.mjs",
+    "test:login": "node scripts/browser-login.mjs",
+    "test:password": "node scripts/browser-password.mjs",
+    "test:install": "node scripts/browser-install.mjs",
+    "test:flows": "node scripts/browser-flow.mjs",
+    "test:prices": "node scripts/browser-prices.mjs",
+    "test:booking-sales": "node scripts/browser-booking-sales.mjs",
+    "supabase:prepare": "node scripts/prepare-supabase.mjs",
+    "supabase:seed": "tsx scripts/seed-supabase.ts",
+    "test:production": "node scripts/browser-production.mjs"
+  },
+  "dependencies": {
+    "@noble/hashes": "^2.4.0",
+    "@tailwindcss/vite": "^4.3.3",
+    "@vitejs/plugin-react": "^6.1.1",
+    "exceljs": "^4.4.0",
+    "lucide-react": "^0.546.0",
+    "react": "^19.0.1",
+    "react-dom": "^19.0.1",
+    "vite": "^8.3.0"
+  },
+  "overrides": {
+    "exceljs": {
+      "uuid": "^11.1.1"
+    }
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "0.5.8",
+    "@resvg/resvg-js": "^2.6.2",
+    "@types/node": "^22.14.0",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "agent-browser": "^0.38.2",
+    "autoprefixer": "^10.4.21",
+    "esbuild": "^0.28.0",
+    "tailwindcss": "^4.3.3",
+    "tsx": "^4.21.0",
+    "typescript": "^7.0.2"
+  }
+}

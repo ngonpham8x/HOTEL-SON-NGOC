@@ -1,0 +1,6 @@
+{
+  "name": "Lotus Hotel PMS",
+  "description": "Hệ thống quản lý khách sạn toàn diện: sơ đồ phòng, đặt phòng, check-in/out, minibar, công nợ khách hàng, thống kê chu kỳ doanh thu và xuất báo cáo Excel/PDF.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

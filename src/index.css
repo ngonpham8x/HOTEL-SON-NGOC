@@ -1,0 +1,128 @@
+@import "tailwindcss";
+
+@layer base {
+  html { -webkit-text-size-adjust: 100%; }
+  *, *::before, *::after { box-sizing: border-box; }
+  input, select, textarea { min-width: 0; max-width: 100%; }
+  button { cursor: pointer; }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+  svg { flex-shrink: 0; }
+  body {
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    color: #0f172a;
+    background-color: #f8fafc;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .font-mono,
+  .tabular-nums {
+    font-family: 'JetBrains Mono', monospace;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* A flex/grid child must be allowed to shrink below long content's width. */
+.login-screen { padding-top: max(1.75rem, env(safe-area-inset-top)); padding-bottom: max(1.75rem, env(safe-area-inset-bottom)); }
+.grid > *, form > *, .room-dialog .flex > * { min-width: 0; }
+.room-dialog > div { width: 100%; max-height: calc(100dvh - 2rem); min-width: 0; }
+.room-dialog > div > :first-child,
+.room-dialog-footer { flex-shrink: 0; }
+.room-dialog > div > :first-child { gap: .75rem; }
+.room-dialog > div > :first-child h3 { line-height: 1.4; }
+.room-dialog > div > :nth-child(2) { min-height: 0; overflow-x: hidden; }
+.room-dialog select { display: block; width: 100%; text-overflow: ellipsis; }
+.report-sheet td:last-child { white-space: nowrap; }
+
+@media (max-width: 639px) {
+  .fixed.inset-0 > div { max-height: calc(100dvh - 2rem); }
+  .room-dialog > div > :first-child { padding: .75rem; }
+  .room-dialog > div > :first-child { position: relative; padding-right: 3rem; }
+  .room-dialog > div > :first-child > button { position: absolute; top: .75rem; right: .75rem; margin: 0; }
+  .room-dialog > div > :first-child > div { flex: 1; flex-wrap: nowrap; gap: .625rem; }
+  .room-dialog > div > :first-child h3 { font-size: 14px; }
+  .room-dialog-footer { display: grid; grid-template-columns: 1fr; padding: .75rem; }
+  .room-dialog-footer > div { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; }
+  .room-dialog-footer button { min-height: 38px; padding: .5rem; line-height: 1.35; border-radius: .5rem; }
+  .room-dialog-footer button span { white-space: normal; }
+  .room-dialog .flex.items-center.justify-between { flex-wrap: wrap; gap: .5rem; }
+  .room-dialog [class*="overflow-y-auto"] { padding: .75rem; }
+  .mobile-table { display: block; width: 100%; min-width: 0; }
+  .mobile-table thead { display: none; }
+  .mobile-table tbody { display: block; padding: .5rem; }
+  .mobile-table tr { display: block; margin-bottom: .75rem; padding: .5rem; border: 1px solid #cbd5e1; border-radius: .75rem; }
+  .mobile-table tr:last-child { margin-bottom: 0; }
+  .mobile-table td { display: grid; grid-template-columns: minmax(75px, 35%) minmax(0, 1fr); align-items: center; gap: .5rem; padding: .5rem; text-align: left; overflow-wrap: anywhere; }
+  .mobile-table td::before { content: attr(data-label); color: #64748b; font-size: 10px; font-weight: 600; }
+  .mobile-table td > * { min-width: 0; }
+  .mobile-table td button { margin: 0; }
+  .mobile-table td > .flex { flex-wrap: wrap; justify-content: flex-start; }
+  .mobile-table td:has(> span.block) { display: block; }
+  .mobile-table td:has(> span.block)::before { display: block; margin-bottom: .25rem; }
+  .mobile-table-wide { display: table; min-width: 700px; }
+  .mobile-table-wide thead { display: table-header-group; }
+  .mobile-table-wide tbody { display: table-row-group; padding: 0; }
+  .mobile-table-wide tr { display: table-row; border: 0; border-radius: 0; padding: 0; margin: 0; }
+  .mobile-table-wide td, .mobile-table-wide td:has(> span.block) { display: table-cell; padding: .75rem; }
+  .mobile-table-wide td::before, .mobile-table-wide td:has(> span.block)::before { display: none; }
+  .report-sheet { padding: 1rem; }
+  .report-sheet h2 { font-size: 1rem; line-height: 1.6; }
+  .report-financial { display: block; min-width: 0 !important; }
+  .report-financial thead { display: none; }
+  .report-financial tbody { display: block; }
+  .report-financial tr { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); padding: .75rem; gap: .5rem; }
+  .report-financial td { padding: 0; white-space: normal; }
+  .report-financial td:first-child { grid-column: 1 / -1; }
+  .report-financial td:nth-child(2)::before { content: 'Tỷ trọng'; }
+  .report-financial td:nth-child(3)::before { content: 'Số tiền'; }
+  .report-financial td:nth-child(n+2)::before { display: block; margin-bottom: .25rem; font-size: 10px; font-family: sans-serif; color: #64748b; font-weight: 500; }
+}
+
+@media print {
+  .report-financial { display: table !important; }
+  .report-financial thead { display: table-header-group !important; }
+  .report-financial tbody { display: table-row-group !important; }
+  .report-financial tr { display: table-row !important; }
+  .report-financial td { display: table-cell !important; padding: .5rem !important; }
+  .report-financial td::before { display: none !important; }
+  .invoice-open > header, .invoice-open > .flex-1, .invoice-open > :not(.invoice-dialog) { display: none !important; }
+  .invoice-dialog { position: static !important; padding: 0 !important; background: white !important; }
+  .invoice-dialog > div { max-width: none !important; max-height: none !important; overflow: visible !important; box-shadow: none !important; }
+  .invoice-dialog .print-container { overflow: visible !important; }
+  .invoice-dialog [class*="overflow-x-auto"] { overflow: visible !important; }
+  .invoice-dialog table { min-width: 0 !important; }
+  .report-sheet { padding: 0 !important; }
+  .report-sheet [class*="overflow"] { overflow: visible !important; }
+  .report-sheet table { min-width: 0 !important; width: 100% !important; }
+  .report-sheet td { white-space: normal !important; }
+  body {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  .print-container {
+    padding: 0 !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+    width: 100% !important;
+  }
+
+  @page {
+    size: auto;
+    margin: 15mm 15mm 15mm 15mm;
+  }
+}
+
+@media screen {
+  .print-only {
+    display: none;
+  }
+}
