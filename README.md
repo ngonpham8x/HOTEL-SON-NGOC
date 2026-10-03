@@ -33,6 +33,7 @@ npm run test:mobile
 npm run test:flows
 npm run test:prices
 npm run test:booking-sales
+npm run test:staff
 npm run test:login
 npm run test:install
 ```
@@ -56,6 +57,21 @@ Bộ kiểm tra đăng nhập có thêm một chứng thực cố định độc
 
 Các kiểm thử chứng thực cố định nhận đầu vào tạm thời qua biến môi trường `SON_NGOC_FIXED_TEST_PASSWORD`; không ghi giá trị vào `.env` hoặc fixture. `node scripts/check-private-credential.mjs` kiểm tra mã nguồn và bản build khi có đầu vào đó.
 Các kiểm thử trình duyệt và kiểm thử chứng thực ban đầu nhận mật khẩu chính qua `SON_NGOC_PRIMARY_TEST_PASSWORD`. Không ghi mật khẩu thật vào mã nguồn; các kiểm thử nghiệp vụ đổi mật khẩu dùng chứng thực giả riêng. Đặt biến tạm trong phiên shell trước khi chạy, rồi xóa biến sau khi xong.
+
+## Phân quyền lễ tân
+
+Đăng nhập quản lý rồi vào **Menu → Phân quyền lễ tân** để tạo tài khoản riêng bằng tên đăng nhập và mật khẩu. Chọn mẫu **Chỉ xem** hoặc **Lễ tân nghiệp vụ**, rồi bật/tắt quyền xem từng mục và quyền thao tác. Lễ tân chọn **Lễ tân** trên màn hình đăng nhập. Không có tài khoản lễ tân mặc định.
+
+Mặc định lễ tân được xem phòng, lịch đặt, khách đang ở, bảng giá và hóa đơn bán lẻ của mình; được đặt/nhận/trả phòng, cập nhật khách đi cùng, thêm dịch vụ, cập nhật dọn phòng và bán vé. Doanh thu tổng, công nợ, sửa giá, xóa phòng/dịch vụ và xuất dữ liệu cần quyền riêng. Quyền xem phòng/lịch/khách bao gồm dữ liệu liên quan để kiểm tra phòng còn trống và xử lý lưu trú. Trang chủ bao gồm thống kê tài chính.
+
+- Xóa phòng chỉ khi chưa có bất kỳ lượt ở, phiếu đặt, hóa đơn hoặc công nợ liên quan, kể cả lịch sử.
+- Xóa dịch vụ chỉ khi chưa được sử dụng trong lượt ở hoặc hóa đơn. Xóa dịch vụ đang ghi vào phòng chỉ áp dụng trước khi thanh toán và cần quyền riêng.
+- Phiếu đã hủy, không có cọc và chưa nhận phòng có thể **Lưu trữ**. Phiếu vẫn nằm trong dữ liệu, bản sao lưu và có thể xem lại bằng **Hiện phiếu đã lưu trữ**.
+- Không xóa lịch sử khách, hóa đơn, thanh toán hay công nợ qua thao tác nghiệp vụ. Lễ tân không được quản lý tài khoản hoặc khôi phục bản sao lưu.
+
+Khóa tài khoản hoặc sửa quyền/mật khẩu làm hết hiệu lực phiên lễ tân cũ. Mỗi tài khoản tự đổi mật khẩu của mình; không thay mật khẩu quản lý hoặc chứng thực cố định. Mật khẩu tài khoản được băm PBKDF2 và không đưa vào bản sao lưu khách sạn. Biểu mẫu cũ không ghi đè quyền vừa cập nhật ở cửa sổ khác.
+
+Chế độ cục bộ lưu tài khoản và quyền ở trình duyệt hiện tại; người kiểm soát bộ nhớ hoặc mã trình duyệt vẫn có thể can thiệp. Khi triển khai Supabase, API kiểm tra tài khoản và quyền phía máy chủ cho mọi thao tác, lọc dữ liệu trả về, giữ lại các bản ghi ngoài quyền xem khi lưu, đồng thời chặn ghi đè giữa các thiết bị. Migration bổ sung ở `supabase/migrations/` áp dụng sau migration nền, không đặt lại dữ liệu hay mật khẩu quản lý.
 
 ## Giá phòng và thời gian
 

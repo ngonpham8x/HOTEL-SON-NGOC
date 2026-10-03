@@ -1,0 +1,151 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { readFileSync, readdirSync } from 'node:fs';
+import { PGlite } from '@electric-sql/pglite';
+import { btree_gist } from '@electric-sql/pglite/contrib/btree_gist';
+import { fixtureCredential, initialPassword } from './authFixture';
+import { INITIAL_INVOICES, INITIAL_DEBTS, INITIAL_STAYS, INITIAL_RESERVATIONS } from '../src/data/initialData';
+import { prepareServiceSale } from '../src/utils/serviceSale';
+import type { HotelData } from '../src/utils/hotelStorage';
+
+test('staff cloud API enforces private credentials, data scopes, safe operations and immediate version revocation in PostgreSQL', async () => {
+  const pg = new PGlite({ extensions: { btree_gist } });
+  const originalFetch = globalThis.fetch;
+  let handler: (request: Request) => Promise<Response>;
+  const scalar = async (sql: string, params: unknown[] = []) => (await pg.query<{ value: any }>(sql, params)).rows[0].value;
+  try {
+    await pg.exec('create schema extensions; create role anon; create role authenticated; create role service_role bypassrls;');
+    for (const migration of readdirSync('supabase/migrations').filter(file => file.endsWith('.sql')).sort()) await pg.exec(readFileSync(`supabase/migrations/${migration}`, 'utf8'));
+    await pg.exec(readFileSync('supabase/seed.sql', 'utf8'));
+    await pg.query('update hotel_auth set primary_credential = $1::jsonb', [JSON.stringify(fixtureCredential)]);
+    const initial = await scalar('select data as value from hotel_state') as HotelData;
+    const full = { ...initial, invoices: [INITIAL_INVOICES[0]], debts: [INITIAL_DEBTS[0]] };
+    await pg.query('update hotel_state set data = $1::jsonb', [JSON.stringify(full)]);
+    assert.equal(await scalar("select has_table_privilege('anon','hotel_staff','select') as value"), false);
+    assert.equal(await scalar("select has_function_privilege('authenticated','hotel_staff_save(text,text,boolean,text,text,jsonb,boolean,jsonb,bigint)','execute') as value"), false);
+    assert.equal(await scalar("select relrowsecurity as value from pg_class where relname = 'hotel_staff'"), true);
+    await pg.exec('set role service_role;');
+    Object.assign(globalThis, { Deno: { env: { get: (name: string) => name === 'SUPABASE_URL' ? 'https://qa.supabase.co' : 'private-test-key' }, serve: (callback: typeof handler) => { handler = callback; } } });
+    globalThis.fetch = async (url, options) => {
+      const u = new URL(String(url)), path = u.pathname.replace('/rest/v1/', '');
+      const body = options?.body ? JSON.parse(String(options.body)) : null;
+      const reply = (data: unknown, status = 200) => Promise.resolve(new Response(JSON.stringify(data), { status }));
+      try {
+        assert.equal((options?.headers as Record<string, string>).apikey, 'private-test-key');
+        if (path.startsWith('rpc/')) {
+          const name = path.slice(4);
+          assert.ok(['hotel_rate_limit','hotel_open_session','hotel_open_staff_session','hotel_staff_save','hotel_save_authorized','hotel_change_password','hotel_staff_change_password'].includes(name));
+          const entries = Object.entries(body);
+          const args = entries.map(([key], index) => `${key} => $${index + 1}`).join(',');
+          return reply(await scalar(`select ${name}(${args}) as value`, entries.map(([, value]) => typeof value === 'object' && value !== null ? JSON.stringify(value) : value)));
+        }
+        if (path === 'hotel_auth') return reply((await pg.query('select * from hotel_auth')).rows);
+        if (path === 'hotel_staff') {
+          if (u.searchParams.has('id')) return reply((await pg.query('select * from hotel_staff where id=$1', [u.searchParams.get('id')!.slice(3)])).rows);
+          if (u.searchParams.has('username')) return reply((await pg.query('select * from hotel_staff where username=$1', [u.searchParams.get('username')!.slice(3)])).rows);
+          return reply((await pg.query('select * from hotel_staff order by created_at')).rows);
+        }
+        if (path === 'hotel_state') return reply((await pg.query('select revision,data from hotel_state')).rows);
+        if (path === 'hotel_mutations') return reply((await pg.query('select request_id from hotel_mutations where request_id=$1', [u.searchParams.get('request_id')!.slice(3)])).rows);
+        if (path === 'hotel_sessions') {
+          const hash = u.searchParams.get('token_hash')!.slice(3);
+          if (options?.method === 'DELETE') { await pg.query('delete from hotel_sessions where token_hash=$1', [hash]); return reply([]); }
+          return reply((await pg.query('select * from hotel_sessions where token_hash=$1 and auth_version=$2 and expires_at > now()', [hash, Number(u.searchParams.get('auth_version')!.slice(3))])).rows);
+        }
+        throw new Error(`Unexpected REST path: ${path}`);
+      } catch (error) { return reply({ message: error instanceof Error ? error.message : String(error) }, 400); }
+    };
+    await import('../supabase/functions/hotel-api/index.ts');
+    const request = (action: string, payload: Record<string, unknown> = {}, token?: string) => handler(new Request('https://qa/functions/v1/hotel-api', { method: 'POST', headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }, body: JSON.stringify({ action, ...payload }) }));
+    const adminLogin = await request('login', { password: initialPassword }); assert.equal(adminLogin.status, 200);
+    const admin = await adminLogin.json(); assert.equal(admin.actor.role, 'ADMIN');
+    const staffPassword = 'Staff Test Only@2026';
+    const createInput = { username: 'letan01', displayName: 'Lễ tân 01', active: true, password: staffPassword, permissions: { views: ['rooms','sales','services'], actions: [] }, role: 'ADMIN' };
+    const created = await request('staff.save', createInput, admin.token); assert.equal(created.status, 200);
+    const { account } = await created.json(); assert.equal(account.role, 'RECEPTION'); assert.equal(account.version, 1);
+    await assert.rejects(pg.query('update hotel_staff set credential = $1::jsonb where id=$2', ['{}', account.id]), /hotel_staff_credential_check/, 'database rejects empty or malformed password verifiers');
+    assert.equal('credential' in account, false); assert.equal('hash' in account, false);
+    const listed = await (await request('staff.list', {}, admin.token)).json(); assert.equal(listed.accounts.length, 1); assert.equal('credential' in listed.accounts[0], false);
+    assert.equal((await request('login', { username: '', password: initialPassword })).status, 400, 'empty staff name must never fall back to manager authentication');
+    assert.equal((await request('login', { username: 'letan01', password: initialPassword })).status, 400, 'manager password must not unlock a staff name');
+    let staff = await (await request('login', { username: 'LeTan01', password: staffPassword })).json();
+    assert.equal(staff.actor.id, account.id); assert.equal(staff.actor.role, 'RECEPTION');
+    assert.equal((await request('staff.list', {}, staff.token)).status, 403);
+    assert.equal((await request('staff.save', createInput, staff.token)).status, 403);
+    assert.equal((await request('session', {}, staff.token)).status, 200);
+    const view = await (await request('read', {}, staff.token)).json();
+    assert.deepEqual(view.data.invoices, []); assert.deepEqual(view.data.debts, []);
+    assert.equal(view.data.rooms.length, 15);
+    assert.equal((await request('write', { operation: 'room.clean', revision: 0, requestId: 'a'.repeat(32), data: view.data, actor: { role: 'ADMIN' } }, staff.token)).status, 403);
+    const granted = await request('staff.save', { ...createInput, password: undefined, id: account.id, expectedVersion: 1, permissions: { views: ['rooms','sales','services'], actions: ['room.clean','sale.create','room.delete','service.delete'] } }, admin.token); assert.equal(granted.status, 200);
+    const second = (await granted.json()).account; assert.equal(second.version, 2);
+    assert.equal((await request('read', {}, staff.token)).status, 401, 'grant edits revoke the prior staff session immediately');
+    assert.equal((await request('staff.save', { ...createInput, password: undefined, id: account.id, expectedVersion: 1 }, admin.token)).status, 409, 'stale permission editor cannot overwrite a newer grant');
+    staff = await (await request('login', { username: 'letan01', password: staffPassword })).json();
+    let projected = await (await request('read', {}, staff.token)).json();
+    const tampered = structuredClone(projected.data); tampered.rooms[0].pricePerNight++;
+    assert.equal((await request('write', { operation: 'room.clean', revision: 0, requestId: 'b'.repeat(32), data: tampered }, staff.token)).status, 403, 'labeling a price edit as cleaning cannot bypass permissions');
+    const exposed = { ...projected.data, invoices: [{ ...INITIAL_INVOICES[0], totalAmount: 0 }] };
+    assert.equal((await request('write', { operation: 'room.clean', revision: 0, requestId: 'c'.repeat(32), data: exposed }, staff.token)).status, 403, 'hidden invoice identifiers cannot be forged to edit financial history');
+    const cleaned = structuredClone(projected.data); cleaned.rooms[0].cleanStatus = 'DIRTY';
+    const clean = await request('write', { operation: 'room.clean', revision: 0, requestId: 'd'.repeat(32), data: cleaned }, staff.token); assert.equal(clean.status, 200);
+    const afterClean = await scalar('select data as value from hotel_state');
+    assert.deepEqual(afterClean.invoices, full.invoices); assert.deepEqual(afterClean.debts, full.debts);
+    projected = await clean.json();
+    const linkedRoom = projected.data.rooms.find((room: any) => room.number === full.invoices[0].roomNumber);
+    if (linkedRoom) assert.equal((await request('write', { operation: 'room.delete', revision: 1, requestId: 'e'.repeat(32), data: { ...projected.data, rooms: projected.data.rooms.filter((room: any) => room.id !== linkedRoom.id) } }, staff.token)).status, 403);
+    const service = projected.data.services[0];
+    const sale = prepareServiceSale({ customerName: 'Khách ngoài', phone: '0900000000', items: [{ serviceId: service.id, quantity: 1 }], discount: 0, paidAmount: service.price, paymentMethod: 'CASH' }, projected.data.services);
+    const sold = await request('write', { operation: 'sale.create', revision: 1, requestId: 'f'.repeat(32), data: { ...projected.data, invoices: [sale.invoice], debts: [] } }, staff.token); assert.equal(sold.status, 200);
+    const soldView = await sold.json(); assert.equal(soldView.data.invoices.length, 1); assert.equal(soldView.data.invoices[0].createdBy, account.id); assert.equal(soldView.data.invoices[0].kind, 'SERVICE');
+    assert.deepEqual(soldView.data.debts, []);
+    assert.equal((await scalar('select data as value from hotel_state')).invoices.length, 2, 'outside sale retains hidden financial rows');
+    assert.equal((await request('write', { operation: 'sale.create', revision: 1, requestId: 'f'.repeat(32), data: { ...projected.data, invoices: [sale.invoice], debts: [] } }, staff.token)).status, 200, 'retry confirms the prior sale without another invoice');
+    assert.equal((await scalar('select data as value from hotel_state')).invoices.length, 2);
+    const usedServiceDelete = { ...soldView.data, services: soldView.data.services.filter((row: any) => row.id !== service.id) };
+    assert.equal((await request('write', { operation: 'service.delete', revision: 2, requestId: '1'.repeat(32), data: usedServiceDelete }, staff.token)).status, 403, 'a service used by an issued receipt must be retained');
+    assert.equal((await request('write', { operation: 'sale.create', revision: 2, requestId: '2'.repeat(32), data: { ...soldView.data, invoices: [] } }, staff.token)).status, 403, 'even own invoices cannot be erased');
+    const partial = prepareServiceSale({ customerName: 'Khách ghi nợ', phone: '0900000001', items: [{ serviceId: service.id, quantity: 1 }], discount: 0, paidAmount: 1, paymentMethod: 'CASH' }, soldView.data.services);
+    const onDebt = await request('write', { operation: 'sale.create', revision: 2, requestId: '3'.repeat(32), data: { ...soldView.data, invoices: [partial.invoice, ...soldView.data.invoices], debts: [partial.debt] } }, staff.token); assert.equal(onDebt.status, 200);
+    assert.deepEqual((await onDebt.json()).data.debts, [], 'staff can create matching debt without receiving the hotel debt ledger');
+    const withDebt = await scalar('select data as value from hotel_state'); assert.equal(withDebt.debts.length, 2); assert.equal(withDebt.invoices.length, 3);
+    assert.equal((await request('write', { operation: 'room.clean', revision: 3, requestId: '4'.repeat(32), data: { ...withDebt, invoices: [] } }, admin.token)).status, 403, 'normal manager writes also retain issued financial history');
+    const authBefore = await scalar('select to_jsonb(a) as value from hotel_auth a');
+    assert.equal((await request('password', { current: initialPassword, next: 'Changed Staff@2026', confirmation: 'Changed Staff@2026' }, staff.token)).status, 400, 'staff current password cannot be a manager password');
+    assert.equal((await request('password', { current: staffPassword, next: 'Changed Staff@2026', confirmation: 'Changed Staff@2026' }, staff.token)).status, 200);
+    assert.deepEqual(await scalar('select to_jsonb(a) as value from hotel_auth a'), authBefore, 'staff password change never changes either manager credential');
+    assert.equal((await request('read', {}, staff.token)).status, 401);
+    const newStaffLogin = await request('login', { username: 'letan01', password: 'Changed Staff@2026' }); assert.equal(newStaffLogin.status, 200);
+    staff = await newStaffLogin.json();
+    const currentStaffVersion = staff.actor.version;
+    const staffHash = Buffer.from(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(staff.token))).toString('hex');
+    await assert.rejects(scalar('select hotel_save_authorized($1,$2::jsonb,$3,$4,$5,$6) as value', [3, JSON.stringify(withDebt), staffHash, 'stale-permissions', 'room.clean', currentStaffVersion - 1]), /SESSION_EXPIRED/, 'SQL rechecks the actor version even if the Edge request already read old grants');
+    await assert.rejects(scalar('select hotel_save_authorized($1,$2::jsonb,$3,$4,$5,$6) as value', [3, JSON.stringify(withDebt), staffHash, 'ungranted', 'room.configure', currentStaffVersion]), /PERMISSION_DENIED/);
+    await assert.rejects(scalar('select hotel_change_password($1,$2::jsonb,$3) as value', [1, JSON.stringify(fixtureCredential), staffHash]), /SESSION_EXPIRED/, 'staff sessions cannot invoke the manager password RPC');
+    const deactivated = await request('staff.save', { ...createInput, password: undefined, id: account.id, expectedVersion: currentStaffVersion, active: false }, admin.token); assert.equal(deactivated.status, 200);
+    assert.equal((await request('read', {}, staff.token)).status, 401);
+    assert.equal((await request('login', { username: 'letan01', password: 'Changed Staff@2026' })).status, 400);
+    await assert.rejects(scalar('select hotel_save_authorized($1,$2::jsonb,$3,$4,$5,$6) as value', [3, JSON.stringify(withDebt), staffHash, 'revoked', 'room.clean', currentStaffVersion]), /SESSION_EXPIRED/);
+    const beforeDebtCollection: HotelData = { ...withDebt, stays: [{ ...INITIAL_STAYS[0], status: 'CHECKED_OUT' }], reservations: [{ ...INITIAL_RESERVATIONS[0], status: 'CANCELLED' }] };
+    await pg.query('update hotel_state set data = $1::jsonb', [JSON.stringify(beforeDebtCollection)]);
+    const debtAccount = await request('staff.save', { username: 'debt-only', displayName: 'Lễ tân thu nợ', active: true, password: 'Debt Staff Only@2026', permissions: { views: ['debt'], actions: ['debt.collect'] } }, admin.token); assert.equal(debtAccount.status, 200);
+    const debtLogin = await request('login', { username: 'debt-only', password: 'Debt Staff Only@2026' }); assert.equal(debtLogin.status, 200);
+    const debtStaff = await debtLogin.json();
+    const debtView = await (await request('read', {}, debtStaff.token)).json();
+    for (const field of ['rooms', 'services', 'stays', 'reservations']) assert.deepEqual(debtView.data[field], [], `${field} is outside the debt-only module scope`);
+    assert.equal(debtView.data.debts.length, 2);
+    assert.deepEqual(debtView.data.invoices.map((invoice: any) => invoice.id), [partial.invoice.id], 'debt-only staff see only existing invoices referenced by debt rows');
+    assert.equal(debtView.data.invoices.some((invoice: any) => invoice.id === sale.invoice.id), false, 'unrelated paid sale is hidden');
+    const targetDebt = debtView.data.debts.find((debt: any) => debt.id === partial.debt!.id), targetInvoice = debtView.data.invoices[0];
+    const amount = 1;
+    const collection = { id: 'debt-only-payment', date: '2026-10-03', time: '12:00', amount, method: 'CASH', collectedBy: debtStaff.actor.displayName };
+    const collected = { ...debtView.data, debts: debtView.data.debts.map((debt: any) => debt.id === targetDebt.id ? { ...debt, paidAmount: debt.paidAmount + amount, remainingAmount: debt.remainingAmount - amount, status: 'PARTIAL', paymentHistory: [...debt.paymentHistory, collection] } : debt), invoices: [{ ...targetInvoice, paidAmount: targetInvoice.paidAmount + amount, debtAmount: targetInvoice.debtAmount - amount, status: 'PARTIAL' }] };
+    const collectedResponse = await request('write', { operation: 'debt.collect', revision: 3, requestId: '5'.repeat(32), data: collected }, debtStaff.token); assert.equal(collectedResponse.status, 200);
+    const afterCollection = await scalar('select data as value from hotel_state') as HotelData;
+    for (const field of ['rooms', 'services', 'stays', 'reservations'] as const) assert.deepEqual(afterCollection[field], beforeDebtCollection[field], `${field} remains intact when the staff submits a projected snapshot`);
+    assert.deepEqual(afterCollection.invoices.find(invoice => invoice.id === sale.invoice.id), beforeDebtCollection.invoices.find(invoice => invoice.id === sale.invoice.id));
+    assert.equal(afterCollection.debts.find(debt => debt.id === targetDebt.id)!.remainingAmount, targetDebt.remainingAmount - amount);
+    const collectedView = await collectedResponse.json(); assert.equal(collectedView.data.invoices.length, 1); assert.deepEqual(collectedView.data.stays, []);
+    const rpcDefinitions = await scalar("select bool_and(prosecdef = false) as value from pg_proc where proname in ('hotel_save_authorized','hotel_staff_save','hotel_open_staff_session','hotel_staff_change_password')"); assert.equal(rpcDefinitions, true);
+  } finally { globalThis.fetch = originalFetch; Reflect.deleteProperty(globalThis, 'Deno'); await pg.close(); }
+});

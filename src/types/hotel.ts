@@ -56,6 +56,7 @@ export interface CompanionGuest {
 export type ReservationStatus = 'CONFIRMED' | 'CHECKED_IN' | 'CANCELLED';
 
 export interface Reservation {
+  archived?: boolean;
   pricingType?: 'NIGHT' | 'HOUR';
   rateApplied?: number;
   id: string;
@@ -82,6 +83,7 @@ export interface Reservation {
 export type StayStatus = 'ACTIVE' | 'CHECKED_OUT';
 
 export interface StayRecord {
+  reservationId?: string;
   id: string;
   code: string;
   roomId: string;
@@ -108,6 +110,7 @@ export type PaymentMethod = 'CASH' | 'TRANSFER' | 'CARD' | 'DEBT' | 'MIXED';
 export type InvoiceStatus = 'PAID' | 'PARTIAL' | 'DEBT';
 
 export interface Invoice {
+  createdBy?: string;
   kind?: 'ROOM' | 'SERVICE';
   id: string;
   code: string;

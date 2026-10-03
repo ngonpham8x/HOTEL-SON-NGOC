@@ -18,14 +18,17 @@ import { Room, Invoice } from './types/hotel';
 import { AuthGate } from './components/auth/AuthGate';
 import { CloudAuthGate } from './components/auth/CloudAuthGate';
 import { cloudEnabled } from './utils/cloudHotel';
+import { useAccess } from './context/AccessContext';
 
 const AnalyticsDashboard = lazy(() => import('./components/analytics/AnalyticsDashboard').then(m => ({ default: m.AnalyticsDashboard })));
 const ExportReportView = lazy(() => import('./components/reports/ExportReportView').then(m => ({ default: m.ExportReportView })));
 const ServiceCatalogView = lazy(() => import('./components/services/ServiceCatalogView').then(m => ({ default: m.ServiceCatalogView })));
 const ServiceSalesView = lazy(() => import('./components/services/ServiceSalesView').then(m => ({ default: m.ServiceSalesView })));
+const StaffAccessManager = lazy(() => import('./components/auth/StaffAccessManager').then(m => ({ default: m.StaffAccessManager })));
 
 const MainLayout: React.FC<{ onLogout: () => void; onPasswordChanged: () => void }> = ({ onLogout, onPasswordChanged }) => {
   const { activeTab, storageError, rooms } = useHotel();
+  const { canView, canAct, isAdmin } = useAccess();
 
   // Modal States
   const [detailRoom, setDetailRoom] = useState<Room | null>(null);
@@ -56,7 +59,9 @@ const MainLayout: React.FC<{ onLogout: () => void; onPasswordChanged: () => void
         <main className="min-w-0 flex-1 overflow-y-auto p-3 sm:p-5 md:p-7 max-w-7xl mx-auto w-full">
           <Suspense fallback={<p role="status" className="p-4 text-sm text-teal-800">Đang mở trang…</p>}>
           <div role="alert" className={storageError ? "no-print mb-4 p-3 bg-rose-50 border border-rose-300 rounded-xl text-sm text-rose-800" : "hidden"}>{storageError}</div>
-          {activeTab === 'dashboard' && (
+          {activeTab === 'none' && <p role="status" className="rounded-xl bg-white p-5 border text-slate-700">Tài khoản chưa được cấp quyền xem mục nào. Vui lòng liên hệ quản lý.</p>}
+          {activeTab === 'staff' && isAdmin && <StaffAccessManager />}
+          {activeTab === 'dashboard' && canView('dashboard') && (
             <HomeDashboard
               onSelectRoom={r => setDetailRoom(r)}
               onCheckInRoom={r => setCheckInRoom(r)}
@@ -69,7 +74,7 @@ const MainLayout: React.FC<{ onLogout: () => void; onPasswordChanged: () => void
             />
           )}
 
-          {activeTab === 'rooms' && (
+          {activeTab === 'rooms' && canView('rooms') && (
             <RoomRackView
               onSelectRoom={r => setDetailRoom(r)}
               onCheckInRoom={r => setCheckInRoom(r)}
@@ -80,25 +85,25 @@ const MainLayout: React.FC<{ onLogout: () => void; onPasswordChanged: () => void
             />
           )}
 
-          {activeTab === 'reservations' && (
+          {activeTab === 'reservations' && canView('reservations') && (
             <ReservationList onOpenBookingModal={() => setIsQuickBookingOpen(true)} />
           )}
 
-          {activeTab === 'stays' && (
+          {activeTab === 'stays' && canView('stays') && (
             <ActiveStayManager
               onSelectRoom={r => setDetailRoom(r)}
               onCheckOutRoom={r => setCheckOutRoom(r)}
             />
           )}
 
-          {activeTab === 'debt' && <DebtManagement />}
-          {activeTab === 'sales' && <ServiceSalesView onPrint={setPrintedInvoice} />}
+          {activeTab === 'debt' && canView('debt') && <DebtManagement />}
+          {activeTab === 'sales' && canView('sales') && <ServiceSalesView onPrint={setPrintedInvoice} />}
 
-          {activeTab === 'analytics' && <AnalyticsDashboard />}
+          {activeTab === 'analytics' && canView('analytics') && <AnalyticsDashboard />}
 
-          {activeTab === 'reports' && <ExportReportView />}
+          {activeTab === 'reports' && canView('reports') && <ExportReportView />}
 
-          {activeTab === 'services' && (
+          {activeTab === 'services' && canView('services') && (
             <ServiceCatalogView
               onOpenAddRoom={() => setEditingRoom(null)}
               onEditRoom={r => setEditingRoom(r)}
@@ -127,14 +132,14 @@ const MainLayout: React.FC<{ onLogout: () => void; onPasswordChanged: () => void
         />
       )}
 
-      {editingRoom !== undefined && (
+      {editingRoom !== undefined && canAct('room.configure') && (
         <RoomEditModal
           initialRoom={editingRoom}
           onClose={() => setEditingRoom(undefined)}
         />
       )}
 
-      {(checkInRoom || isQuickCheckInOpen) && (
+      {(checkInRoom || isQuickCheckInOpen) && canAct('stay.checkin') && (
         <CheckInModal
           initialRoom={checkInRoom || undefined}
           onClose={() => {
@@ -144,7 +149,7 @@ const MainLayout: React.FC<{ onLogout: () => void; onPasswordChanged: () => void
         />
       )}
 
-      {(bookingRoom || isQuickBookingOpen) && (
+      {(bookingRoom || isQuickBookingOpen) && canAct('booking.create') && (
         <BookingModal
           initialRoom={bookingRoom || undefined}
           onClose={() => {
@@ -154,7 +159,7 @@ const MainLayout: React.FC<{ onLogout: () => void; onPasswordChanged: () => void
         />
       )}
 
-      {checkOutRoom && (
+      {checkOutRoom && canAct('stay.checkout') && (
         <CheckOutModal
           room={checkOutRoom}
           onClose={() => setCheckOutRoom(null)}

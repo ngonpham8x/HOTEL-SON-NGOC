@@ -1,6 +1,7 @@
 import React from 'react';
 import { HotelLogo } from '../common/HotelLogo';
 import { Invoice } from '../../types/hotel';
+import { useAccess } from '../../context/AccessContext';
 import { formatCurrency, formatDate, getPaymentMethodName } from '../../utils/formatters';
 import { Printer, X, Building2 } from 'lucide-react';
 
@@ -10,6 +11,8 @@ interface InvoicePrintViewProps {
 }
 
 export const InvoicePrintView: React.FC<InvoicePrintViewProps> = ({ invoice, onClose }) => {
+  const { canAct } = useAccess();
+  const canPrint = canAct('data.export') || canAct(invoice.kind === 'SERVICE' ? 'sale.create' : 'stay.checkout');
   const handlePrint = () => {
     window.print();
   };
@@ -21,13 +24,13 @@ export const InvoicePrintView: React.FC<InvoicePrintViewProps> = ({ invoice, onC
         <div className="no-print px-3 sm:px-6 py-3.5 bg-slate-900 text-white flex flex-wrap gap-2 items-center justify-between shrink-0">
           <span className="text-xs font-semibold">Hóa đơn thanh toán - {invoice.code}</span>
           <div className="flex items-center gap-2">
-            <button
+            {canPrint && <button
               onClick={handlePrint}
               className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors"
             >
               <Printer className="w-3.5 h-3.5" />
               <span>In hóa đơn / Lưu PDF</span>
-            </button>
+            </button>}
             <button
               onClick={onClose}
               className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"

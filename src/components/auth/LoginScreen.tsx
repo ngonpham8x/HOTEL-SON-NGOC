@@ -3,6 +3,7 @@ import { ArrowRight, BedDouble, Eye, EyeOff, KeyRound, LoaderCircle, Phone, Rece
 import { HotelLogo } from '../common/HotelLogo';
 import { PWAInstallButton } from '../common/PWAInstallButton';
 import { loginSystem } from '../../utils/systemAuth';
+import type { AccessActor } from '../../types/access';
 
 const features = [
   { icon: BedDouble, title: 'Phòng & đặt phòng', detail: 'Nhận phòng, trả phòng, theo dõi lưu trú' },
@@ -10,8 +11,10 @@ const features = [
   { icon: ChartNoAxesCombined, title: 'Báo cáo & công nợ', detail: 'Nắm doanh thu, quản lý khoản cần thu' },
 ];
 
-export function LoginScreen({ onSuccess, notice }: { onSuccess: () => void; notice?: string }) {
+export function LoginScreen({ onSuccess, notice }: { onSuccess: (actor: AccessActor) => void; notice?: string }) {
   const [password, setPassword] = useState('');
+  const [mode, setMode] = useState<'ADMIN' | 'RECEPTION'>('ADMIN');
+  const [username, setUsername] = useState('');
   const [visible, setVisible] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -26,11 +29,12 @@ export function LoginScreen({ onSuccess, notice }: { onSuccess: () => void; noti
     setBusy(true);
     setError('');
     try {
-      if (await loginSystem(password)) {
+      const actor = await loginSystem(password, mode === 'RECEPTION' ? username : undefined);
+      if (actor) {
         setPassword('');
-        onSuccess();
+        onSuccess(actor);
       } else {
-        setError('Mật khẩu chưa đúng. Vui lòng nhập lại.');
+        setError(mode === 'RECEPTION' ? 'Tên đăng nhập hoặc mật khẩu chưa đúng, hoặc tài khoản đã bị khóa.' : 'Mật khẩu chưa đúng. Vui lòng nhập lại.');
         passwordInput.current?.focus();
         passwordInput.current?.select();
       }
@@ -57,11 +61,13 @@ export function LoginScreen({ onSuccess, notice }: { onSuccess: () => void; noti
         <div className="lg:hidden flex items-center gap-3 mb-8"><HotelLogo size="lg" /><div><p className="font-bold text-lg tracking-tight">Hotel Sơn Ngọc</p><p className="text-xs text-teal-700 mt-0.5">Hệ thống quản lý khách sạn</p></div></div>
         <span className="self-start rounded-full bg-teal-50 border border-teal-100 px-3 py-1.5 text-[11px] font-semibold text-teal-800">Cổng quản trị Sơn Ngọc</span>
         <h1 className="mt-5 text-[28px] sm:text-3xl font-bold tracking-tight leading-tight">Chào mừng trở lại</h1>
-        <p className="mt-3 text-sm leading-6 text-slate-500">Nhập mật khẩu để vào hệ thống quản lý.</p>
+        <p className="mt-3 text-sm leading-6 text-slate-500">{mode === 'ADMIN' ? 'Nhập mật khẩu để vào hệ thống quản lý.' : 'Đăng nhập tài khoản lễ tân do quản lý cấp.'}</p>
         {notice && <p role="status" className="mt-4 rounded-xl border border-teal-200 bg-teal-50 p-3 text-xs leading-5 text-teal-900">{notice}</p>}
         <form onSubmit={submit} className="mt-8 space-y-5" aria-label="Đăng nhập hệ thống">
+          <div className="grid grid-cols-2 gap-1 rounded-xl bg-slate-100 p-1" aria-label="Loại tài khoản">{(['ADMIN', 'RECEPTION'] as const).map(role => <button key={role} type="button" disabled={busy} aria-pressed={mode === role} onClick={() => { setMode(role); setPassword(''); setError(''); }} className={`min-h-11 rounded-lg px-3 text-sm font-semibold ${mode === role ? 'bg-white text-teal-900 shadow-sm' : 'text-slate-500 hover:text-teal-800'}`}>{role === 'ADMIN' ? 'Quản lý' : 'Lễ tân'}</button>)}</div>
+          {mode === 'RECEPTION' && <div><label htmlFor="login-username" className="block text-sm font-semibold text-slate-700 mb-2">Tên đăng nhập lễ tân</label><input id="login-username" name="username" autoComplete="username" autoCapitalize="none" spellCheck={false} required maxLength={40} disabled={busy} value={username} onChange={event => { setUsername(event.target.value); setError(''); }} placeholder="Tên do quản lý cấp" className="min-w-0 w-full rounded-xl border border-slate-200 bg-slate-50 h-13 px-3.5 text-base outline-none focus:border-teal-600 focus:ring-4 focus:ring-teal-100" /></div>}
           <div>
-            <label htmlFor="login-password" className="block text-sm font-semibold text-slate-700 mb-2">Mật khẩu hệ thống</label>
+            <label htmlFor="login-password" className="block text-sm font-semibold text-slate-700 mb-2">{mode === 'ADMIN' ? 'Mật khẩu hệ thống' : 'Mật khẩu lễ tân'}</label>
             <div className={`flex items-center gap-3 rounded-xl border bg-slate-50 px-3.5 focus-within:ring-4 transition-shadow ${error ? 'border-rose-400 focus-within:ring-rose-100' : 'border-slate-200 focus-within:border-teal-600 focus-within:ring-teal-100'}`}>
               <KeyRound className="w-[18px] h-[18px] text-slate-400" />
               <input ref={passwordInput} id="login-password" name="password" type={visible ? 'text' : 'password'} autoComplete="current-password" required maxLength={128} value={password} onChange={event => { setPassword(event.target.value); setError(''); }} onKeyUp={event => setCapsLock(event.getModifierState('CapsLock'))} onBlur={() => setCapsLock(false)} aria-invalid={!!error} aria-describedby={error ? 'login-error' : undefined} placeholder="Nhập mật khẩu" className="min-w-0 w-full flex-1 bg-transparent h-13 text-base outline-none text-slate-900 placeholder:text-slate-400" />

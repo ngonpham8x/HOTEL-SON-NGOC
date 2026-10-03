@@ -12,7 +12,7 @@
     "icons": "node scripts/generate-pwa-icons.js",
     "preview": "vite preview",
     "lint": "tsc --noEmit",
-    "test": "tsx --test tests/*.test.ts",
+    "test": "tsx --test --test-concurrency=1 tests/*.test.ts",
     "test:mobile": "node scripts/browser-review.mjs",
     "test:login": "node scripts/browser-login.mjs",
     "test:password": "node scripts/browser-password.mjs",
@@ -20,6 +20,7 @@
     "test:flows": "node scripts/browser-flow.mjs",
     "test:prices": "node scripts/browser-prices.mjs",
     "test:booking-sales": "node scripts/browser-booking-sales.mjs",
+    "test:staff": "node scripts/browser-staff.mjs",
     "supabase:prepare": "node scripts/prepare-supabase.mjs",
     "supabase:seed": "tsx scripts/seed-supabase.ts",
     "test:production": "node scripts/browser-production.mjs"

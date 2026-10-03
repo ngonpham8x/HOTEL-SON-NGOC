@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { MobileTableToggle } from '../common/MobileTableToggle';
 import { useHotel } from '../../context/HotelContext';
+import { useAccess } from '../../context/AccessContext';
 import { formatCurrency, formatDate } from '../../utils/formatters';
 import {
   CalendarPlus,
@@ -18,12 +19,15 @@ interface ReservationListProps {
 }
 
 export const ReservationList: React.FC<ReservationListProps> = ({ onOpenBookingModal }) => {
-  const { reservations, cancelReservation, checkInReservation, setActiveTab, requestConfirm, showToast } = useHotel();
+  const { reservations, cancelReservation, archiveReservation, checkInReservation, setActiveTab, requestConfirm, showToast } = useHotel();
+  const { canAct, canView } = useAccess();
   const [filterStatus, setFilterStatus] = useState<string>('CONFIRMED');
   const [search, setSearch] = useState<string>('');
   const [tableMode, setTableMode] = useState<'COMPACT' | 'TABLE'>('COMPACT');
+  const [showArchived, setShowArchived] = useState(false);
 
   const filtered = reservations.filter(res => {
+    if (res.archived && !showArchived) return false;
     if (filterStatus !== 'ALL' && res.status !== filterStatus) return false;
     if (search.trim()) {
       const q = search.toLowerCase().trim();
@@ -46,7 +50,8 @@ export const ReservationList: React.FC<ReservationListProps> = ({ onOpenBookingM
   const handleCheckInAndNavigate = async (resId: string, roomNum: string, guestName: string) => {
     try { await checkInReservation(resId); } catch (err) { showToast(err instanceof Error ? err.message : 'Không thể nhận phòng.', 'error'); return; }
     showToast(`Đã nhận Phòng ${roomNum} cho khách ${guestName} thành công!`, 'success');
-    setActiveTab('rooms');
+    if (canView('rooms')) setActiveTab('rooms');
+    else if (canView('stays')) setActiveTab('stays');
   };
 
   const handleCancel = (resId: string, code: string, guestName: string) => {
@@ -143,18 +148,19 @@ export const ReservationList: React.FC<ReservationListProps> = ({ onOpenBookingM
             />
           </div>
 
-          <button
+          {canAct('booking.create') && <button
             onClick={onOpenBookingModal}
             className="px-3.5 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 whitespace-nowrap shadow-xs"
           >
             <CalendarPlus className="w-4 h-4" />
             <span>Thêm đặt phòng</span>
-          </button>
+          </button>}
         </div>
       </div>
 
       {/* Table List */}
       <MobileTableToggle mode={tableMode} onChange={setTableMode} />
+      <label className="flex items-center gap-2 text-xs text-slate-600"><input type="checkbox" checked={showArchived} onChange={e => setShowArchived(e.target.checked)} />Hiện phiếu đã lưu trữ ({reservations.filter(r => r.archived).length})</label>
       <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-2xs">
         {filtered.length === 0 ? (
           <div className="p-12 text-center text-slate-500">
@@ -183,6 +189,7 @@ export const ReservationList: React.FC<ReservationListProps> = ({ onOpenBookingM
                       <span className="font-mono font-bold text-slate-900 block">
                         {res.code}
                       </span>
+                      {res.archived && <span className="text-[10px] text-slate-500">Đã lưu trữ</span>}
                       <span className="text-[10px] text-slate-400">
                         {res.createdAt}
                       </span>
@@ -247,20 +254,20 @@ export const ReservationList: React.FC<ReservationListProps> = ({ onOpenBookingM
                     <td data-label="Hành động" className="px-4 py-3 text-right">
                       {res.status === 'CONFIRMED' && (
                         <div className="flex items-center justify-end gap-2">
-                          <button
+                          {canAct('booking.cancel') && <button
                             onClick={() => handleCancel(res.id, res.code, res.customerName)}
                             className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
                             title="Hủy đặt phòng này"
                           >
                             <XCircle className="w-4 h-4" />
-                          </button>
-                          <button
+                          </button>}
+                          {canAct('stay.checkin') && <button
                             onClick={() => handleCheckInAndNavigate(res.id, res.roomNumber, res.customerName)}
                             className="px-2.5 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg font-semibold flex items-center gap-1 transition-colors shadow-xs"
                           >
                             <CheckCircle className="w-3.5 h-3.5" />
                             <span>Check-in</span>
-                          </button>
+                          </button>}
                         </div>
                       )}
                       {res.status === 'CHECKED_IN' && (
@@ -268,6 +275,7 @@ export const ReservationList: React.FC<ReservationListProps> = ({ onOpenBookingM
                           Đang lưu trú
                         </span>
                       )}
+                      {res.status === 'CANCELLED' && !res.archived && res.depositAmount === 0 && canAct('booking.archive') && <button type="button" onClick={() => requestConfirm({ title: 'Lưu trữ phiếu đã hủy', message: `Ẩn phiếu ${res.code} khỏi danh sách thường? Phiếu được giữ trong lịch sử và bản sao lưu.`, confirmLabel: 'Lưu trữ', onConfirm: async () => { await archiveReservation(res.id); showToast('Đã lưu trữ phiếu. Lịch sử được giữ nguyên.'); } })} className="px-2.5 py-1.5 border rounded-lg text-slate-600 hover:bg-slate-100 text-xs">Lưu trữ</button>}
                     </td>
                   </tr>
                 ))}

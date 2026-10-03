@@ -1,3 +1,4 @@
+import type { AccessActor } from '../types/access';
 const endpoint = import.meta.env?.VITE_HOTEL_API_URL || '';
 export const cloudEnabled = !!endpoint;
 export class CloudRequestError extends Error { constructor(message: string, public status: number) { super(message); } }
@@ -14,8 +15,8 @@ export async function cloudRequest<T = unknown>(action: string, payload: Record<
   }
   return result as T;
 }
-export async function cloudLogin(password: string) {
-  const session = await cloudRequest<{ token: string }>('login', { password });
+export async function cloudLogin(password: string, username?: string) {
+  const session = await cloudRequest<{ token: string; actor: AccessActor }>('login', { password, ...(username !== undefined ? { username } : {}) });
   sessionStorage.setItem(TOKEN_KEY, session.token);
-  return true;
+  return session.actor;
 }

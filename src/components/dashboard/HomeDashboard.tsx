@@ -26,6 +26,8 @@ import {
   PieChart,
 } from 'lucide-react';
 import { HotelLogo } from '../common/HotelLogo';
+import { AccessGuard } from '../common/AccessGuard';
+import { useAccess } from '../../context/AccessContext';
 
 interface HomeDashboardProps {
   onSelectRoom: (room: Room) => void;
@@ -46,6 +48,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
   onCheckOutRoom,
   onBookRoom,
 }) => {
+  const { canView, canAct } = useAccess();
   const { rooms, stays, reservations, invoices, debts, setActiveTab, services, today } = useHotel();
   const keys = periodKeys(today);
   const thisMonthLabel = keys.thisMonth.split('-').reverse().join('/');
@@ -306,7 +309,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
         </div>
 
         {/* Card 5: Tiền khách nợ */}
-        <div
+        <AccessGuard view="debt"><div
           onClick={() => setDetailModal('DEBT_LIST')}
           className="bg-white p-3.5 rounded-xl border border-rose-200 shadow-2xs hover:shadow-md hover:border-rose-500 transition-all cursor-pointer group"
           title="Bấm để xem danh sách khách nợ và xử lý thu tiền nợ"
@@ -321,7 +324,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
           <div className="mt-2 pt-2 border-t border-rose-100 flex items-center justify-between text-[11px] text-slate-500">
             <span>Khách nợ: <strong className="text-rose-700">{activeDebtorsCount} đoàn</strong></span>
           </div>
-        </div>
+        </div></AccessGuard>
       </div>
 
       {/* 3. Doanh Thu Riêng Biệt 2 Loại Dịch Vụ: Tiền Phòng vs Vé Massage Thư Giãn */}
@@ -430,13 +433,13 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
               Doanh thu Hotel Sơn Ngọc theo ngày (gồm tiền phòng và dịch vụ)
                 </p>
               </div>
-              <button
+              <AccessGuard view="analytics"><button
                 onClick={() => setActiveTab('analytics')}
                 className="text-xs font-bold text-teal-700 hover:text-teal-800 flex items-center gap-1"
               >
                 <span>Xem tháng</span>
                 <ArrowRight className="w-3.5 h-3.5" />
-              </button>
+              </button></AccessGuard>
             </div>
 
             {/* 7-day Bar Chart */}
@@ -532,7 +535,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
                     key={room.id}
                     onClick={() => {
                       if (isOccupied) onSelectRoom(room);
-                      else if (isAvailable) onCheckInRoom(room);
+                      else if (isAvailable && canAct('stay.checkin')) onCheckInRoom(room);
                       else onSelectRoom(room);
                     }}
                     title={`Phòng ${room.number} (Tầng ${room.floor}) - ${room.typeName}`}
@@ -560,7 +563,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
             </div>
 
             <div className="pt-2 border-t border-slate-100 text-[11px] text-slate-400 text-center">
-              Bấm vào số phòng để xem hoặc thao tác phòng
+              {canAct('stay.checkin') ? 'Bấm vào số phòng để xem hoặc thao tác phòng' : 'Bấm vào số phòng để xem thông tin'}
             </div>
           </div>
         </div>
@@ -569,7 +572,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
       {/* ========================================================= */}
       {/* 5. INTERACTIVE DETAIL DRILL-DOWN MODALS                   */}
       {/* ========================================================= */}
-      {detailModal !== null && (
+      {detailModal !== null && (detailModal !== 'DEBT_LIST' || canView('debt')) && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs animate-in fade-in duration-200">
           <div className="bg-white rounded-2xl shadow-2xl border border-teal-200 w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
             {/* Modal Header */}
@@ -683,7 +686,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
                   <h4 className="font-bold text-slate-900 text-sm pt-2">So sánh với Tháng trước ({lastMonthLabel}):</h4>
                   <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between text-xs">
                     <span>Tổng doanh thu tháng trước: <strong className="font-mono text-slate-800">{formatCurrency(lastMonthRev)}</strong></span>
-                    <button
+                    <AccessGuard view="analytics"><button
                       onClick={() => {
                         setDetailModal(null);
                         setActiveTab('analytics');
@@ -691,7 +694,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
                       className="px-3 py-1.5 bg-teal-700 hover:bg-teal-800 text-white font-bold rounded-lg transition-colors"
                     >
                       Mở báo cáo thống kê đầy đủ →
-                    </button>
+                    </button></AccessGuard>
                   </div>
                 </div>
               )}
@@ -825,7 +828,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
               )}
 
               {/* MODAL 5: DEBT LIST */}
-              {detailModal === 'DEBT_LIST' && (
+              {detailModal === 'DEBT_LIST' && canView('debt') && (
                 <div className="space-y-4">
                   <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-xl flex items-center justify-between">
                     <div>
@@ -865,16 +868,16 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
                   </div>
 
                   <div className="flex justify-end pt-2">
-                    <button
+                    <AccessGuard view="debt"><button
                       onClick={() => {
                         setDetailModal(null);
                         setActiveTab('debt');
                       }}
                       className="px-4 py-2 bg-rose-700 hover:bg-rose-800 text-white font-bold rounded-xl transition-colors flex items-center gap-1.5"
                     >
-                      <span>Mở Sổ Quản Lý Công Nợ để Thu Tiền</span>
+                      <span>{canAct('debt.collect') ? 'Mở Sổ Quản Lý Công Nợ để Thu Tiền' : 'Xem Sổ Quản Lý Công Nợ'}</span>
                       <ArrowRight className="w-4 h-4" />
-                    </button>
+                    </button></AccessGuard>
                   </div>
                 </div>
               )}

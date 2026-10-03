@@ -5,6 +5,7 @@ import { HotelLogo } from '../common/HotelLogo';
 import { PasswordChangeError, type PasswordErrorField } from '../../utils/authSession';
 import { changeSystemPassword } from '../../utils/systemAuth';
 import { cloudEnabled } from '../../utils/cloudHotel';
+import { useAccess } from '../../context/AccessContext';
 
 const fields = [
   { key: 'current', id: 'current-password', label: 'Mật khẩu hiện tại', autoComplete: 'current-password' },
@@ -13,6 +14,7 @@ const fields = [
 ] as const;
 
 export default function ChangePasswordDialog({ onClose, onChanged }: { onClose: () => void; onChanged: () => void }) {
+  const { actor, isAdmin } = useAccess();
   const [passwords, setPasswords] = useState({ current: '', new: '', confirmation: '' });
   const [visible, setVisible] = useState({ current: false, new: false, confirmation: false });
   const [error, setError] = useState<{ message: string; field: PasswordErrorField } | null>(null);
@@ -53,7 +55,7 @@ export default function ChangePasswordDialog({ onClose, onChanged }: { onClose: 
     setBusy(true);
     setError(null);
     try {
-      await changeSystemPassword(passwords.current, passwords.new, passwords.confirmation);
+      await changeSystemPassword(passwords.current, passwords.new, passwords.confirmation, actor);
       setPasswords({ current: '', new: '', confirmation: '' });
       onChanged();
     } catch (failure) {
@@ -73,7 +75,7 @@ export default function ChangePasswordDialog({ onClose, onChanged }: { onClose: 
       <div className="shrink-0 flex items-center justify-between gap-3 px-5 py-4 border-b border-slate-100"><div className="flex items-center gap-3"><HotelLogo size="md" /><div><h2 id="change-password-title" className="text-base font-bold">Đổi mật khẩu</h2><p className="mt-1 text-[11px] text-teal-700">Hệ thống Hotel Sơn Ngọc</p></div></div><button type="button" aria-label="Đóng đổi mật khẩu" disabled={busy} onClick={dismiss} className="w-10 h-10 shrink-0 flex items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 disabled:opacity-40"><X className="w-5 h-5" /></button></div>
       <form aria-label="Đổi mật khẩu hệ thống" onSubmit={submit} noValidate className="min-h-0 flex flex-col">
         <div className="min-h-0 overflow-y-auto p-5 space-y-5">
-          <p className="text-xs leading-5 text-slate-500">Nhập mật khẩu hiện tại để xác nhận. Sau khi lưu, bạn sẽ đăng nhập lại bằng mật khẩu mới.</p>
+          <p className="text-xs leading-5 text-slate-500">{isAdmin ? 'Nhập mật khẩu hiện tại để xác nhận.' : `Đổi mật khẩu riêng của tài khoản ${actor.username}.`} Sau khi lưu, bạn sẽ đăng nhập lại bằng mật khẩu mới.</p>
           {fields.map(field => <div key={field.key}>
             <label htmlFor={field.id} className="block mb-2 text-xs font-semibold text-slate-700">{field.label}</label>
             <div className={`flex items-center gap-2 px-3 rounded-xl border bg-slate-50 focus-within:ring-4 ${error?.field === field.key ? 'border-rose-400 focus-within:ring-rose-100' : 'border-slate-200 focus-within:border-teal-600 focus-within:ring-teal-100'}`}>

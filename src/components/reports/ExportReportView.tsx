@@ -1,3 +1,4 @@
+import { AccessGuard } from '../common/AccessGuard';
 import { localDate, periodKeys, invoiceRevenue, invoiceCollected } from '../../utils/hotelLogic';
 import React, { useState, useMemo } from 'react';
 import { HotelLogo } from '../common/HotelLogo';
@@ -110,13 +111,13 @@ export const ExportReportView: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2">
-            <button
+            <AccessGuard action="data.export"><button
               onClick={handlePrintPDF}
               className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors shadow-xs"
             >
               <Printer className="w-4 h-4" />
               <span>In báo cáo / Lưu PDF</span>
-            </button>
+            </button></AccessGuard>
           </div>
         </div>
 
@@ -174,13 +175,13 @@ export const ExportReportView: React.FC = () => {
               <p className="font-bold text-xs text-slate-900">Báo cáo Doanh thu ({periodTitle})</p>
               <p className="text-[11px] text-slate-500 mt-0.5">{filteredInvoices.length} lượt hóa đơn</p>
             </div>
-            <button
+            <AccessGuard action="data.export"><button
               onClick={handleExportExcelRevenue}
               className="p-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg transition-colors"
               title="Tải tệp Excel .xlsx"
             >
               <Download className="w-4 h-4" />
-            </button>
+            </button></AccessGuard>
           </div>
 
           <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between">
@@ -188,13 +189,13 @@ export const ExportReportView: React.FC = () => {
               <p className="font-bold text-xs text-slate-900">Sổ theo dõi Công nợ khách</p>
               <p className="text-[11px] text-slate-500 mt-0.5">{debts.length} hồ sơ đối soát</p>
             </div>
-            <button
+            <AccessGuard action="data.export"><button
               onClick={handleExportExcelDebts}
               className="p-2 bg-rose-600 hover:bg-rose-700 text-white rounded-lg transition-colors"
               title="Tải tệp Excel .xlsx"
             >
               <Download className="w-4 h-4" />
-            </button>
+            </button></AccessGuard>
           </div>
 
           <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between">
@@ -202,25 +203,25 @@ export const ExportReportView: React.FC = () => {
               <p className="font-bold text-xs text-slate-900">Sơ đồ & Danh sách phòng</p>
               <p className="text-[11px] text-slate-500 mt-0.5">{rooms.length} phòng toàn khách sạn</p>
             </div>
-            <button
+            <AccessGuard action="data.export"><button
               onClick={handleExportExcelRooms}
               className="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
               title="Tải tệp Excel .xlsx"
             >
               <Download className="w-4 h-4" />
-            </button>
+            </button></AccessGuard>
           </div>
         </div>
       </div>
 
       <div className="no-print flex flex-wrap items-center gap-3 p-3 bg-white border border-slate-200 rounded-xl text-xs">
-        <button onClick={exportBackup} className="px-3 py-2 bg-teal-700 text-white rounded-lg font-semibold">Tải bản sao lưu dữ liệu</button>
-        <label className="px-3 py-2 border border-slate-300 rounded-lg cursor-pointer font-semibold">Khôi phục từ bản sao lưu
+        <AccessGuard action="data.export"><button onClick={exportBackup} className="px-3 py-2 bg-teal-700 text-white rounded-lg font-semibold">Tải bản sao lưu dữ liệu</button></AccessGuard>
+        <AccessGuard action="data.restore"><label className="px-3 py-2 border border-slate-300 rounded-lg cursor-pointer font-semibold">Khôi phục từ bản sao lưu
           <input aria-label="Khôi phục từ bản sao lưu" type="file" accept=".json,application/json" className="sr-only" onChange={async e => {
             const file = e.target.files?.[0]; e.target.value = ''; if (!file) return;
             try { const text = await file.text(); requestConfirm({ title: 'Khôi phục bản sao lưu', message: `Thay dữ liệu hiện tại bằng bản sao lưu ${file.name}? Hãy tải bản sao lưu hiện tại trước khi tiếp tục.`, onConfirm: async () => { await importBackup(text); showToast('Đã khôi phục bản sao lưu.'); } }); } catch { showToast('Không đọc được tệp.', 'error'); }
           }} />
-        </label>
+        </label></AccessGuard>
       </div>
       {/* Formal Printable Document Sheet */}
       <div className="bg-white report-sheet min-w-0 p-4 sm:p-8 lg:p-12 rounded-xl border border-slate-200 shadow-sm print-container space-y-6 text-slate-900 text-xs">

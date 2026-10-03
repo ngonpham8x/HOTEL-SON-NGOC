@@ -1,3 +1,5 @@
+import { AccessGuard } from '../common/AccessGuard';
+import { useAccess } from '../../context/AccessContext';
 import { useState } from 'react';
 import { Ticket, Plus, Trash2, Printer } from 'lucide-react';
 import { useHotel } from '../../context/HotelContext';
@@ -6,6 +8,7 @@ import { formatCurrency } from '../../utils/formatters';
 import type { ServiceSaleInput } from '../../utils/serviceSale';
 
 export function ServiceSalesView({ onPrint }: { onPrint: (invoice: Invoice) => void }) {
+  const { canAct } = useAccess();
   const { services, invoices, sellServices, showToast, today } = useHotel();
   const [serviceId, setServiceId] = useState(() => services.find(s => s.category === 'MASSAGE')?.id || services[0]?.id || '');
   const [items, setItems] = useState<ServiceSaleInput['items']>([]);
@@ -42,7 +45,8 @@ export function ServiceSalesView({ onPrint }: { onPrint: (invoice: Invoice) => v
       <h1 className="text-lg font-bold flex gap-2 items-center"><Ticket className="w-5 h-5" />Bán vé / dịch vụ khách ngoài</h1>
       <p className="mt-2 text-sm text-teal-100">Khách mua vé massage hoặc dịch vụ lẻ. Hóa đơn được tính vào doanh thu dịch vụ, không giữ phòng.</p>
     </div>
-    <form onSubmit={submit} className="rounded-2xl border border-teal-200 bg-white p-4 sm:p-6 text-sm space-y-4">
+    {!canAct('sale.create') && <p className="rounded-xl border border-slate-200 bg-white p-4 text-xs text-slate-600">Bạn có quyền xem hóa đơn khách ngoài. Liên hệ quản lý nếu cần quyền bán vé hoặc tạo hóa đơn.</p>}
+    <AccessGuard action="sale.create"><form onSubmit={submit} className="rounded-2xl border border-teal-200 bg-white p-4 sm:p-6 text-sm space-y-4">
       {error && <p role="alert" className="bg-rose-50 p-3 rounded-lg text-rose-700">{error}</p>}
       <div className="grid sm:grid-cols-2 gap-3">
         <label>Tên khách<input aria-label="Tên khách mua lẻ" value={name} onChange={e => setName(e.target.value)} placeholder="Để trống: Khách lẻ" className={inputClass} /></label>
@@ -69,7 +73,7 @@ export function ServiceSalesView({ onPrint }: { onPrint: (invoice: Invoice) => v
       {amount < total && <div className="rounded-xl bg-amber-50 p-3 space-y-2"><p className="text-amber-900">Ghi nợ {formatCurrency(total - amount)}. Cần tên và số điện thoại khách.</p><label>Ngày hẹn thu nợ<input type="date" min={today} required value={dueDate} onChange={e => setDueDate(e.target.value)} className={inputClass} /></label></div>}
       <label className="block">Ghi chú<textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} className={inputClass} /></label>
       <div className="flex flex-col sm:flex-row gap-3 justify-between sm:items-center pt-3 border-t"><strong className="text-teal-900">Cần thanh toán: {formatCurrency(total)}</strong><button type="submit" disabled={busy || !items.length} className="px-4 py-3 rounded-xl bg-teal-700 text-white font-bold disabled:opacity-50">{busy ? 'Đang lưu…' : 'Lưu hóa đơn bán lẻ'}</button></div>
-    </form>
+    </form></AccessGuard>
     {lastInvoice && <div role="status" className="rounded-xl bg-teal-50 border border-teal-200 p-3 flex flex-wrap items-center justify-between gap-2"><span>Đã lưu {lastInvoice.code} · {formatCurrency(lastInvoice.totalAmount)}</span><button type="button" onClick={() => onPrint(lastInvoice)} className="flex items-center gap-2 font-semibold text-teal-800"><Printer className="w-4 h-4" />Xem / In hóa đơn</button></div>}
     <section className="bg-white rounded-xl border p-4 space-y-3"><h2 className="font-bold text-slate-800">Hóa đơn khách ngoài ({sales.length})</h2>{sales.slice(0, 30).map(i => <button key={i.id} type="button" onClick={() => onPrint(i)} className="w-full p-3 border rounded-xl text-left flex flex-wrap gap-2 justify-between text-sm"><span><strong>{i.code}</strong> · {i.customerName}<span className="block text-xs text-slate-500">{i.time} {i.date} · {i.status === 'PAID' ? 'Đã thanh toán' : `Còn nợ ${formatCurrency(i.debtAmount)}`}</span></span><span className="font-mono font-bold text-teal-800">{formatCurrency(i.totalAmount)}</span></button>)}</section>
   </div>;

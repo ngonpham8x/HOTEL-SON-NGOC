@@ -1,3 +1,5 @@
+import { AccessGuard } from '../common/AccessGuard';
+import { useAccess } from '../../context/AccessContext';
 import React from 'react';
 import { useHotel } from '../../context/HotelContext';
 import { Room } from '../../types/hotel';
@@ -22,6 +24,7 @@ export const ActiveStayManager: React.FC<ActiveStayManagerProps> = ({
   onSelectRoom,
   onCheckOutRoom,
 }) => {
+  const { canAct } = useAccess();
   const { stays, rooms } = useHotel();
 
   const activeStays = stays.filter(s => s.status === 'ACTIVE');
@@ -139,15 +142,15 @@ export const ActiveStayManager: React.FC<ActiveStayManagerProps> = ({
                     className="flex-1 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
                   >
                     <Plus className="w-3.5 h-3.5" />
-                    <span>Thêm Minibar/DV</span>
+                    <span>{canAct('stay.service.add') ? 'Thêm Minibar/DV' : 'Xem chi tiết'}</span>
                   </button>
-                  <button
+                  <AccessGuard action="stay.checkout"><button
                     onClick={() => room && onCheckOutRoom(room)}
                     className="flex-1 px-3 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors shadow-xs"
                   >
                     <span>Trả phòng</span>
                     <ArrowRight className="w-3.5 h-3.5" />
-                  </button>
+                  </button></AccessGuard>
                 </div>
               </div>
             );

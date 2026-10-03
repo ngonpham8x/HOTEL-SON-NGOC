@@ -2,6 +2,8 @@ import React from 'react';
 import { useHotel } from '../../context/HotelContext';
 import { PlusCircle, CalendarPlus, BedDouble, PhoneCall, Menu, X } from 'lucide-react';
 import { HotelLogo } from '../common/HotelLogo';
+import { useAccess } from '../../context/AccessContext';
+import { firstAllowedModule } from '../../utils/permissions';
 
 interface HeaderProps {
   onOpenQuickCheckIn: () => void;
@@ -14,6 +16,8 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenQuickBooking,
   onOpenAddRoom,
 }) => {
+  const { actor, canView, canAct } = useAccess();
+  const homeModule = firstAllowedModule(actor);
   const {
     rooms,
     debts,
@@ -44,11 +48,11 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Brand */}
         <button
           onClick={() => {
-            setActiveTab('dashboard');
+            if (homeModule) setActiveTab(homeModule);
             setIsMobileMenuOpen(false);
           }}
           className="flex items-center gap-1.5 sm:gap-2.5 min-w-0 text-left group hover:opacity-95 transition-opacity"
-          title="Về Trang chủ (Bảng điều khiển & Thống kê)"
+          title="Về mục được cấp quyền"
         >
           <HotelLogo size="sm" />
           <div className="min-w-0">
@@ -70,11 +74,11 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* Middle: Compact Status Badges (Hidden on very small screens to keep bar thin) */}
       <div className="hidden xl:flex items-center gap-2 text-xs">
-        <div className="flex items-center gap-1.5 bg-teal-950/60 px-2.5 py-1 rounded-lg border border-teal-800/60 text-slate-300">
+        {(canView('rooms') || canView('dashboard')) && <div className="flex items-center gap-1.5 bg-teal-950/60 px-2.5 py-1 rounded-lg border border-teal-800/60 text-slate-300">
           <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
           <span>Đang ở: <strong className="text-white font-mono">{occupiedCount}/{totalRooms}</strong> ({occupancyPercent}%)</span>
-        </div>
-        {activeDebtsCount > 0 && (
+        </div>}
+        {(canView('debt') || canView('analytics')) && activeDebtsCount > 0 && (
           <div className="hidden md:flex items-center gap-1.5 text-amber-300 font-semibold bg-amber-950/40 border border-amber-800/60 px-2.5 py-1 rounded-lg">
             <span className="w-2 h-2 rounded-full bg-amber-400"></span>
             <span>Nợ: <strong>{activeDebtsCount}</strong> khách</span>
@@ -84,32 +88,32 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* Right: Actions (Sleek, Compact, Never Wraps) */}
       <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-        <button
+        {canAct('room.configure') && <button
           onClick={onOpenAddRoom}
           title="Thêm phòng mới vào khách sạn"
           className="px-2 sm:px-2.5 py-1.5 text-xs font-semibold text-teal-100 bg-teal-900/40 hover:bg-teal-800/60 border border-teal-700/60 hover:text-white rounded-lg flex items-center gap-1 transition-colors"
         >
           <BedDouble className="w-3.5 h-3.5 text-teal-300" />
           <span className="hidden sm:inline">+ Thêm phòng</span>
-        </button>
+        </button>}
 
-        <button
+        {canAct('booking.create') && <button
           onClick={onOpenQuickBooking}
           title="Đặt phòng trước cho khách"
           className="px-2 sm:px-2.5 py-1.5 text-xs font-semibold text-teal-100 bg-teal-900/40 hover:bg-teal-800/60 border border-teal-700/60 hover:text-white rounded-lg flex items-center gap-1 transition-colors"
         >
           <CalendarPlus className="w-3.5 h-3.5 text-amber-400" />
           <span className="hidden sm:inline">Đặt phòng</span>
-        </button>
+        </button>}
 
-        <button
+        {canAct('stay.checkin') && <button
           onClick={onOpenQuickCheckIn}
           title="Nhận phòng trực tiếp ngay" aria-label="Nhận phòng"
           className="px-2.5 sm:px-3 py-1.5 text-xs font-bold text-slate-950 bg-gradient-to-r from-teal-400 to-cyan-400 hover:from-teal-300 hover:to-cyan-300 rounded-lg flex items-center gap-1 transition-all shadow-xs"
         >
           <PlusCircle className="w-3.5 h-3.5" />
           <span className="hidden sm:inline">Nhận phòng</span>
-        </button>
+        </button>}
       </div>
     </header>
   );

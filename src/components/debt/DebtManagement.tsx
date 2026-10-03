@@ -1,3 +1,5 @@
+import { AccessGuard } from '../common/AccessGuard';
+import { useAccess } from '../../context/AccessContext';
 import React, { useState } from 'react';
 import { useHotel } from '../../context/HotelContext';
 import { DebtRecord, PaymentMethod } from '../../types/hotel';
@@ -19,6 +21,7 @@ import {
 } from 'lucide-react';
 
 export const DebtManagement: React.FC = () => {
+  const { canAct } = useAccess();
   const { debts, recordDebtPayment, showToast } = useHotel();
   const [filterStatus, setFilterStatus] = useState<string>('ACTIVE_DEBT');
   const [search, setSearch] = useState<string>('');
@@ -139,13 +142,13 @@ export const DebtManagement: React.FC = () => {
             <span className="text-xs font-semibold">Báo cáo & Đối soát</span>
             <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
           </div>
-          <button
+          <AccessGuard action="data.export"><button
             onClick={handleExportExcel}
             className="mt-2 w-full py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-colors shadow-xs"
           >
             <FileSpreadsheet className="w-4 h-4" />
             <span>Xuất Excel sổ công nợ</span>
-          </button>
+          </button></AccessGuard>
         </div>
       </div>
 
@@ -306,13 +309,13 @@ export const DebtManagement: React.FC = () => {
                           )}
 
                           {!isSettled && (
-                            <button
+                            <AccessGuard action="debt.collect"><button
                               onClick={() => handleOpenCollectModal(debt)}
                               className="px-2.5 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg font-semibold flex items-center gap-1 transition-colors shadow-xs"
                             >
                               <DollarSign className="w-3.5 h-3.5" />
                               <span>Thu nợ</span>
-                            </button>
+                            </button></AccessGuard>
                           )}
                         </div>
                       </td>
@@ -326,7 +329,7 @@ export const DebtManagement: React.FC = () => {
       </div>
 
       {/* Collect Payment Modal */}
-      {collectingDebt && (
+      {collectingDebt && canAct('debt.collect') && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4">
           <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-150">
             <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-900 text-white">
@@ -344,7 +347,7 @@ export const DebtManagement: React.FC = () => {
               </button>
             </div>
 
-            <form onSubmit={handleConfirmPayment} className="p-6 space-y-4 text-xs">
+            <AccessGuard action="debt.collect"><form onSubmit={handleConfirmPayment} className="p-6 space-y-4 text-xs">
               <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl space-y-1 text-rose-900">
                 <div className="flex justify-between">
                   <span>Số tiền nợ còn lại:</span>
@@ -447,7 +450,7 @@ export const DebtManagement: React.FC = () => {
                   <span>Xác nhận đã thu</span>
                 </button>
               </div>
-            </form>
+            </form></AccessGuard>
           </div>
         </div>
       )}

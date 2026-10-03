@@ -21,6 +21,7 @@ test('cloud API authenticates server sessions, rejects stale writes and invalida
     assert.equal((options?.headers as Record<string, string>).apikey, 'server-test-key');
     if (path === 'hotel_auth') return reply([auth]);
     if (path === 'hotel_state') return reply([state]);
+    if (path === 'hotel_mutations') return reply(receipts.has(u.searchParams.get('request_id')!.replace('eq.', '')) ? [{ request_id: u.searchParams.get('request_id')!.replace('eq.', '') }] : []);
     if (path === 'hotel_sessions') {
       const hash = u.searchParams.get('token_hash')!.replace('eq.', '');
       if (options?.method === 'DELETE') { sessions.delete(hash); return reply([]); }
@@ -28,7 +29,7 @@ test('cloud API authenticates server sessions, rejects stale writes and invalida
     }
     if (path === 'rpc/hotel_rate_limit') return reply(true);
     if (path === 'rpc/hotel_open_session') { sessions.set(body.p_hash, { auth_version: auth.version, expires_at: new Date(Date.now()+43200000).toISOString() }); return reply(body.p_version === auth.version); }
-    if (path === 'rpc/hotel_save') {
+    if (path === 'rpc/hotel_save_authorized') {
       if (receipts.has(body.p_request_id)) return reply(state);
       if (body.p_revision !== state.revision) return reply({ message: 'STALE_REVISION' }, 400);
       state = { revision: state.revision + 1, data: body.p_data }; receipts.add(body.p_request_id);
@@ -40,12 +41,12 @@ test('cloud API authenticates server sessions, rejects stale writes and invalida
   };
   try {
     await import('../supabase/functions/hotel-api/index.ts');
-    const request = (action: string, payload: Record<string, unknown> = {}, token?: string) => handler(new Request('https://qa/functions/v1/hotel-api', { method: 'POST', headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }, body: JSON.stringify({ action, ...payload }) }));
+    const request = (action: string, payload: Record<string, unknown> = {}, token?: string) => handler(new Request('https://qa/functions/v1/hotel-api', { method: 'POST', headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }, body: JSON.stringify({ action, ...(action === 'write' ? { operation: 'room.clean' } : {}), ...payload }) }));
     assert.equal((await request('read')).status, 401);
     assert.equal((await request('read', {}, 'f'.repeat(64))).status, 401);
     assert.equal((await request('login', { password: 'incorrect' })).status, 400);
     const response = await request('login', { password: initialPassword }); assert.equal(response.status, 200);
-    const login = await response.json(); assert.deepEqual(Object.keys(login), ['token']); assert.match(login.token, /^[a-f0-9]{64}$/);
+    const login = await response.json(); assert.deepEqual(Object.keys(login), ['token', 'actor']); assert.equal(login.actor.role, 'ADMIN'); assert.match(login.token, /^[a-f0-9]{64}$/);
     assert.equal((await request('read', {}, login.token)).status, 200);
     const requestId = 'a'.repeat(32);
     assert.equal((await request('write', { data: state.data, revision: 0, requestId }, login.token)).status, 200);
@@ -54,7 +55,7 @@ test('cloud API authenticates server sessions, rejects stale writes and invalida
     assert.equal(state.revision, 1, 'retry must not create another transaction');
     assert.equal((await request('write', { data: state.data, revision: 0, requestId: 'b'.repeat(32) }, login.token)).status, 409);
     const booking = { ...INITIAL_RESERVATIONS[0], status: 'CONFIRMED', roomId: 'room-test', checkInDate: '2027-10-11', checkOutDate: '2027-10-12' };
-    assert.equal((await request('write', { data: { ...state.data, reservations: [{ ...booking, id: 'a' }, { ...booking, id: 'b' }] }, revision: 1, requestId: 'c'.repeat(32) }, login.token)).status, 409);
+    assert.equal((await request('write', { operation: 'data.restore', data: { ...state.data, reservations: [{ ...booking, id: 'a' }, { ...booking, id: 'b' }] }, revision: 1, requestId: 'c'.repeat(32) }, login.token)).status, 409);
     assert.equal(state.revision, 1);
     assert.equal((await request('password', { current: 'incorrect', next: 'QA Only 2026', confirmation: 'QA Only 2026' }, login.token)).status, 400);
     dropNextWriteResponse = true;

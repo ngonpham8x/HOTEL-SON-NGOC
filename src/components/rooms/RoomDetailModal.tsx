@@ -1,3 +1,5 @@
+import { AccessGuard } from '../common/AccessGuard';
+import { useAccess } from '../../context/AccessContext';
 import React, { useState } from 'react';
 import { useHotel } from '../../context/HotelContext';
 import { Room, CompanionGuest } from '../../types/hotel';
@@ -26,6 +28,7 @@ interface RoomDetailModalProps {
 }
 
 export const RoomDetailModal: React.FC<RoomDetailModalProps> = ({ room, onClose, onCheckOut, onEditRoom }) => {
+  const { canAct } = useAccess();
   const {
     stays,
     services,
@@ -153,12 +156,12 @@ export const RoomDetailModal: React.FC<RoomDetailModalProps> = ({ room, onClose,
                   {room.cleanStatus === 'CLEAN' ? 'Phòng sạch' : 'Chưa dọn'}
                 </span>
                 {room.cleanStatus === 'DIRTY' && (
-                  <button
+                  <AccessGuard action="room.clean"><button
                     onClick={() => updateRoomCleanStatus(room.id, 'CLEAN').catch(error => showToast(error.message, 'error'))}
                     className="ml-1 text-[11px] text-blue-600 underline font-medium hover:text-blue-800"
                   >
                     Báo sạch
-                  </button>
+                  </button></AccessGuard>
                 )}
               </div>
             </div>
@@ -208,20 +211,20 @@ export const RoomDetailModal: React.FC<RoomDetailModalProps> = ({ room, onClose,
                       Danh Sách Khách Ở Cùng Phòng ({1 + (activeStay.companionGuests?.length || 0)} người)
                     </h4>
                   </div>
-                  <button
+                  <AccessGuard action="stay.guests"><button
                     type="button"
                     onClick={() => setIsAddingCompanion(!isAddingCompanion)}
                     className="px-2.5 py-1 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-[11px] font-bold flex items-center gap-1 transition-colors shadow-2xs"
                   >
                     <Plus className="w-3 h-3" />
                     <span>{isAddingCompanion ? 'Đóng form' : '+ Bổ sung khách'}</span>
-                  </button>
+                  </button></AccessGuard>
                 </div>
 
                 {/* List of Companion Guests */}
                 {(!activeStay.companionGuests || activeStay.companionGuests.length === 0) ? (
                   <p className="text-[11px] text-slate-500 italic py-1">
-                    Hiện chỉ có 1 khách đại diện ({activeStay.customerName}). Bấm "+ Bổ sung khách" nếu có thêm 2, 3, 4, 5 người ở cùng để khai báo tạm trú.
+                    Hiện chỉ có 1 khách đại diện ({activeStay.customerName}). {canAct('stay.guests') && 'Bấm "+ Bổ sung khách" nếu có thêm người ở cùng để khai báo tạm trú.'}
                   </p>
                 ) : (
                   <div className="space-y-1.5 pt-1">
@@ -244,14 +247,14 @@ export const RoomDetailModal: React.FC<RoomDetailModalProps> = ({ room, onClose,
                             </div>
                           </div>
                         </div>
-                        <button
+                        <AccessGuard action="stay.guests"><button
                           type="button"
                           onClick={() => handleRemoveCompanion(guest.id)}
                           className="text-rose-500 hover:text-rose-700 p-1 rounded hover:bg-rose-50 transition-colors"
                           title="Xóa khách khỏi phòng"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                        </button></AccessGuard>
                       </div>
                     ))}
                   </div>
@@ -259,7 +262,7 @@ export const RoomDetailModal: React.FC<RoomDetailModalProps> = ({ room, onClose,
 
                 {/* Inline form to add companion */}
                 {isAddingCompanion && (
-                  <form onSubmit={handleSaveCompanion} className="p-3 bg-white rounded-xl border border-teal-300 space-y-2.5 pt-3">
+                  <AccessGuard action="stay.guests"><form onSubmit={handleSaveCompanion} className="p-3 bg-white rounded-xl border border-teal-300 space-y-2.5 pt-3">
                     <p className="font-bold text-teal-900 text-xs flex items-center gap-1">
                       <span>Bổ sung khách vào phòng {room.number}</span>
                     </p>
@@ -315,7 +318,7 @@ export const RoomDetailModal: React.FC<RoomDetailModalProps> = ({ room, onClose,
                         Lưu khách vào phòng
                       </button>
                     </div>
-                  </form>
+                  </form></AccessGuard>
                 )}
               </div>
 
@@ -332,7 +335,7 @@ export const RoomDetailModal: React.FC<RoomDetailModalProps> = ({ room, onClose,
                 </div>
 
                 {/* Add Service Bar (Responsive, Never Overflows) */}
-                <form
+                <AccessGuard action="stay.service.add"><form
                   onSubmit={handleAddService}
                   className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 bg-slate-50 p-2.5 rounded-xl border border-slate-200"
                 >
@@ -369,7 +372,7 @@ export const RoomDetailModal: React.FC<RoomDetailModalProps> = ({ room, onClose,
                       <span>Thêm DV</span>
                     </button>
                   </div>
-                </form>
+                </form></AccessGuard>
 
                 {/* Services List Table */}
                 {activeStay.services.length === 0 ? (
@@ -405,12 +408,12 @@ export const RoomDetailModal: React.FC<RoomDetailModalProps> = ({ room, onClose,
                               {formatCurrency(usage.totalPrice)}
                             </td>
                             <td className="px-3 py-2 text-center">
-                              <button
+                              <AccessGuard action="stay.service.remove"><button
                                 onClick={() => removeServiceFromStay(activeStay.id, usage.id).catch(error => showToast(error.message, 'error'))}
                                 className="p-1 text-slate-400 hover:text-rose-600 rounded transition-colors"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
-                              </button>
+                              </button></AccessGuard>
                             </td>
                           </tr>
                         ))}
@@ -449,16 +452,16 @@ export const RoomDetailModal: React.FC<RoomDetailModalProps> = ({ room, onClose,
         {/* Modal Footer (Clean, Sleek & Compact for Mobile & Desktop) */}
         <div className="room-dialog-footer p-3 sm:px-6 sm:py-3.5 border-t border-slate-200 bg-slate-50 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <button
+            <AccessGuard action="room.clean"><button
               onClick={() => updateRoomCleanStatus(room.id, room.cleanStatus === 'CLEAN' ? 'DIRTY' : 'CLEAN').catch(error => showToast(error.message, 'error'))}
               className="flex-1 sm:flex-none px-3 py-2 bg-white border border-slate-300 hover:bg-slate-100 rounded-xl text-xs font-semibold text-slate-700 flex items-center justify-center gap-1.5 transition-colors shadow-2xs"
             >
               <Sparkles className="w-3.5 h-3.5 text-blue-600 shrink-0" />
               <span>{room.cleanStatus === 'CLEAN' ? 'Báo bẩn' : 'Báo sạch'}</span>
-            </button>
+            </button></AccessGuard>
 
             {onEditRoom && (
-              <button
+              <AccessGuard action="room.configure"><button
                 onClick={() => {
                   onClose();
                   onEditRoom(room);
@@ -467,7 +470,7 @@ export const RoomDetailModal: React.FC<RoomDetailModalProps> = ({ room, onClose,
               >
                 <Edit className="w-3.5 h-3.5 text-teal-700 shrink-0" />
                 <span>Sửa phòng</span>
-              </button>
+              </button></AccessGuard>
             )}
           </div>
 
@@ -480,7 +483,7 @@ export const RoomDetailModal: React.FC<RoomDetailModalProps> = ({ room, onClose,
             </button>
 
             {activeStay && (
-              <button
+              <AccessGuard action="stay.checkout"><button
                 onClick={() => {
                   onClose();
                   onCheckOut(room);
@@ -489,7 +492,7 @@ export const RoomDetailModal: React.FC<RoomDetailModalProps> = ({ room, onClose,
               >
                 <span>Trả phòng</span>
                 <ArrowRight className="w-3.5 h-3.5 shrink-0" />
-              </button>
+              </button></AccessGuard>
             )}
           </div>
         </div>

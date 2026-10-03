@@ -23,7 +23,7 @@ export function createBrowserCLI(session) {
       // Closing an existing session does not need browser launch/profile options.
       const commandOptions = args[0] === 'close' ? ['--session', session] : options;
       return execFileSync(process.execPath, ['node_modules/agent-browser/bin/agent-browser.js', ...commandOptions, ...args], {
-        encoding: 'utf8', timeout: 30000,
+        encoding: 'utf8', timeout: args[0] === 'open' ? 60000 : 30000,
         ...(input === undefined ? {} : { input }),
         env: { ...browserEnv, TEMP: temp, TMP: temp },
       }).trim();

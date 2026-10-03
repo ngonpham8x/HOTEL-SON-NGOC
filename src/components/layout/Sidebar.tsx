@@ -1,5 +1,6 @@
 import React, { lazy, Suspense, useState } from 'react';
 import { useHotel } from '../../context/HotelContext';
+import { useAccess } from '../../context/AccessContext';
 import {
   Home,
   LayoutGrid,
@@ -9,14 +10,12 @@ import {
   BarChart3,
   FileSpreadsheet,
   Coffee,
-  CheckCircle2,
   PhoneCall,
-  BedDouble,
-  MapPin,
   X,
   LogOut,
   KeyRound,
   Ticket,
+  ShieldCheck,
 } from 'lucide-react';
 import { HotelLogo } from '../common/HotelLogo';
 import { PWAInstallButton } from '../common/PWAInstallButton';
@@ -25,6 +24,7 @@ const ChangePasswordDialog = lazy(() => import('../auth/ChangePasswordDialog'));
 
 export const Sidebar: React.FC<{ onLogout: () => void; onPasswordChanged: () => void }> = ({ onLogout, onPasswordChanged }) => {
   const [changingPassword, setChangingPassword] = useState(false);
+  const { actor, isAdmin, canView } = useAccess();
   const {
     activeTab,
     setActiveTab,
@@ -91,7 +91,8 @@ export const Sidebar: React.FC<{ onLogout: () => void; onPasswordChanged: () => 
       label: 'Bảng giá & Dịch vụ',
       icon: Coffee,
     },
-  ];
+    { id: 'staff', label: 'Phân quyền lễ tân', icon: ShieldCheck },
+  ].filter(item => item.id === 'staff' ? isAdmin : canView(item.id));
 
   return (
     <>
@@ -129,6 +130,13 @@ export const Sidebar: React.FC<{ onLogout: () => void; onPasswordChanged: () => 
         </div>
 
         <div className="p-3 min-h-0 flex-1 space-y-1 overflow-y-auto">
+          <div className="mx-1 mb-3 flex items-center gap-2 rounded-xl border border-teal-800/60 bg-teal-950/50 px-3 py-2.5">
+            <ShieldCheck className="h-4 w-4 shrink-0 text-teal-400" />
+            <div className="min-w-0">
+              <p className="truncate text-xs font-semibold text-white" title={actor.displayName}>{actor.displayName}</p>
+              <p className="mt-0.5 text-[10px] text-teal-300">{isAdmin ? 'Quản lý hệ thống' : 'Lễ tân'}{!isAdmin && ` · ${actor.username}`}</p>
+            </div>
+          </div>
           <p className="px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-teal-400/80">
             Chức năng nghiệp vụ
           </p>
@@ -169,7 +177,7 @@ export const Sidebar: React.FC<{ onLogout: () => void; onPasswordChanged: () => 
         {/* Quick summary footer in sidebar */}
         <div className="p-2.5 shrink-0 border-t border-teal-900/60 bg-[#06181d] space-y-2">
           {/* Compact 3-item status row */}
-          <div className="grid grid-cols-3 gap-1.5 text-center text-[10px]">
+          {(canView('rooms') || canView('dashboard')) && <div className="grid grid-cols-3 gap-1.5 text-center text-[10px]">
             <div className="bg-teal-950/60 border border-teal-800/60 py-1 px-1 rounded-lg">
               <span className="text-teal-400 block font-medium">Trống</span>
               <span className="font-mono font-bold text-teal-200 text-xs">
@@ -186,7 +194,7 @@ export const Sidebar: React.FC<{ onLogout: () => void; onPasswordChanged: () => 
                 {rooms.filter(r => r.status === 'CLEANING').length}
               </span>
             </div>
-          </div>
+          </div>}
 
           {/* PWA Install Button on Mobile/Sidebar */}
           <PWAInstallButton variant="sidebar" />
