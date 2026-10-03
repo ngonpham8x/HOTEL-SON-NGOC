@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { PGlite } from '@electric-sql/pglite';
 import { btree_gist } from '@electric-sql/pglite/contrib/btree_gist';
 
@@ -8,7 +8,7 @@ test('PostgreSQL migration protects hotel transactions, room schedules, credenti
   const db = new PGlite({ extensions: { btree_gist } });
   try {
     await db.exec('create schema extensions; create role anon; create role authenticated; create role service_role bypassrls;');
-    await db.exec(readFileSync('supabase/migrations/20261003080620_hotel_backend.sql', 'utf8'));
+    for (const migration of readdirSync('supabase/migrations').filter(file => file.endsWith('.sql')).sort()) await db.exec(readFileSync(`supabase/migrations/${migration}`, 'utf8'));
     await db.exec(readFileSync('supabase/seed.sql', 'utf8'));
     const scalar = async (sql: string, params: unknown[] = []) => (await db.query<{ value: any }>(sql, params)).rows[0].value;
     const initial = await scalar('select data as value from hotel_state');

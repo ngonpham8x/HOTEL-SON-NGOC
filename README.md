@@ -11,12 +11,14 @@ npm ci
 npm run dev
 ```
 
-Mở `http://localhost:3000`. Để kiểm tra bản build và tính năng offline:
+Mở `http://localhost:3000`; dev server dùng dữ liệu cục bộ. Bản build thông thường dùng API Supabase Sơn Ngọc đã triển khai:
 
 ```powershell
 npm run build
 npm run preview
 ```
+
+Để chạy bản build cục bộ và kiểm tra tính năng offline, dùng `npm run build -- --mode local` trước khi chạy preview. Bản cloud cần mạng để đăng nhập và lưu dữ liệu chung.
 
 ## Kiểm tra
 
@@ -38,7 +40,7 @@ npm run test:login
 npm run test:install
 ```
 
-Sau khi build và chạy preview ở cổng 4173, `npm run test:production` kiểm tra service worker và các trang khi offline.
+Sau khi build bằng `npm run build -- --mode local` và chạy preview ở cổng 4173, `npm run test:production` kiểm tra service worker và các trang khi offline. Các kiểm thử trình duyệt tạo dữ liệu giả phải chạy trên dev server hoặc bản build cục bộ, không chạy trên API thật.
 `npm run test:password` kiểm tra đổi mật khẩu, đăng nhập bằng mật khẩu mới, đăng xuất các tab khác, lỗi lưu và hoạt động ngoại tuyến trong một phiên thử nghiệm riêng.
 
 Các kiểm thử trình duyệt dùng các phiên riêng có tên bắt đầu bằng `sonngoc-`. Kiểm thử luồng và mobile tạo dữ liệu giả trong những phiên này. Ảnh kiểm chứng được lưu ở `.review/`.
@@ -47,11 +49,11 @@ Các kiểm thử trình duyệt dùng các phiên riêng có tên bắt đầu 
 
 Màn hình đăng nhập dùng mật khẩu hệ thống đã cấu hình. Có nút hiện/ẩn mật khẩu và đăng xuất ở menu. Phiên đăng nhập lưu trong `sessionStorage`, tối đa 12 giờ; đăng xuất giữ nguyên dữ liệu khách sạn. Mật khẩu được đối chiếu với PBKDF2-SHA256 có salt; mã app chỉ chứa giá trị băm, không chứa mật khẩu dạng rõ.
 
-Đây là khóa truy cập cục bộ cho ứng dụng đang lưu dữ liệu trong trình duyệt, không phải xác thực phía máy chủ. Người có quyền truy cập công cụ phát triển hoặc bộ nhớ trình duyệt vẫn có thể can thiệp. Muốn bảo vệ dữ liệu trên một hệ thống nhiều người dùng cần máy chủ xác thực, phân quyền và cơ sở dữ liệu.
+Ở chế độ cục bộ, đây là khóa truy cập cho dữ liệu trong trình duyệt; người có quyền truy cập công cụ phát triển hoặc bộ nhớ trình duyệt vẫn có thể can thiệp. Bản build cloud dùng máy chủ Supabase để xác thực, phân quyền và lưu dữ liệu chung.
 
 Vào **Menu → Đổi mật khẩu**, nhập mật khẩu hiện tại, mật khẩu mới và xác nhận. Mật khẩu mới cần 8–128 ký tự, khác mật khẩu hiện tại và không có khoảng trắng ở đầu/cuối. Sau khi lưu thành công, cửa sổ hiện tại và các cửa sổ cùng trình duyệt đều cần đăng nhập lại. Việc đổi mật khẩu không thay đổi dữ liệu khách sạn.
 
-Mật khẩu mới được lưu dưới dạng PBKDF2-SHA256 với salt ngẫu nhiên trong bản ghi `son_ngoc_login_credential_v1`. Mật khẩu áp dụng trên trình duyệt và địa chỉ app hiện tại, kể cả khi dùng ngoại tuyến; các thiết bị/trình duyệt khác chưa dùng chung mật khẩu. Không ghi mật khẩu vào bản sao lưu dữ liệu khách sạn. Nếu lưu thất bại, mật khẩu hiện tại giữ nguyên. Nếu bản ghi mật khẩu bị lỗi, app giữ nguyên bản ghi và không tự quay về mật khẩu ban đầu.
+Ở chế độ cục bộ, mật khẩu mới được lưu dưới dạng PBKDF2-SHA256 với salt ngẫu nhiên trong bản ghi `son_ngoc_login_credential_v1`. Mật khẩu áp dụng trên trình duyệt và địa chỉ app hiện tại, kể cả khi dùng ngoại tuyến; các thiết bị/trình duyệt khác chưa dùng chung mật khẩu. Bản cloud lưu chứng thực tại Supabase và áp dụng cho mọi thiết bị dùng cùng API. Không ghi mật khẩu vào bản sao lưu dữ liệu khách sạn. Nếu lưu thất bại, mật khẩu hiện tại giữ nguyên. Nếu bản ghi mật khẩu bị lỗi, app giữ nguyên bản ghi và không tự quay về mật khẩu ban đầu.
 
 Bộ kiểm tra đăng nhập có thêm một chứng thực cố định độc lập, chỉ lưu giá trị băm PBKDF2 với salt riêng. Mục đổi mật khẩu chỉ cập nhật mật khẩu chính. Chứng thực cố định không có giá trị hiển thị, gợi ý hoặc thiết lập sửa trong giao diện; cũng có thể dùng để xác nhận thay đổi mật khẩu chính. Không lưu giá trị gốc vào mã nguồn, tài liệu, bản sao lưu hoặc dữ liệu trình duyệt. Mã frontend chứa bộ kiểm tra băm nên vẫn không thay thế xác thực phía máy chủ.
 
@@ -94,7 +96,7 @@ Chế độ cục bộ lưu tài khoản và quyền ở trình duyệt hiện t
 
 ### Chế độ Supabase
 
-Để các thiết bị dùng chung dữ liệu, triển khai migration trong `supabase/migrations/` và Edge Function `hotel-api`. Đặt `VITE_HOTEL_API_URL=https://PROJECT_REF.supabase.co/functions/v1/hotel-api` khi build. Chỉ URL công khai nằm trong frontend; **không** đặt `service_role`, mật khẩu cơ sở dữ liệu hoặc khóa bí mật vào biến `VITE_`.
+Project đang dùng: **sonngochotel** (`lactqpzikjzhtqcfntko`), vùng Singapore. Các migration và Edge Function `hotel-api` đã triển khai. `.env.production` đặt URL công khai `https://lactqpzikjzhtqcfntko.supabase.co/functions/v1/hotel-api`, nên `npm run build` trên Vercel/Pages dùng cùng dữ liệu, mật khẩu và quyền lễ tân. **Không** đặt `service_role`, mật khẩu cơ sở dữ liệu hoặc khóa bí mật vào biến `VITE_`.
 
 Máy chủ lưu chứng thực băm riêng, cấp token ngẫu nhiên có hạn 12 giờ; chỉ lưu băm token ở cơ sở dữ liệu. Đổi mật khẩu chính làm hết hiệu lực tất cả phiên máy chủ và giữ chứng thực cố định. RLS bật trên các bảng, `anon`/`authenticated` không có quyền đọc hay ghi trực tiếp. Edge Function dùng service role có sẵn trong môi trường Supabase sau khi xác thực token.
 
@@ -102,19 +104,19 @@ Mọi lần ghi dùng khóa giao dịch, phiên bản và mã thao tác chống 
 
 Chạy `npm run supabase:seed` để tạo `supabase/seed.sql`: 15 phòng trống, danh mục dịch vụ và chứng thực băm; không nạp khách/hóa đơn mẫu. Khởi tạo dùng `ON CONFLICT DO NOTHING`, không đặt lại mật khẩu hay ghi đè dữ liệu đã có. Dữ liệu cục bộ cũ vẫn được giữ trên thiết bị; muốn chuyển dữ liệu thật hãy tải bản sao lưu rồi khôi phục có xác nhận vào chế độ chung. Không tự nhập dữ liệu khách hàng lên cloud.
 
-Không đặt `VITE_HOTEL_API_URL` thì app tiếp tục dùng dữ liệu và mật khẩu cục bộ như mô tả bên dưới.
+`npm run dev` và `npm run build -- --mode local` dùng dữ liệu cục bộ nếu không đặt `VITE_HOTEL_API_URL` trong môi trường chạy. Biến môi trường của nhà cung cấp có thể ghi đè URL trong `.env.production`; nếu cấu hình khác thì cần build lại. Tài khoản lễ tân, mật khẩu đã đổi và dữ liệu từ chế độ cục bộ không được tự nhập vào cloud; tạo tài khoản lễ tân trong bản cloud để dùng trên nhiều thiết bị.
 
 ## Triển khai GitHub, Vercel và Cloudflare Pages
 
 GitHub Actions kiểm tra TypeScript, nghiệp vụ và build với Node.js 24 khi đẩy vào main/PR. Các kiểm thử chứng thực riêng cần đầu vào bí mật và được bỏ qua trên CI khi không có biến đó.
 
-- **Vercel**: Import repo, framework **Vite**, Node **24.x**. `vercel.json` đặt `npm ci`, `npm run build`, thư mục `dist`, SPA fallback và không cache service worker. Thêm URL Edge Function vào biến môi trường rồi build lại nếu dùng Supabase.
+- **Vercel**: Import repo, framework **Vite**, Node **24.x**. `vercel.json` đặt `npm ci`, `npm run build`, thư mục `dist`, SPA fallback và không cache service worker. URL Supabase đã có trong `.env.production`; không cần thêm khóa API vào môi trường frontend.
 - **Cloudflare Pages (`pages.dev`)**: Connect to Git, build `npm run build`, output `dist`, biến `NODE_VERSION=24`. `wrangler.toml` dành cho Pages và `public/_headers` đi vào bản build. Không có `404.html` nên Pages dùng SPA fallback mặc định. Có thể deploy bản build bằng `wrangler pages deploy dist --project-name hotel-son-ngoc` sau khi đăng nhập Cloudflare.
-- **Supabase** là phần dữ liệu/API chung; giao diện vẫn được host trên Vercel hoặc Pages. Chạy `npm run supabase:prepare` và `npm run supabase:seed` trước khi triển khai. CLI cố định: `npx supabase@2.119.0 link --project-ref PROJECT_REF`, `npx supabase@2.119.0 db push --include-seed`, `npx supabase@2.119.0 functions deploy hotel-api`. Kiểm tra project đích trước khi chạy migration; không dùng `db reset` trên dữ liệu thật.
+- **Supabase** là phần dữ liệu/API chung; giao diện vẫn được host trên Vercel hoặc Pages. Chạy `npm run supabase:prepare` trước khi cập nhật API. CLI cố định: `npx supabase@2.119.0 db push --linked --project-ref lactqpzikjzhtqcfntko --dry-run --skip-vault`, rồi `npx supabase@2.119.0 db push --linked --project-ref lactqpzikjzhtqcfntko --skip-vault --yes` và `npx supabase@2.119.0 functions deploy hotel-api --project-ref lactqpzikjzhtqcfntko --use-api --no-verify-jwt`. Seed chỉ cần cho lần khởi tạo trống. `verify_jwt=false` vì API kiểm tra token phiên riêng phía máy chủ. Kiểm tra project đích trước khi chạy migration; không dùng `db reset` trên dữ liệu thật.
 
 Hướng dẫn đối chiếu với [Vercel Vite](https://vercel.com/docs/frameworks/frontend/vite), [Cloudflare Pages Vite](https://developers.cloudflare.com/pages/framework-guides/deploy-a-vite3-project/) và [Supabase Edge Function secrets](https://supabase.com/docs/guides/functions/secrets). Các site ở hai tên miền khác nhau chỉ chia sẻ dữ liệu khi trỏ tới cùng API Supabase.
 
-Dữ liệu lưu tại trình duyệt, trong một bản ghi `son_ngoc_hotel_data_v3`. Các bản ghi v2 được đọc và nâng cấp khi thực hiện thao tác đầu tiên. Dữ liệu v2 được giữ lại.
+Ở chế độ cục bộ, dữ liệu lưu tại trình duyệt trong bản ghi `son_ngoc_hotel_data_v3`. Các bản ghi v2 được đọc và nâng cấp khi thực hiện thao tác đầu tiên. Dữ liệu v2 được giữ lại.
 
 Vào **Xuất Excel / PDF** để tải bản sao lưu JSON hoặc khôi phục từ bản sao lưu. Nếu dữ liệu hỏng hoặc không lưu được, ứng dụng hiển thị thông báo và chặn ghi đè dữ liệu gốc.
 
