@@ -22,7 +22,10 @@
 }
 
 /* A flex/grid child must be allowed to shrink below long content's width. */
-.login-screen { padding-top: max(1.75rem, env(safe-area-inset-top)); padding-bottom: max(1.75rem, env(safe-area-inset-bottom)); }
+.login-screen { padding-top: max(1rem, env(safe-area-inset-top)); padding-bottom: max(1rem, env(safe-area-inset-bottom)); }
+@media (min-width: 640px) {
+  .login-screen { padding-top: max(1.5rem, env(safe-area-inset-top)); padding-bottom: max(1.5rem, env(safe-area-inset-bottom)); }
+}
 .grid > *, form > *, .room-dialog .flex > * { min-width: 0; }
 .room-dialog > div { width: 100%; max-height: calc(100dvh - 2rem); min-width: 0; }
 .room-dialog > div > :first-child,
