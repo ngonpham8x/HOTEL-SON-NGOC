@@ -55,7 +55,7 @@ export const exportRevenueToExcel = async (
 ) => {
   const { default: ExcelJS } = await import('exceljs');
   const wb = new ExcelJS.Workbook();
-  wb.creator = 'Hotel Sơn Ngọc';
+  wb.creator = 'HOTEL SƠN NGỌC';
   wb.created = new Date();
 
   // SHEET 1: Chi tiết phiếu thu
@@ -238,7 +238,7 @@ export const exportDebtsToExcel = async (
 ) => {
   const { default: ExcelJS } = await import('exceljs');
   const wb = new ExcelJS.Workbook();
-  wb.creator = 'Hotel Sơn Ngọc';
+  wb.creator = 'HOTEL SƠN NGỌC';
 
   const ws = wb.addWorksheet('Sổ Công Nợ Khách Hàng', {
     views: [{ showGridLines: true }],
@@ -385,7 +385,7 @@ export const exportRoomsToExcel = async (
 ) => {
   const { default: ExcelJS } = await import('exceljs');
   const wb = new ExcelJS.Workbook();
-  wb.creator = 'Hotel Sơn Ngọc';
+  wb.creator = 'HOTEL SƠN NGỌC';
 
   const ws = wb.addWorksheet('Danh Sách Phòng', {
     views: [{ showGridLines: true }],

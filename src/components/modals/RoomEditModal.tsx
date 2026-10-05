@@ -136,7 +136,7 @@ export const RoomEditModal: React.FC<RoomEditModalProps> = ({ initialRoom, onClo
       // Add room prompt
       requestConfirm({
         title: 'Xác nhận thêm phòng mới',
-        message: `Xác nhận tạo mới Phòng ${cleanNumber} (Tầng ${floor}, ${getTypeName(type)}) vào hệ thống Hotel Sơn Ngọc?`,
+        message: `Xác nhận tạo mới Phòng ${cleanNumber} (Tầng ${floor}, ${getTypeName(type)}) vào hệ thống HOTEL SƠN NGỌC?`,
         confirmLabel: 'Tạo phòng ngay',
         onConfirm: async () => {
           await addRoom({
@@ -170,7 +170,7 @@ export const RoomEditModal: React.FC<RoomEditModalProps> = ({ initialRoom, onClo
 
     requestConfirm({
       title: 'Xác nhận xóa phòng',
-      message: `Bạn có chắc chắn muốn xóa vĩnh viễn Phòng ${initialRoom.number} khỏi danh sách phòng Hotel Sơn Ngọc? Thao tác này không thể hoàn tác.`,
+      message: `Bạn có chắc chắn muốn xóa vĩnh viễn Phòng ${initialRoom.number} khỏi danh sách phòng HOTEL SƠN NGỌC? Thao tác này không thể hoàn tác.`,
       confirmLabel: 'Xác nhận xóa phòng',
       cancelLabel: 'Giữ lại',
       isDangerous: true,
@@ -196,7 +196,7 @@ export const RoomEditModal: React.FC<RoomEditModalProps> = ({ initialRoom, onClo
                 {isEditing ? `Chỉnh sửa thông tin Phòng ${initialRoom.number}` : 'Thêm phòng mới'}
               </h3>
               <p className="text-xs text-slate-300">
-                Hotel Sơn Ngọc · Hotline: 0392.089.960 (Ms Trinh)
+                HOTEL SƠN NGỌC · Hotline: 0392.089.960 (Ms Trinh)
               </p>
             </div>
           </div>

@@ -58,7 +58,7 @@ export const Header: React.FC<HeaderProps> = ({
           <div className="min-w-0">
             <div className="flex items-center gap-1.5">
               <h1 className="text-[11px] sm:text-sm whitespace-nowrap font-extrabold tracking-tight text-white leading-none group-hover:text-teal-300 transition-colors">
-                Hotel Sơn Ngọc
+                HOTEL SƠN NGỌC
               </h1>
               <span className="hidden sm:inline-block w-1.5 h-1.5 rounded-full bg-teal-400"></span>
             </div>

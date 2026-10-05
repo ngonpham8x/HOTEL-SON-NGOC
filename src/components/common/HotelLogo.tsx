@@ -26,7 +26,7 @@ export const HotelLogo: React.FC<HotelLogoProps> = ({
       >
         <img
           src="/icon.svg"
-          alt="Hotel Sơn Ngọc"
+          alt="HOTEL SƠN NGỌC"
           className="w-full h-full object-contain filter drop-shadow-xs"
         />
       </div>
@@ -35,7 +35,7 @@ export const HotelLogo: React.FC<HotelLogoProps> = ({
         <div className="leading-tight">
           <div className="flex items-center gap-1.5">
             <h1 className="text-sm font-extrabold tracking-tight text-white">
-              Hotel Sơn Ngọc
+              HOTEL SƠN NGỌC
             </h1>
             <span className="w-1.5 h-1.5 rounded-full bg-teal-400"></span>
           </div>

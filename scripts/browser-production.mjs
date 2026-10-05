@@ -16,7 +16,7 @@ run('reload');settle();
 loginBrowser(run);
 evaluate(`window.__qaErrors=[];addEventListener('error',e=>window.__qaErrors.push(e.message));`);
 evaluate(`navigator.serviceWorker.ready.then(reg=>reg.scope)`);
-check(`document.body.innerText.includes('Hotel Sơn Ngọc') && !document.querySelector('vite-error-overlay')`,'production app loads');
+check(`document.body.innerText.includes('HOTEL SƠN NGỌC') && !document.querySelector('vite-error-overlay')`,'production app loads');
 check(`document.documentElement.scrollWidth===innerWidth`,'production homepage fits a 320px viewport');
 check(`Array.from(document.querySelectorAll('button')).every(e=>!e.textContent.includes('Khôi phục dữ liệu mẫu'))`,'sample reset button is absent');
 run('set','offline','on');

@@ -116,7 +116,7 @@ export const Sidebar: React.FC<{ onLogout: () => void; onPasswordChanged: () => 
           <div className="flex items-center gap-2.5">
             <HotelLogo size="sm" />
             <div>
-              <h2 className="text-xs font-bold text-white tracking-tight">Hotel Sơn Ngọc</h2>
+              <h2 className="text-xs font-bold text-white tracking-tight">HOTEL SƠN NGỌC</h2>
               <p className="text-[10px] text-teal-300 font-medium">0392.089.960 (Ms Trinh)</p>
             </div>
           </div>

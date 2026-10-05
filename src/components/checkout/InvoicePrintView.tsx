@@ -48,7 +48,7 @@ export const InvoicePrintView: React.FC<InvoicePrintViewProps> = ({ invoice, onC
               <div className="flex items-center gap-2">
                 <HotelLogo size="sm" />
                 <h2 className="text-base font-extrabold tracking-tight uppercase text-emerald-950">
-                  Hotel Sơn Ngọc
+                  HOTEL SƠN NGỌC
                 </h2>
               </div>
               <p className="text-slate-600 mt-0.5">Địa chỉ: Số 70 Quốc lộ 20, xã Hòa Ninh, Lâm Đồng</p>
@@ -184,7 +184,7 @@ export const InvoicePrintView: React.FC<InvoicePrintViewProps> = ({ invoice, onC
           </div>
 
           <p className="text-center text-[10px] text-slate-400 pt-4 border-t border-slate-100">
-            Cảm ơn quý khách đã tin tưởng và lựa chọn Hotel Sơn Ngọc! Hotline hỗ trợ: 0392.089.960 Ms Trinh. Chúc quý khách thượng lộ bình an!
+            Cảm ơn quý khách đã tin tưởng và lựa chọn HOTEL SƠN NGỌC! Hotline hỗ trợ: 0392.089.960 Ms Trinh. Chúc quý khách thượng lộ bình an!
           </p>
         </div>
       </div>

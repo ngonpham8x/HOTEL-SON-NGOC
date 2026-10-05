@@ -49,7 +49,7 @@ export function LoginScreen({ onSuccess, notice }: { onSuccess: (actor: AccessAc
         <div className="pointer-events-none absolute -right-24 -top-24 w-80 h-80 rounded-full border-[45px] border-teal-200/5" aria-hidden="true" />
         <div className="pointer-events-none absolute -left-24 -bottom-28 w-80 h-80 rounded-full border-[45px] border-amber-200/5" aria-hidden="true" />
         <div className="relative">
-          <div className="flex items-center gap-3"><HotelLogo size="xl" /><div><p className="font-bold text-xl tracking-tight">Hotel Sơn Ngọc</p><p className="mt-1 text-[11px] tracking-[0.16em] uppercase text-amber-200/80">Khách sạn & Massage</p></div></div>
+          <div className="flex items-center gap-3"><HotelLogo size="xl" /><div><p className="font-bold text-xl tracking-tight">HOTEL SƠN NGỌC</p><p className="mt-1 text-[11px] tracking-[0.16em] uppercase text-amber-200/80">Khách sạn & Massage</p></div></div>
           <p className="mt-10 text-xs font-semibold tracking-[0.2em] text-teal-300 uppercase">Hệ thống quản lý</p>
           <h2 className="mt-3 text-[32px] xl:text-[34px] leading-[1.3] font-bold tracking-tight">Quản lý gọn gàng.<br />Vận hành thuận tiện.</h2>
           <p className="mt-4 max-w-sm text-sm leading-6 text-teal-100/70">Một nơi để theo dõi phòng, chăm sóc khách và nắm tình hình kinh doanh mỗi ngày.</p>
@@ -59,7 +59,7 @@ export function LoginScreen({ onSuccess, notice }: { onSuccess: (actor: AccessAc
       </section>
       <section className="min-w-0 px-5 py-6 sm:p-8 lg:p-9 xl:p-10 flex flex-col justify-center">
         <div className="mx-auto w-full max-w-[380px]">
-        <div className="lg:hidden flex items-center justify-center gap-3 mb-5"><HotelLogo size="lg" /><div className="min-w-0 text-left"><p className="font-bold text-lg leading-6 tracking-tight">Hotel Sơn Ngọc</p><p className="text-[11px] leading-5 text-teal-700 mt-0.5">Hệ thống quản lý khách sạn</p></div></div>
+        <div className="lg:hidden flex items-center justify-center gap-3 mb-5"><HotelLogo size="lg" /><div className="min-w-0 text-left"><p className="font-bold text-lg leading-6 tracking-tight">HOTEL SƠN NGỌC</p><p className="text-[11px] leading-5 text-teal-700 mt-0.5">Hệ thống quản lý khách sạn</p></div></div>
         <div className="text-center lg:text-left">
           <span className="inline-flex rounded-full bg-teal-50 border border-teal-100 px-3 py-1 text-[10px] leading-5 font-semibold text-teal-800">Cổng quản trị Sơn Ngọc</span>
           <h1 className="mt-3 text-[25px] sm:text-[28px] font-bold tracking-tight leading-tight">Chào mừng trở lại</h1>

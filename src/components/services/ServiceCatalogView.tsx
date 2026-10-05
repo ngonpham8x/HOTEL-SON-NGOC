@@ -668,7 +668,7 @@ export const ServiceCatalogView: React.FC<ServiceCatalogViewProps> = ({
                       : 'Cập Nhật Dịch Vụ / Vé Massage'}
                   </span>
                 </h3>
-                <p className="text-xs text-teal-200 mt-0.5">Hotel Sơn Ngọc</p>
+                <p className="text-xs text-teal-200 mt-0.5">HOTEL SƠN NGỌC</p>
               </div>
               <button
                 onClick={() => setServiceModal(prev => ({ ...prev, isOpen: false }))}

@@ -1,8 +1,8 @@
 {
   "id": "/",
-  "name": "Hotel Sơn Ngọc - Quản Lý & Đặt Phòng",
+  "name": "HOTEL SƠN NGỌC - Quản Lý & Đặt Phòng",
   "short_name": "Sơn Ngọc",
-  "description": "Hệ thống quản lý khách sạn và bán vé Massage thư giãn - Hotel Sơn Ngọc",
+  "description": "Hệ thống quản lý khách sạn và bán vé Massage thư giãn - HOTEL SƠN NGỌC",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

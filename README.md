@@ -1,4 +1,4 @@
-# Hotel Sơn Ngọc
+# HOTEL SƠN NGỌC
 
 Ứng dụng quản lý phòng, đặt phòng, khách lưu trú, dịch vụ, phiếu thu và công nợ bằng React + TypeScript + Vite.
 

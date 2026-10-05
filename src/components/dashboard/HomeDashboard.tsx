@@ -171,7 +171,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
             <HotelLogo size="md" />
             <div className="min-w-0">
               <h2 className="text-base sm:text-lg font-black text-slate-900 tracking-tight truncate">
-                Hotel Sơn Ngọc
+                HOTEL SƠN NGỌC
               </h2>
               <p className="text-[11px] sm:text-xs text-slate-500 font-medium truncate">
                 Trung tâm quản lý khách sạn &amp; Dịch vụ thư giãn
@@ -430,7 +430,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
                   <span>Biểu Đồ Doanh Thu 7 Ngày Gần Nhất</span>
                 </h3>
                 <p className="text-xs text-slate-500 mt-0.5">
-              Doanh thu Hotel Sơn Ngọc theo ngày (gồm tiền phòng và dịch vụ)
+              Doanh thu HOTEL SƠN NGỌC theo ngày (gồm tiền phòng và dịch vụ)
                 </p>
               </div>
               <AccessGuard view="analytics"><button
@@ -586,7 +586,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
                   {detailModal === 'DEBT_LIST' && '⚠️ Danh Sách Khách Hàng Còn Nợ'}
                 </h3>
                 <p className="text-xs text-teal-200 mt-0.5">
-                  Hotel Sơn Ngọc · Số 70 Quốc lộ 20, xã Hòa Ninh, Lâm Đồng
+                  HOTEL SƠN NGỌC · Số 70 Quốc lộ 20, xã Hòa Ninh, Lâm Đồng
                 </p>
               </div>
               <button
