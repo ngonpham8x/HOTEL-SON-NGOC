@@ -43,7 +43,7 @@ const MainLayout: React.FC<{ onLogout: () => void; onPasswordChanged: () => void
   const [editingRoom, setEditingRoom] = useState<Room | null | undefined>(undefined);
 
   return (
-    <div className={`${printedInvoice ? 'invoice-open' : ''} min-h-screen bg-[#e4f3f4] flex flex-col font-sans text-slate-800 selection:bg-teal-200 selection:text-teal-950`}>
+    <div className={`${printedInvoice ? 'invoice-open' : ''} h-screen h-dvh overflow-hidden bg-[#e4f3f4] flex flex-col font-sans text-slate-800 selection:bg-teal-200 selection:text-teal-950`}>
       {/* Top Header */}
       <Header
         onOpenQuickCheckIn={() => setIsQuickCheckInOpen(true)}
@@ -51,12 +51,12 @@ const MainLayout: React.FC<{ onLogout: () => void; onPasswordChanged: () => void
         onOpenAddRoom={() => setEditingRoom(null)}
       />
 
-      <div className="flex-1 flex overflow-hidden">
+      <div className="min-h-0 flex-1 flex overflow-hidden">
         {/* Left Sidebar */}
         <Sidebar onLogout={onLogout} onPasswordChanged={onPasswordChanged} />
 
         {/* Main Content Viewport */}
-        <main className="min-w-0 flex-1 overflow-y-auto p-3 sm:p-5 md:p-7 max-w-7xl mx-auto w-full">
+        <main className="min-h-0 min-w-0 flex-1 overflow-y-auto p-3 sm:p-5 md:p-7 max-w-7xl mx-auto w-full">
           <Suspense fallback={<p role="status" className="p-4 text-sm text-teal-800">Đang mở trang…</p>}>
           <div role="alert" className={storageError ? "no-print mb-4 p-3 bg-rose-50 border border-rose-300 rounded-xl text-sm text-rose-800" : "hidden"}>{storageError}</div>
           {activeTab === 'none' && <p role="status" className="rounded-xl bg-white p-5 border text-slate-700">Tài khoản chưa được cấp quyền xem mục nào. Vui lòng liên hệ quản lý.</p>}

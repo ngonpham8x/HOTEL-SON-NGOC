@@ -107,7 +107,7 @@ export const Sidebar: React.FC<{ onLogout: () => void; onPasswordChanged: () => 
 
       {/* Sidebar Container: Slide drawer on mobile, static sidebar on desktop */}
       <aside
-        className={`no-print fixed lg:static top-0 lg:top-auto bottom-0 left-0 z-50 lg:z-auto w-[min(18rem,90vw)] lg:w-64 bg-[#092228] border-r border-teal-900/60 flex flex-col shrink-0 text-teal-100 shadow-2xl lg:shadow-none transition-transform duration-300 ease-in-out h-dvh lg:h-[calc(100dvh-56px)] lg:sticky lg:top-14 ${
+        className={`no-print fixed top-0 bottom-0 left-0 z-50 w-[min(18rem,90vw)] lg:z-auto lg:w-64 lg:sticky lg:top-0 lg:h-full bg-[#092228] border-r border-teal-900/60 flex flex-col shrink-0 text-teal-100 shadow-2xl lg:shadow-none transition-transform duration-300 ease-in-out h-dvh ${
           isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         }`}
       >
@@ -175,22 +175,22 @@ export const Sidebar: React.FC<{ onLogout: () => void; onPasswordChanged: () => 
         </div>
 
         {/* Quick summary footer in sidebar */}
-        <div className="p-2.5 shrink-0 border-t border-teal-900/60 bg-[#06181d] space-y-2">
+        <div className="sidebar-footer p-2 shrink-0 border-t border-teal-900/60 bg-[#06181d] space-y-1.5">
           {/* Compact 3-item status row */}
-          {(canView('rooms') || canView('dashboard')) && <div className="grid grid-cols-3 gap-1.5 text-center text-[10px]">
-            <div className="bg-teal-950/60 border border-teal-800/60 py-1 px-1 rounded-lg">
+          {(canView('rooms') || canView('dashboard')) && <div className="grid grid-cols-3 gap-1 text-center text-[9px]">
+            <div className="bg-teal-950/60 border border-teal-800/60 py-0.5 px-1 rounded-md">
               <span className="text-teal-400 block font-medium">Trống</span>
-              <span className="font-mono font-bold text-teal-200 text-xs">
+              <span className="font-mono font-bold text-teal-200 text-[11px] leading-4">
                 {rooms.filter(r => r.status === 'AVAILABLE').length}
               </span>
             </div>
-            <div className="bg-rose-950/40 border border-rose-900/60 py-1 px-1 rounded-lg">
+            <div className="bg-rose-950/40 border border-rose-900/60 py-0.5 px-1 rounded-md">
               <span className="text-rose-400 block font-medium">Đang ở</span>
-              <span className="font-mono font-bold text-rose-200 text-xs">{occupiedRooms}</span>
+              <span className="font-mono font-bold text-rose-200 text-[11px] leading-4">{occupiedRooms}</span>
             </div>
-            <div className="bg-cyan-950/40 border border-cyan-900/60 py-1 px-1 rounded-lg">
+            <div className="bg-cyan-950/40 border border-cyan-900/60 py-0.5 px-1 rounded-md">
               <span className="text-cyan-400 block font-medium">Cần dọn</span>
-              <span className="font-mono font-bold text-cyan-200 text-xs">
+              <span className="font-mono font-bold text-cyan-200 text-[11px] leading-4">
                 {rooms.filter(r => r.status === 'CLEANING').length}
               </span>
             </div>

@@ -27,6 +27,8 @@
   .login-screen { padding-top: max(1.5rem, env(safe-area-inset-top)); padding-bottom: max(1.5rem, env(safe-area-inset-bottom)); }
 }
 .grid > *, form > *, .room-dialog .flex > * { min-width: 0; }
+.sidebar-footer [aria-label="Cài ứng dụng"] .w-8 { width: 1.5rem; height: 1.5rem; border-radius: .5rem; }
+.sidebar-footer > button + button { margin-top: .25rem; font-size: .625rem; }
 .room-dialog > div { width: 100%; max-height: calc(100dvh - 2rem); min-width: 0; }
 .room-dialog > div > :first-child,
 .room-dialog-footer { flex-shrink: 0; }
