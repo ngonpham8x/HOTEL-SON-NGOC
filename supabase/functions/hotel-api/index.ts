@@ -96,6 +96,12 @@ Deno.serve(async (request: Request) => {
       const updated = await db('rpc/hotel_staff_save', { p_hash: hash, p_id: input.id || crypto.randomUUID(), p_create: !input.id, p_username: username, p_display_name: displayName, p_permissions: permissions, p_active: input.active, p_credential: input.password ? await newCredential(input.password) : null, p_expected_version: input.id ? input.expectedVersion : null });
       return response({ account: publicStaff(updated) });
     }
+    if (action === 'staff.delete') {
+      if (actor.role !== 'ADMIN') return response({ error: 'Chỉ quản lý được xóa tài khoản lễ tân.' }, 403);
+      if (typeof input.id !== 'string') return response({ error: 'Mã tài khoản không hợp lệ.' }, 400);
+      await db(`hotel_staff?id=eq.${encodeURIComponent(input.id)}`, undefined, 'DELETE');
+      return response({ success: true });
+    }
     if (action === 'read') { const state = (await db('hotel_state?id=eq.true&select=revision,data'))[0]; if (!state) return response({ error: 'Dữ liệu chưa khởi tạo.' }, 503); return response({ revision: state.revision, data: projectHotelData(actor, validateHotelData(state.data)) }); }
     if (action === 'write') {
       if (!canAct(actor, input.operation as ActionId)) return response({ error: 'Bạn chưa được cấp quyền thực hiện thao tác này.' }, 403);

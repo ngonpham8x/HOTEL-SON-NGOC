@@ -80,7 +80,7 @@ export interface Reservation {
   createdAt: string;
 }
 
-export type StayStatus = 'ACTIVE' | 'CHECKED_OUT';
+export type StayStatus = 'ACTIVE' | 'CHECKED_OUT' | 'CANCELLED';
 
 export interface StayRecord {
   reservationId?: string;
@@ -107,7 +107,7 @@ export interface StayRecord {
 }
 
 export type PaymentMethod = 'CASH' | 'TRANSFER' | 'CARD' | 'DEBT' | 'MIXED';
-export type InvoiceStatus = 'PAID' | 'PARTIAL' | 'DEBT';
+export type InvoiceStatus = 'PAID' | 'PARTIAL' | 'DEBT' | 'CANCELLED';
 
 export interface Invoice {
   createdBy?: string;

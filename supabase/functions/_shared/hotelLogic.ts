@@ -32,9 +32,11 @@ export function stayDuration(stay: Pick<StayRecord, 'checkInDate' | 'checkInTime
   return Math.max(1, Math.round((Date.parse(endDate) - Date.parse(stay.checkInDate)) / 86400000));
 }
 export function invoiceRevenue(invoice: Invoice) {
+  if (invoice.status === 'CANCELLED') return 0;
   return Math.max(0, invoice.roomCharge + invoice.serviceCharge + invoice.surcharge - invoice.discount);
 }
 export function invoiceCollected(invoice: Invoice) {
+  if (invoice.status === 'CANCELLED') return 0;
   return invoice.paidAmount + Math.min(invoice.depositDeducted, invoiceRevenue(invoice));
 }
 export function paymentBreakdown(invoices: Invoice[], debts: DebtRecord[]) {
@@ -44,6 +46,7 @@ export function paymentBreakdown(invoices: Invoice[], debts: DebtRecord[]) {
     else result.other += amount;
   };
   for (const invoice of invoices) {
+    if (invoice.status === 'CANCELLED') continue;
     const payments = debts.filter(d => d.invoiceId === invoice.id).flatMap(d => d.paymentHistory);
     add(invoice.paymentMethod, Math.max(0, invoice.paidAmount - payments.reduce((sum, p) => sum + p.amount, 0)));
     payments.forEach(p => add(p.method, p.amount));
