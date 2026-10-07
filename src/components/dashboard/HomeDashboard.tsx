@@ -24,6 +24,9 @@ import {
   Layers,
   ChevronRight,
   PieChart,
+  Calendar,
+  Trophy,
+  BarChart2,
 } from 'lucide-react';
 import { HotelLogo } from '../common/HotelLogo';
 import { AccessGuard } from '../common/AccessGuard';
@@ -40,7 +43,17 @@ interface HomeDashboardProps {
   onEditRoom: (room: Room) => void;
 }
 
-type DetailModalType = 'TODAY_REVENUE' | 'MONTH_REVENUE' | 'MASSAGE_REVENUE' | 'ROOM_OCCUPANCY' | 'DEBT_LIST' | null;
+type DetailModalType =
+  | 'TODAY_REVENUE'
+  | 'WEEK_REVENUE'
+  | 'MONTH_REVENUE'
+  | 'YEAR_REVENUE'
+  | 'MASSAGE_REVENUE'
+  | 'ROOM_OCCUPANCY'
+  | 'DEBT_LIST'
+  | null;
+
+type PeriodScope = 'DAY' | 'WEEK' | 'MONTH' | 'YEAR';
 
 export const HomeDashboard: React.FC<HomeDashboardProps> = ({
   onSelectRoom,
@@ -55,6 +68,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
   const lastMonthLabel = keys.lastMonth.split('-').reverse().join('/');
   const [roomFilter, setRoomFilter] = useState<RoomStatus | 'ALL'>('ALL');
   const [detailModal, setDetailModal] = useState<DetailModalType>(null);
+  const [splitPeriod, setSplitPeriod] = useState<PeriodScope>('DAY');
 
   // Today's invoice statistics.
   const todayStr = today;
@@ -65,7 +79,33 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
   const todayRoomRev = useMemo(() => todayInvoices.reduce((sum, i) => sum + i.roomCharge, 0), [todayInvoices]);
   const todayMassageRev = useMemo(() => todayInvoices.reduce((sum, i) => sum + (i.massageCharge || 0), 0), [todayInvoices]);
 
-  // Current and previous calendar months.
+  // 2. Tuần này (This Week: Thứ 2 -> Chủ Nhật)
+  const weekRange = useMemo(() => {
+    const d = new Date(`${today}T12:00:00+07:00`);
+    const day = d.getDay();
+    const diffToMon = (day === 0 ? -6 : 1) - day;
+    const mon = new Date(d);
+    mon.setDate(d.getDate() + diffToMon);
+    const sun = new Date(mon);
+    sun.setDate(mon.getDate() + 6);
+    return {
+      start: localDate(mon),
+      end: localDate(sun),
+      label: `${mon.getDate()}/${mon.getMonth() + 1} - ${sun.getDate()}/${sun.getMonth() + 1}`,
+    };
+  }, [today]);
+
+  const thisWeekInvoices = useMemo(
+    () => invoices.filter(i => i.date >= weekRange.start && i.date <= weekRange.end),
+    [invoices, weekRange]
+  );
+  const thisWeekRev = useMemo(() => thisWeekInvoices.reduce((sum, i) => sum + invoiceRevenue(i), 0), [thisWeekInvoices]);
+  const thisWeekRoomRev = useMemo(() => thisWeekInvoices.reduce((sum, i) => sum + i.roomCharge, 0), [thisWeekInvoices]);
+  const thisWeekMassageRev = useMemo(() => thisWeekInvoices.reduce((sum, i) => sum + (i.massageCharge || 0), 0), [thisWeekInvoices]);
+  const thisWeekPaid = useMemo(() => thisWeekInvoices.reduce((sum, i) => sum + invoiceCollected(i), 0), [thisWeekInvoices]);
+  const thisWeekDebt = useMemo(() => thisWeekInvoices.reduce((sum, i) => sum + i.debtAmount, 0), [thisWeekInvoices]);
+
+  // 3. Current and previous calendar months.
   const thisMonthInvoices = useMemo(() => invoices.filter(i => i.date.startsWith(keys.thisMonth)), [invoices, today]);
   const lastMonthInvoices = useMemo(() => invoices.filter(i => i.date.startsWith(keys.lastMonth)), [invoices, today]);
 
@@ -73,6 +113,58 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
   const thisMonthRoomRev = useMemo(() => thisMonthInvoices.reduce((sum, i) => sum + i.roomCharge, 0), [thisMonthInvoices]);
   const thisMonthMassageRev = useMemo(() => thisMonthInvoices.reduce((sum, i) => sum + (i.massageCharge || 0), 0), [thisMonthInvoices]);
   const lastMonthRev = useMemo(() => lastMonthInvoices.reduce((sum, i) => sum + invoiceRevenue(i), 0), [lastMonthInvoices]);
+
+  const thisMonthPaid = useMemo(() => thisMonthInvoices.reduce((sum, i) => sum + invoiceCollected(i), 0), [thisMonthInvoices]);
+  const thisMonthDebt = useMemo(() => thisMonthInvoices.reduce((sum, i) => sum + i.debtAmount, 0), [thisMonthInvoices]);
+
+  // 4. Năm nay & Năm trước (This Year & Last Year)
+  const thisYear = today.slice(0, 4);
+  const lastYear = String(Number(thisYear) - 1);
+  const thisYearInvoices = useMemo(
+    () => invoices.filter(i => i.date.startsWith(thisYear)),
+    [invoices, thisYear]
+  );
+  const lastYearInvoices = useMemo(
+    () => invoices.filter(i => i.date.startsWith(lastYear)),
+    [invoices, lastYear]
+  );
+  const thisYearRev = useMemo(() => thisYearInvoices.reduce((sum, i) => sum + invoiceRevenue(i), 0), [thisYearInvoices]);
+  const thisYearRoomRev = useMemo(() => thisYearInvoices.reduce((sum, i) => sum + i.roomCharge, 0), [thisYearInvoices]);
+  const thisYearMassageRev = useMemo(() => thisYearInvoices.reduce((sum, i) => sum + (i.massageCharge || 0), 0), [thisYearInvoices]);
+  const thisYearPaid = useMemo(() => thisYearInvoices.reduce((sum, i) => sum + invoiceCollected(i), 0), [thisYearInvoices]);
+  const thisYearDebt = useMemo(() => thisYearInvoices.reduce((sum, i) => sum + i.debtAmount, 0), [thisYearInvoices]);
+  const lastYearRev = useMemo(() => lastYearInvoices.reduce((sum, i) => sum + invoiceRevenue(i), 0), [lastYearInvoices]);
+
+  // Thống kê bóc tách theo chu kỳ chọn (splitPeriod)
+  const splitStats = useMemo(() => {
+    let invs = todayInvoices;
+    let label = `Hôm nay (${formatDate(today).slice(0, 5)})`;
+    if (splitPeriod === 'WEEK') {
+      invs = thisWeekInvoices;
+      label = `Tuần này (${weekRange.label})`;
+    } else if (splitPeriod === 'MONTH') {
+      invs = thisMonthInvoices;
+      label = `Tháng này (${thisMonthLabel})`;
+    } else if (splitPeriod === 'YEAR') {
+      invs = thisYearInvoices;
+      label = `Năm nay (${thisYear})`;
+    }
+    const roomRev = invs.reduce((sum, i) => sum + i.roomCharge, 0);
+    const massageRev = invs.reduce((sum, i) => sum + (i.massageCharge || 0), 0);
+    const total = invs.reduce((sum, i) => sum + invoiceRevenue(i), 0);
+    const collected = invs.reduce((sum, i) => sum + invoiceCollected(i), 0);
+    const debt = invs.reduce((sum, i) => sum + i.debtAmount, 0);
+    return {
+      label,
+      invoices: invs,
+      roomRev,
+      massageRev,
+      total,
+      collected,
+      debt,
+      count: invs.length,
+    };
+  }, [splitPeriod, todayInvoices, thisWeekInvoices, thisMonthInvoices, thisYearInvoices, today, weekRange, thisMonthLabel, thisYear]);
 
   // Debts
   const totalRemainingDebt = useMemo(() => debts.reduce((sum, d) => sum + d.remainingAmount, 0), [debts]);
@@ -226,7 +318,21 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
       </div>
 
       {/* 2. Top Interactive Metric Cards (Click any card to view drill-down details) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <TrendingUp className="w-4 h-4 text-teal-600" />
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">
+              Thống Kê Doanh Thu: Ngày · Tuần · Tháng · Năm
+            </h3>
+          </div>
+          <span className="text-[11px] text-slate-500 hidden sm:inline">
+            Bấm vào từng thẻ để xem danh sách phiếu thu chi tiết
+          </span>
+        </div>
+
+        {/* 4 Revenue Cards for Day, Week, Month, Year */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
         {/* Card 1: Doanh thu hôm nay */}
         <div
           onClick={() => setDetailModal('TODAY_REVENUE')}
@@ -243,6 +349,28 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
           <div className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
             <span>Phòng: <strong className="text-slate-800 font-mono">{formatCurrency(todayRoomRev)}</strong></span>
             <span>Massage: <strong className="text-teal-700 font-mono">{formatCurrency(todayMassageRev)}</strong></span>
+          </div>
+        </div>
+
+        {/* Card: Doanh thu Tuần này */}
+        <div
+          onClick={() => setDetailModal('WEEK_REVENUE')}
+          className="bg-white p-3.5 rounded-xl border border-teal-200/90 shadow-2xs hover:shadow-md hover:border-teal-500 transition-all cursor-pointer group"
+          title="Bấm để xem danh sách phiếu thu tuần này"
+        >
+          <div className="flex items-center justify-between text-slate-500 text-xs">
+            <span className="font-semibold text-slate-700 flex items-center gap-1.5">
+              <BarChart2 className="w-3.5 h-3.5 text-blue-600" />
+              <span>Tuần này ({weekRange.label})</span>
+            </span>
+            <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-teal-600 transition-colors" />
+          </div>
+          <p className="text-xl font-bold font-mono text-blue-900 mt-1">
+            {formatCurrency(thisWeekRev)}
+          </p>
+          <div className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
+            <span>Phòng: <strong className="text-slate-800 font-mono">{formatCurrency(thisWeekRoomRev)}</strong></span>
+            <span>Massage: <strong className="text-teal-700 font-mono">{formatCurrency(thisWeekMassageRev)}</strong></span>
           </div>
         </div>
 
@@ -264,7 +392,32 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
           </div>
         </div>
 
-        {/* Card 3: Doanh thu Vé Massage Thư Giãn (Doanh thu riêng biệt) */}
+        {/* Card: Doanh thu Cả Năm */}
+        <div
+          onClick={() => setDetailModal('YEAR_REVENUE')}
+          className="bg-white p-3.5 rounded-xl border border-teal-200/90 shadow-2xs hover:shadow-md hover:border-teal-500 transition-all cursor-pointer group"
+          title="Bấm để xem doanh thu cả năm"
+        >
+          <div className="flex items-center justify-between text-slate-500 text-xs">
+            <span className="font-semibold text-slate-700 flex items-center gap-1.5">
+              <Trophy className="w-3.5 h-3.5 text-amber-600" />
+              <span>Cả năm ({thisYear})</span>
+            </span>
+            <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-teal-600 transition-colors" />
+          </div>
+          <p className="text-xl font-bold font-mono text-amber-900 mt-1">
+            {formatCurrency(thisYearRev)}
+          </p>
+          <div className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
+            <span>Năm trước: <strong className="text-slate-700 font-mono">{formatCurrency(lastYearRev)}</strong></span>
+          </div>
+        </div>
+
+      </div>
+
+      {/* 3 Thẻ Vận Hành & Khách Nợ */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        {/* Card: Doanh thu Vé Massage Thư Giãn (Doanh thu riêng biệt) */}
         <div
           onClick={() => setDetailModal('MASSAGE_REVENUE')}
           className="bg-gradient-to-br from-teal-50 to-cyan-50/70 p-3.5 rounded-xl border border-teal-300 shadow-2xs hover:shadow-md hover:border-teal-600 transition-all cursor-pointer group"
@@ -326,6 +479,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
           </div>
         </div></AccessGuard>
       </div>
+      </div>
 
       {/* 3. Doanh Thu Riêng Biệt 2 Loại Dịch Vụ: Tiền Phòng vs Vé Massage Thư Giãn */}
       <div className="bg-white rounded-2xl border border-teal-200/90 p-4 sm:p-5 shadow-2xs">
@@ -333,19 +487,67 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
           <div>
             <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
               <PieChart className="w-4 h-4 text-teal-600" />
-              <span>Thống Kê Doanh Thu Riêng Biệt 2 Loại Dịch Vụ</span>
+              <span>Thống Kê Nguồn Thu Riêng Biệt: Tiền Phòng & Vé Massage</span>
             </h3>
             <p className="text-xs text-slate-500 mt-0.5">
-              Tách bạch nguồn thu giữa dịch vụ lưu trú ({totalRooms} phòng) và dịch vụ bán vé Massage thư giãn
+              Đang xem thống kê chu kỳ: <strong className="text-teal-900 font-bold">{splitStats.label}</strong>
             </p>
           </div>
-          <button
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-xl">
+              <button
+                type="button"
+                onClick={() => setSplitPeriod('DAY')}
+                className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all ${
+                  splitPeriod === 'DAY'
+                    ? 'bg-white text-teal-800 shadow-2xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Hôm nay
+              </button>
+              <button
+                type="button"
+                onClick={() => setSplitPeriod('WEEK')}
+                className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all ${
+                  splitPeriod === 'WEEK'
+                    ? 'bg-white text-teal-800 shadow-2xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Tuần này
+              </button>
+              <button
+                type="button"
+                onClick={() => setSplitPeriod('MONTH')}
+                className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all ${
+                  splitPeriod === 'MONTH'
+                    ? 'bg-white text-teal-800 shadow-2xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Tháng này
+              </button>
+              <button
+                type="button"
+                onClick={() => setSplitPeriod('YEAR')}
+                className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all ${
+                  splitPeriod === 'YEAR'
+                    ? 'bg-white text-teal-800 shadow-2xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Cả năm
+              </button>
+            </div>
+            <button
             onClick={() => setDetailModal('MASSAGE_REVENUE')}
             className="text-xs font-bold text-teal-700 hover:text-teal-900 flex items-center gap-1 self-start sm:self-center bg-teal-50 px-3 py-1.5 rounded-lg border border-teal-200 transition-colors"
           >
             <span>Vé Massage theo loại</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </button>
+        </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
@@ -362,9 +564,9 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
             </div>
             <div className="grid grid-cols-2 gap-2 pt-1">
               <div className="bg-white p-2.5 rounded-lg border border-slate-200">
-                <span className="text-[11px] text-slate-500 block">Tiền phòng hôm nay</span>
+                <span className="text-[11px] text-slate-500 block">Tiền phòng ({splitStats.label})</span>
                 <span className="text-base font-bold font-mono text-slate-900 mt-0.5 block">
-                  {formatCurrency(todayRoomRev)}
+                  {formatCurrency(splitStats.roomRev)}
                 </span>
               </div>
               <div className="bg-white p-2.5 rounded-lg border border-slate-200">
@@ -393,9 +595,9 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
             </div>
             <div className="grid grid-cols-2 gap-2 pt-1">
               <div className="bg-white p-2.5 rounded-lg border border-teal-200">
-                <span className="text-[11px] text-slate-500 block">Vé Massage hôm nay</span>
+                <span className="text-[11px] text-slate-500 block">Vé Massage ({splitStats.label})</span>
                 <span className="text-base font-bold font-mono text-teal-900 mt-0.5 block">
-                  {formatCurrency(todayMassageRev)}
+                  {formatCurrency(splitStats.massageRev)}
                 </span>
               </div>
               <div className="bg-white p-2.5 rounded-lg border border-teal-200">
@@ -580,7 +782,9 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
               <div>
                 <h3 className="text-base font-bold flex items-center gap-2">
                   {detailModal === 'TODAY_REVENUE' && `💵 Doanh thu hôm nay (${formatDate(today)})`}
+                  {detailModal === 'WEEK_REVENUE' && `📊 Doanh thu tuần này (${weekRange.label})`}
                   {detailModal === 'MONTH_REVENUE' && `📈 Doanh thu tháng ${thisMonthLabel}`}
+                  {detailModal === 'YEAR_REVENUE' && `🏆 Doanh thu cả năm ${thisYear}`}
                   {detailModal === 'MASSAGE_REVENUE' && '🌸 Doanh Thu Từng Loại Vé Massage Thư Giãn'}
                   {detailModal === 'ROOM_OCCUPANCY' && `🛏️ Hiện trạng ${totalRooms} phòng khách sạn`}
                   {detailModal === 'DEBT_LIST' && '⚠️ Danh Sách Khách Hàng Còn Nợ'}
@@ -662,6 +866,70 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
                 </div>
               )}
 
+              {/* MODAL: WEEK REVENUE */}
+              {detailModal === 'WEEK_REVENUE' && (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                      <span className="text-[11px] text-slate-500 block">Doanh thu tuần ({weekRange.label})</span>
+                      <strong className="text-base font-mono text-blue-900 block mt-0.5">{formatCurrency(thisWeekRev)}</strong>
+                    </div>
+                    <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200">
+                      <span className="text-[11px] text-emerald-700 block">Đã thu tuần này</span>
+                      <strong className="text-base font-mono text-emerald-800 block mt-0.5">{formatCurrency(thisWeekPaid)}</strong>
+                    </div>
+                    <div className="p-3 bg-blue-50 rounded-xl border border-blue-200">
+                      <span className="text-[11px] text-blue-700 block">Doanh thu Tiền Phòng</span>
+                      <strong className="text-base font-mono text-blue-800 block mt-0.5">{formatCurrency(thisWeekRoomRev)}</strong>
+                    </div>
+                    <div className="p-3 bg-teal-50 rounded-xl border border-teal-200">
+                      <span className="text-[11px] text-teal-700 block">Vé Massage Thư Giãn</span>
+                      <strong className="text-base font-mono text-teal-800 block mt-0.5">{formatCurrency(thisWeekMassageRev)}</strong>
+                    </div>
+                  </div>
+
+                  <h4 className="font-bold text-slate-900 text-sm pt-2">Danh sách phiếu thu trong tuần này ({thisWeekInvoices.length} phiếu):</h4>
+                  <div className="border border-slate-200 rounded-xl overflow-hidden">
+                    <table className="w-full text-left border-collapse">
+                      <thead className="bg-slate-100 text-[11px] font-bold text-slate-700 uppercase">
+                        <tr>
+                          <th className="py-2.5 px-3">Ngày</th>
+                          <th className="py-2.5 px-3">Mã PT</th>
+                          <th className="py-2.5 px-3">Phòng</th>
+                          <th className="py-2.5 px-3">Khách hàng</th>
+                          <th className="py-2.5 px-3">Tiền phòng</th>
+                          <th className="py-2.5 px-3">Vé Massage</th>
+                          <th className="py-2.5 px-3">Tổng cộng</th>
+                          <th className="py-2.5 px-3">Đã thu</th>
+                          <th className="py-2.5 px-3">Trạng thái</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {thisWeekInvoices.map(inv => (
+                          <tr key={inv.id} className="hover:bg-slate-50">
+                            <td className="py-2.5 px-3 text-[11px] font-mono text-slate-500">{formatDate(inv.date).slice(0, 5)}</td>
+                            <td className="py-2.5 px-3 font-mono font-bold text-teal-800">{inv.code}</td>
+                            <td className="py-2.5 px-3 font-mono font-bold">{inv.roomNumber}</td>
+                            <td className="py-2.5 px-3">{inv.customerName}</td>
+                            <td className="py-2.5 px-3 font-mono">{formatCurrency(inv.roomCharge)}</td>
+                            <td className="py-2.5 px-3 font-mono text-teal-700 font-bold">{formatCurrency(inv.massageCharge || 0)}</td>
+                            <td className="py-2.5 px-3 font-mono font-bold">{formatCurrency(invoiceRevenue(inv))}</td>
+                            <td className="py-2.5 px-3 font-mono text-emerald-700">{formatCurrency(invoiceCollected(inv))}</td>
+                            <td className="py-2.5 px-3">
+                              <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                inv.status === 'PAID' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
+                              }`}>
+                                {inv.status === 'PAID' ? 'Đã thu đủ' : 'Ghi nợ'}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
               {/* MODAL 2: MONTH REVENUE */}
               {detailModal === 'MONTH_REVENUE' && (
                 <div className="space-y-4">
@@ -695,6 +963,83 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
                     >
                       Mở báo cáo thống kê đầy đủ →
                     </button></AccessGuard>
+                  </div>
+                </div>
+              )}
+
+              {/* MODAL: YEAR REVENUE */}
+              {detailModal === 'YEAR_REVENUE' && (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div className="p-3 bg-amber-50 rounded-xl border border-amber-200">
+                      <span className="text-[11px] text-amber-800 block">Tổng doanh thu cả năm {thisYear}</span>
+                      <strong className="text-base font-mono text-amber-950 block mt-0.5">{formatCurrency(thisYearRev)}</strong>
+                    </div>
+                    <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200">
+                      <span className="text-[11px] text-emerald-700 block">Đã thu cho phiếu thu</span>
+                      <strong className="text-base font-mono text-emerald-800 block mt-0.5">{formatCurrency(thisYearPaid)}</strong>
+                    </div>
+                    <div className="p-3 bg-blue-50 rounded-xl border border-blue-200">
+                      <span className="text-[11px] text-blue-700 block">Doanh thu Tiền Phòng</span>
+                      <strong className="text-base font-mono text-blue-800 block mt-0.5">{formatCurrency(thisYearRoomRev)}</strong>
+                    </div>
+                    <div className="p-3 bg-teal-50 rounded-xl border border-teal-200">
+                      <span className="text-[11px] text-teal-700 block">Vé Massage Thư Giãn</span>
+                      <strong className="text-base font-mono text-teal-800 block mt-0.5">{formatCurrency(thisYearMassageRev)}</strong>
+                    </div>
+                  </div>
+
+                  <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between text-xs">
+                    <span>So sánh năm trước ({lastYear}): <strong className="font-mono text-slate-800">{formatCurrency(lastYearRev)}</strong></span>
+                    <AccessGuard view="analytics"><button
+                      onClick={() => {
+                        setDetailModal(null);
+                        setActiveTab('analytics');
+                      }}
+                      className="px-3 py-1.5 bg-teal-700 hover:bg-teal-800 text-white font-bold rounded-lg transition-colors"
+                    >
+                      Mở báo cáo thống kê đầy đủ →
+                    </button></AccessGuard>
+                  </div>
+
+                  <h4 className="font-bold text-slate-900 text-sm pt-2">Danh sách phiếu thu trong năm {thisYear} ({thisYearInvoices.length} phiếu):</h4>
+                  <div className="border border-slate-200 rounded-xl overflow-hidden max-h-96 overflow-y-auto">
+                    <table className="w-full text-left border-collapse">
+                      <thead className="bg-slate-100 text-[11px] font-bold text-slate-700 uppercase sticky top-0">
+                        <tr>
+                          <th className="py-2.5 px-3">Ngày</th>
+                          <th className="py-2.5 px-3">Mã PT</th>
+                          <th className="py-2.5 px-3">Phòng</th>
+                          <th className="py-2.5 px-3">Khách hàng</th>
+                          <th className="py-2.5 px-3">Tiền phòng</th>
+                          <th className="py-2.5 px-3">Vé Massage</th>
+                          <th className="py-2.5 px-3">Tổng cộng</th>
+                          <th className="py-2.5 px-3">Đã thu</th>
+                          <th className="py-2.5 px-3">Trạng thái</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {thisYearInvoices.map(inv => (
+                          <tr key={inv.id} className="hover:bg-slate-50">
+                            <td className="py-2.5 px-3 text-[11px] font-mono text-slate-500">{formatDate(inv.date)}</td>
+                            <td className="py-2.5 px-3 font-mono font-bold text-teal-800">{inv.code}</td>
+                            <td className="py-2.5 px-3 font-mono font-bold">{inv.roomNumber}</td>
+                            <td className="py-2.5 px-3">{inv.customerName}</td>
+                            <td className="py-2.5 px-3 font-mono">{formatCurrency(inv.roomCharge)}</td>
+                            <td className="py-2.5 px-3 font-mono text-teal-700 font-bold">{formatCurrency(inv.massageCharge || 0)}</td>
+                            <td className="py-2.5 px-3 font-mono font-bold">{formatCurrency(invoiceRevenue(inv))}</td>
+                            <td className="py-2.5 px-3 font-mono text-emerald-700">{formatCurrency(invoiceCollected(inv))}</td>
+                            <td className="py-2.5 px-3">
+                              <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                inv.status === 'PAID' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
+                              }`}>
+                                {inv.status === 'PAID' ? 'Đã thu đủ' : 'Ghi nợ'}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 </div>
               )}

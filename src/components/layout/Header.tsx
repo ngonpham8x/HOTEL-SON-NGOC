@@ -1,6 +1,6 @@
 import React from 'react';
 import { useHotel } from '../../context/HotelContext';
-import { PlusCircle, CalendarPlus, BedDouble, PhoneCall, Menu, X, Ticket } from 'lucide-react';
+import { PlusCircle, CalendarPlus, PhoneCall, Menu, X, Ticket } from 'lucide-react';
 import { HotelLogo } from '../common/HotelLogo';
 import { useAccess } from '../../context/AccessContext';
 import { firstAllowedModule } from '../../utils/permissions';
@@ -103,15 +103,6 @@ export const Header: React.FC<HeaderProps> = ({
           <Ticket className="w-3.5 h-3.5 text-amber-400" />
           <span className="hidden sm:inline">Bán vé</span>
         </button>}
-        {canAct('room.configure') && <button
-          onClick={onOpenAddRoom}
-          title="Thêm phòng mới vào khách sạn"
-          className="px-2 sm:px-2.5 py-1.5 text-xs font-semibold text-teal-100 bg-teal-900/40 hover:bg-teal-800/60 border border-teal-700/60 hover:text-white rounded-lg flex items-center gap-1 transition-colors"
-        >
-          <BedDouble className="w-3.5 h-3.5 text-teal-300" />
-          <span className="hidden sm:inline">+ Thêm phòng</span>
-        </button>}
-
         {canAct('booking.create') && <button
           onClick={onOpenQuickBooking}
           title="Đặt phòng trước cho khách"
