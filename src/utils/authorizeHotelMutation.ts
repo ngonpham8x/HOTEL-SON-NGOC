@@ -113,7 +113,7 @@ export function authorizeHotelMutation(actor: AccessActor, before: HotelData, ne
     }
     case 'room.delete':
       scope('rooms'); if (d.rooms.added.length || d.rooms.updated.length) deny();
-      for (const room of d.rooms.removed) if (before.stays.some(stay => stay.roomId === room.id) || before.reservations.some(res => res.roomId === room.id) || before.invoices.some(invoice => roomNumberReferenced(invoice.roomNumber, room.number)) || before.debts.some(debt => roomNumberReferenced(debt.roomNumber, room.number)) || room.currentStayId) deny('Phòng có dữ liệu liên quan; hãy giữ lại để bảo toàn lịch sử.');
+      for (const room of d.rooms.removed) if (before.stays.some(stay => stay.roomId === room.id && stay.status !== 'CANCELLED') || before.reservations.some(res => res.roomId === room.id && res.status !== 'CANCELLED') || before.invoices.some(invoice => roomNumberReferenced(invoice.roomNumber, room.number) && invoice.status !== 'CANCELLED') || before.debts.some(debt => roomNumberReferenced(debt.roomNumber, room.number)) || room.currentStayId) deny('Phòng có dữ liệu liên quan; hãy giữ lại để bảo toàn lịch sử.');
       break;
     case 'service.configure': scope('services'); if (d.services.removed.length || [...d.services.added, ...d.services.updated.map(item => item.next)].some(service => !Number.isSafeInteger(service.price) || service.price < 0)) deny(); break;
     case 'service.delete':
@@ -167,18 +167,30 @@ export function authorizeHotelMutation(actor: AccessActor, before: HotelData, ne
         if (!['NIGHT', 'HOUR'].includes(stay.pricingType) || stay.rateApplied !== expectedRate || stay.pricingType !== expectedPricingType || stay.pricingType === 'HOUR' && sourceRoom.allowsHourly === false) deny('Đơn giá nhận phòng không khớp giá đã đặt hoặc bảng giá.');
         roomUpdates([stay.roomId], ['status', 'currentStayId', 'currentGuestName']);
         const room = next.rooms.find(row => row.id === stay.roomId); if (!room || room.status !== 'OCCUPIED' || room.currentStayId !== stay.id || room.currentGuestName !== stay.customerName) deny();
-      } else if (d.stays.added.length === 0 && d.stays.updated.length === 1 && !d.stays.removed.length && !d.reservations.added.length && !d.reservations.updated.length) {
+      } else if (d.stays.added.length === 0 && d.stays.updated.length === 1 && !d.stays.removed.length && !d.reservations.added.length && d.reservations.updated.length <= 1) {
         const { old, next: stay } = d.stays.updated[0];
-        if (old.status !== 'ACTIVE' || stay.status !== 'ACTIVE' || old.id !== stay.id || old.roomId !== stay.roomId || old.code !== stay.code) deny();
-        if (!Number.isSafeInteger(stay.deposit) || stay.deposit < 0) deny('Tiền cọc không hợp lệ.');
-        if (!Number.isSafeInteger(stay.rateApplied) || stay.rateApplied < 0) deny('Đơn giá không hợp lệ.');
-        if (!stay.customerName?.trim()) deny('Tên khách không được để trống.');
-        if (!['NIGHT', 'HOUR'].includes(stay.pricingType)) deny('Hình thức giá không hợp lệ.');
-        validatePeriod(stay.checkInDate, stay.checkInTime, stay.expectedCheckOutDate, stay.expectedCheckOutTime);
-        if (!onlyFields(old, stay, ['customerName', 'phone', 'idCard', 'checkInDate', 'checkInTime', 'expectedCheckOutDate', 'expectedCheckOutTime', 'pricingType', 'rateApplied', 'deposit', 'notes'])) deny();
-        updatesOnly(d.rooms);
-        for (const { old: rOld, next: rNext } of d.rooms.updated) {
-          if (rOld.id !== stay.roomId || !onlyFields(rOld, rNext, ['currentGuestName']) || rNext.currentGuestName !== stay.customerName) deny();
+        if (old.status !== 'ACTIVE' || old.id !== stay.id || old.code !== stay.code || old.roomId !== stay.roomId) deny();
+        if (stay.status === 'CANCELLED') {
+          updatesOnly(d.rooms);
+          for (const { old: rOld, next: rNext } of d.rooms.updated) {
+            if (rOld.id !== stay.roomId || !onlyFields(rOld, rNext, ['status', 'cleanStatus', 'currentStayId', 'currentGuestName']) || rNext.currentStayId || rNext.currentGuestName) deny();
+          }
+          for (const { old: resOld, next: resNext } of d.reservations.updated) {
+            if (resOld.status !== 'CHECKED_IN' || resNext.status !== 'CONFIRMED' || !onlyFields(resOld, resNext, ['status'])) deny();
+          }
+        } else if (stay.status === 'ACTIVE') {
+          if (!Number.isSafeInteger(stay.deposit) || stay.deposit < 0) deny('Tiền cọc không hợp lệ.');
+          if (!Number.isSafeInteger(stay.rateApplied) || stay.rateApplied < 0) deny('Đơn giá không hợp lệ.');
+          if (!stay.customerName?.trim()) deny('Tên khách không được để trống.');
+          if (!['NIGHT', 'HOUR'].includes(stay.pricingType)) deny('Hình thức giá không hợp lệ.');
+          validatePeriod(stay.checkInDate, stay.checkInTime, stay.expectedCheckOutDate, stay.expectedCheckOutTime);
+          if (!onlyFields(old, stay, ['customerName', 'phone', 'idCard', 'checkInDate', 'checkInTime', 'expectedCheckOutDate', 'expectedCheckOutTime', 'pricingType', 'rateApplied', 'deposit', 'notes'])) deny();
+          updatesOnly(d.rooms);
+          for (const { old: rOld, next: rNext } of d.rooms.updated) {
+            if (rOld.id !== stay.roomId || !onlyFields(rOld, rNext, ['currentGuestName']) || rNext.currentGuestName !== stay.customerName) deny();
+          }
+        } else {
+          deny();
         }
       } else {
         deny();
@@ -206,8 +218,23 @@ export function authorizeHotelMutation(actor: AccessActor, before: HotelData, ne
       break;
     }
     case 'sale.create': {
-      scope('invoices', 'debts'); const invoice = newInvoice('SERVICE');
-      if (invoice.roomCharge || invoice.depositDeducted || invoice.surcharge || invoice.refundAmount || !invoice.services?.length || invoice.services.some(usage => !validUsage(usage, before)) || invoice.serviceCharge !== invoice.services.reduce((sum, usage) => sum + usage.totalPrice, 0)) deny();
+      scope('invoices', 'debts');
+      if (d.invoices.added.length === 1 && !d.invoices.updated.length) {
+        const invoice = newInvoice('SERVICE');
+        if (invoice.roomCharge || invoice.depositDeducted || invoice.surcharge || invoice.refundAmount || !invoice.services?.length || invoice.services.some(usage => !validUsage(usage, before)) || invoice.serviceCharge !== invoice.services.reduce((sum, usage) => sum + usage.totalPrice, 0)) deny();
+      } else if (!d.invoices.added.length && d.invoices.updated.length === 1) {
+        const { old, next: invoice } = d.invoices.updated[0];
+        if (old.kind !== 'SERVICE' || invoice.kind !== 'SERVICE' || old.id !== invoice.id || old.code !== invoice.code) deny();
+        if (invoice.status === 'CANCELLED') {
+          if (invoice.roomCharge || invoice.depositDeducted) deny();
+        } else {
+          if (invoice.roomCharge || invoice.depositDeducted || invoice.surcharge || invoice.refundAmount || !invoice.services?.length || invoice.services.some(usage => !validUsage(usage, before)) || invoice.serviceCharge !== invoice.services.reduce((sum, usage) => sum + usage.totalPrice, 0)) deny();
+          const gross = invoice.serviceCharge - invoice.discount;
+          if (gross < 0 || invoice.totalAmount !== gross || invoice.paidAmount + invoice.debtAmount !== invoice.totalAmount) deny();
+        }
+      } else {
+        deny();
+      }
       break;
     }
     case 'debt.collect': {

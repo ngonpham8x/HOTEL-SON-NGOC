@@ -15,6 +15,7 @@ import {
   Clock,
   BedDouble,
   Edit2,
+  Trash2,
 } from 'lucide-react';
 
 interface ActiveStayManagerProps {
@@ -27,10 +28,28 @@ export const ActiveStayManager: React.FC<ActiveStayManagerProps> = ({
   onCheckOutRoom,
 }) => {
   const { canAct } = useAccess();
-  const { stays, rooms } = useHotel();
+  const { stays, rooms, cancelCheckIn, requestConfirm, showToast } = useHotel();
 
   const activeStays = stays.filter(s => s.status === 'ACTIVE');
   const [editingStay, setEditingStay] = useState<StayRecord | null>(null);
+
+  const handleCancelStay = (stay: StayRecord) => {
+    requestConfirm({
+      title: `Hủy lượt nhận phòng ${stay.roomNumber}?`,
+      message: `Thao tác này dùng khi nhận phòng nhầm hoặc thông tin bị sai cần hủy bỏ hoàn toàn. Phòng ${stay.roomNumber} sẽ được đưa về trạng thái TRỐNG SẠCH ngay lập tức và không tính tiền hay phát sinh hóa đơn trả phòng. Bạn có chắc chắn muốn hủy?`,
+      confirmLabel: 'Xác nhận hủy nhận phòng',
+      cancelLabel: 'Quay lại',
+      isDangerous: true,
+      onConfirm: async () => {
+        try {
+          await cancelCheckIn(stay.id);
+          showToast(`Đã hủy lượt nhận phòng ${stay.roomNumber}.`, 'success');
+        } catch (err) {
+          showToast(err instanceof Error ? err.message : 'Không thể hủy nhận phòng.', 'error');
+        }
+      },
+    });
+  };
 
   return (
     <div className="space-y-5">
@@ -156,6 +175,14 @@ export const ActiveStayManager: React.FC<ActiveStayManagerProps> = ({
                     >
                       <Edit2 className="w-3.5 h-3.5" />
                       <span>Sửa</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleCancelStay(stay)}
+                      className="px-2 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-lg text-xs font-semibold flex items-center justify-center transition-colors"
+                      title="Hủy lượt nhận phòng nếu thông tin bị sai"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </AccessGuard>
                   <AccessGuard action="stay.checkout"><button

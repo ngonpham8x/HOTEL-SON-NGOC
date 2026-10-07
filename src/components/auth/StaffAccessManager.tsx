@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
-import { AlertCircle, CheckCircle2, Eye, KeyRound, LoaderCircle, Pencil, Plus, RefreshCw, Save, ShieldCheck, UserRound, Users } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Eye, KeyRound, LoaderCircle, Pencil, Plus, RefreshCw, Save, ShieldCheck, Trash2, UserRound, Users } from 'lucide-react';
 import { useAccess } from '../../context/AccessContext';
 import { useHotel } from '../../context/HotelContext';
 import { ACTION_IDS, MODULE_IDS, type ActionId, type ModuleId, type StaffAccount, type StaffAccountInput, type StaffPermissions } from '../../types/access';
@@ -19,7 +19,7 @@ export function StaffAccessManager() {
 export default StaffAccessManager;
 
 function StaffAccessEditor() {
-  const { listStaffAccounts, saveStaffAccount } = useAccess();
+  const { listStaffAccounts, saveStaffAccount, deleteStaffAccount } = useAccess();
   const { requestConfirm } = useHotel();
   const [accounts, setAccounts] = useState<StaffAccount[]>([]);
   const [form, setForm] = useState<StaffAccountInput>(newAccount);
@@ -57,6 +57,31 @@ function StaffAccessEditor() {
     if (saving.current) return;
     setForm(newAccount()); clearMessages();
     formHeading.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  const handleDeleteAccount = (account: StaffAccount) => {
+    requestConfirm({
+      title: 'Xóa tài khoản lễ tân?',
+      message: `Bạn có chắc muốn xóa vĩnh viễn tài khoản lễ tân "${account.displayName}" (${account.username}) không? Thao tác này không thể hoàn tác.`,
+      confirmLabel: 'Xác nhận xóa',
+      cancelLabel: 'Giữ lại',
+      isDangerous: true,
+      onConfirm: async () => {
+        try {
+          setBusy(true);
+          await deleteStaffAccount(account.id);
+          if (form.id === account.id) {
+            setForm(newAccount());
+          }
+          await refresh();
+          setSuccess(`Đã xóa tài khoản lễ tân "${account.displayName}" thành công.`);
+        } catch (err) {
+          setError(err instanceof Error ? err.message : 'Không thể xóa tài khoản.');
+        } finally {
+          setBusy(false);
+        }
+      },
+    });
   };
 
   const toggleView = (module: ModuleId) => {
@@ -114,10 +139,34 @@ function StaffAccessEditor() {
       <div className="min-w-0 rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="flex items-center justify-between gap-2 border-b border-slate-100 px-4 py-4"><h3 className="flex items-center gap-2 text-sm font-semibold text-slate-800"><Users className="h-4 w-4 text-teal-700" />Tài khoản ({accounts.length})</h3><button type="button" aria-label="Tải lại danh sách lễ tân" title="Tải lại danh sách" disabled={loading || busy} onClick={() => void refresh()} className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 disabled:opacity-40"><RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} /></button></div>
         <div className="max-h-96 overflow-y-auto p-3 lg:max-h-[36rem]">
-          {loading && !accounts.length ? <p className="flex items-center gap-2 p-3 text-xs text-slate-500"><LoaderCircle className="h-4 w-4 animate-spin" />Đang tải tài khoản…</p> : !accounts.length ? <p className="p-3 text-xs leading-5 text-slate-500">Chưa có tài khoản lễ tân. Điền biểu mẫu bên dưới để tạo tài khoản đầu tiên.</p> : <div className="space-y-2">{accounts.map(account => <button type="button" key={account.id} disabled={busy} onClick={() => edit(account)} aria-label={`Sửa quyền ${account.displayName}`} aria-pressed={form.id === account.id} className={`w-full min-w-0 rounded-xl border p-3 text-left transition-colors disabled:opacity-50 ${form.id === account.id ? 'border-teal-400 bg-teal-50' : 'border-slate-100 hover:border-teal-200 hover:bg-slate-50'}`}>
-            <div className="flex min-w-0 items-start gap-2.5"><div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-teal-100 text-teal-800"><UserRound className="h-4 w-4" /></div><div className="min-w-0 flex-1"><p className="truncate text-xs font-semibold text-slate-800">{account.displayName}</p><p className="mt-1 truncate text-[11px] text-slate-500">{account.username}</p></div><Pencil className="mt-1 h-3.5 w-3.5 shrink-0 text-slate-400" /></div>
-            <div className="mt-3 flex flex-wrap items-center gap-2 text-[10px]"><span className={`rounded-full px-2 py-1 font-semibold ${account.active ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-600'}`}>{account.active ? 'Đang hoạt động' : 'Đã khóa'}</span><span className="text-slate-500">{account.permissions.views.length} mục xem · {account.permissions.actions.length} thao tác</span></div>
-          </button>)}</div>}
+          {loading && !accounts.length ? <p className="flex items-center gap-2 p-3 text-xs text-slate-500"><LoaderCircle className="h-4 w-4 animate-spin" />Đang tải tài khoản…</p> : !accounts.length ? <p className="p-3 text-xs leading-5 text-slate-500">Chưa có tài khoản lễ tân. Điền biểu mẫu bên dưới để tạo tài khoản đầu tiên.</p> : <div className="space-y-2">{accounts.map(account => (
+            <div key={account.id} className={`w-full min-w-0 rounded-xl border p-3 transition-colors ${form.id === account.id ? 'border-teal-400 bg-teal-50' : 'border-slate-100 hover:border-teal-200 hover:bg-slate-50'}`}>
+              <div className="flex min-w-0 items-start justify-between gap-2">
+                <button type="button" disabled={busy} onClick={() => edit(account)} aria-label={`Sửa quyền ${account.displayName}`} className="flex min-w-0 flex-1 items-start gap-2.5 text-left">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-teal-100 text-teal-800"><UserRound className="h-4 w-4" /></div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-xs font-semibold text-slate-800">{account.displayName}</p>
+                    <p className="mt-1 truncate text-[11px] text-slate-500">{account.username}</p>
+                  </div>
+                  <Pencil className="mt-1 h-3.5 w-3.5 shrink-0 text-slate-400" />
+                </button>
+                <button
+                  type="button"
+                  aria-label={`Xóa tài khoản ${account.displayName}`}
+                  title="Xóa tài khoản lễ tân"
+                  disabled={busy}
+                  onClick={() => handleDeleteAccount(account)}
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="mt-3 flex flex-wrap items-center gap-2 text-[10px]">
+                <span className={`rounded-full px-2 py-1 font-semibold ${account.active ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-600'}`}>{account.active ? 'Đang hoạt động' : 'Đã khóa'}</span>
+                <span className="text-slate-500">{account.permissions.views.length} mục xem · {account.permissions.actions.length} thao tác</span>
+              </div>
+            </div>
+          ))}</div>}
         </div>
       </div>
       <form onSubmit={submit} aria-label="Cấp quyền tài khoản lễ tân" className="min-w-0 rounded-2xl border border-slate-200 bg-white shadow-sm">
@@ -150,7 +199,26 @@ function StaffAccessEditor() {
         <div className="space-y-3 border-t border-slate-100 bg-slate-50/60 p-4 sm:p-5">
           {error && <p role="alert" className="flex items-start gap-2 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs leading-5 text-rose-700"><AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />{error}</p>}
           {success && <p role="status" className="flex items-start gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs leading-5 text-emerald-700"><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />{success}</p>}
-          <div className="flex flex-wrap items-center justify-between gap-3"><p className="text-[11px] leading-5 text-slate-500">{form.permissions.views.length} mục xem · {form.permissions.actions.length} thao tác được cấp</p><button type="submit" disabled={busy || loading} className="flex min-h-11 items-center justify-center gap-2 rounded-xl bg-teal-800 px-5 py-3 text-xs font-semibold text-white hover:bg-teal-900 disabled:opacity-50">{busy ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}{busy ? 'Đang lưu…' : 'Lưu tài khoản và quyền'}</button></div>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-[11px] leading-5 text-slate-500">{form.permissions.views.length} mục xem · {form.permissions.actions.length} thao tác được cấp</p>
+            <div className="flex flex-wrap items-center gap-2">
+              {form.id && (
+                <button
+                  type="button"
+                  disabled={busy || loading}
+                  onClick={() => {
+                    const acc = accounts.find(a => a.id === form.id);
+                    if (acc) handleDeleteAccount(acc);
+                  }}
+                  className="flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2.5 text-xs font-semibold text-rose-700 hover:bg-rose-100 hover:border-rose-300 disabled:opacity-50 transition-colors"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  <span>Xóa lễ tân này</span>
+                </button>
+              )}
+              <button type="submit" disabled={busy || loading} className="flex min-h-11 items-center justify-center gap-2 rounded-xl bg-teal-800 px-5 py-3 text-xs font-semibold text-white hover:bg-teal-900 disabled:opacity-50">{busy ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}{busy ? 'Đang lưu…' : 'Lưu tài khoản và quyền'}</button>
+            </div>
+          </div>
           {form.id && <p className="text-[11px] leading-5 text-slate-500">Sau khi cập nhật quyền hoặc mật khẩu, lễ tân cần đăng nhập lại để áp dụng.</p>}
         </div>
       </form>

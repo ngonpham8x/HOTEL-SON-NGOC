@@ -140,3 +140,13 @@ export async function changeStaffPassword(actor: AccessActor, current: string, n
   const updated = { ...account, credential, version: account.version + 1, updatedAt: new Date().toISOString() };
   writeStore(storage, raw, { version: 1, revision: store.revision + 1, accounts: store.accounts.map(item => item.id === account.id ? updated : item) });
 }
+export function deleteStaffAccount(id: string, storage = browserStorage()) {
+  const { raw, store } = readStore(storage);
+  const previous = store.accounts.find(account => account.id === id);
+  if (!previous) throw new Error('Tài khoản lễ tân không tồn tại.');
+  writeStore(storage, raw, {
+    version: 1,
+    revision: store.revision + 1,
+    accounts: store.accounts.filter(account => account.id !== id),
+  });
+}

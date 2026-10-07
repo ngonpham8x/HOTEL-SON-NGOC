@@ -1,15 +1,16 @@
 import { AccessGuard } from '../common/AccessGuard';
 import { useAccess } from '../../context/AccessContext';
 import { useState } from 'react';
-import { Ticket, Plus, Trash2, Printer } from 'lucide-react';
+import { Ticket, Plus, Trash2, Printer, Edit2 } from 'lucide-react';
 import { useHotel } from '../../context/HotelContext';
 import type { Invoice } from '../../types/hotel';
 import { formatCurrency } from '../../utils/formatters';
 import type { ServiceSaleInput } from '../../utils/serviceSale';
+import { EditServiceSaleModal } from '../modals/EditServiceSaleModal';
 
 export function ServiceSalesView({ onPrint }: { onPrint: (invoice: Invoice) => void }) {
   const { canAct } = useAccess();
-  const { services, invoices, sellServices, showToast, today } = useHotel();
+  const { services, invoices, sellServices, cancelServiceSale, requestConfirm, showToast, today } = useHotel();
   const [serviceId, setServiceId] = useState(() => services.find(s => s.category === 'MASSAGE')?.id || services[0]?.id || '');
   const [items, setItems] = useState<ServiceSaleInput['items']>([]);
   const [name, setName] = useState('');
@@ -21,6 +22,7 @@ export function ServiceSalesView({ onPrint }: { onPrint: (invoice: Invoice) => v
   const [notes, setNotes] = useState('');
   const [error, setError] = useState('');
   const [lastInvoice, setLastInvoice] = useState<Invoice>();
+  const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
   const subtotal = items.reduce((sum, item) => sum + (services.find(s => s.id === item.serviceId)?.price || 0) * item.quantity, 0);
   const total = Math.max(0, subtotal - discount), amount = paid ?? total;
   const inputClass = 'w-full min-w-0 mt-1 px-3 py-2 border border-slate-300 rounded-lg bg-white';
@@ -39,6 +41,24 @@ export function ServiceSalesView({ onPrint }: { onPrint: (invoice: Invoice) => v
       showToast(`Đã bán vé / dịch vụ và lưu phiếu thu ${invoice.code}.`, 'success');
     } catch (err) { setError(err instanceof Error ? err.message : 'Không lưu được phiếu thu.'); } finally { setBusy(false); }
   };
+
+  const handleDeleteInvoice = (inv: Invoice) => {
+    requestConfirm({
+      title: `Hủy phiếu vé ${inv.code}?`,
+      message: `Bạn có chắc muốn xóa / hủy phiếu vé này do nhập sai nội dung? Toàn bộ doanh thu và công nợ của phiếu vé sẽ được hủy bỏ.`,
+      confirmLabel: 'Xác nhận xóa vé',
+      cancelLabel: 'Quay lại',
+      isDangerous: true,
+      onConfirm: async () => {
+        try {
+          await cancelServiceSale(inv.id);
+        } catch (err) {
+          showToast(err instanceof Error ? err.message : 'Không thể xóa phiếu vé.', 'error');
+        }
+      },
+    });
+  };
+
   const sales = invoices.filter(i => i.kind === 'SERVICE');
   return <div className="space-y-4">
     <div className="rounded-2xl bg-gradient-to-r from-teal-900 to-slate-900 text-white p-4 sm:p-6">
@@ -75,6 +95,75 @@ export function ServiceSalesView({ onPrint }: { onPrint: (invoice: Invoice) => v
       <div className="flex flex-col sm:flex-row gap-3 justify-between sm:items-center pt-3 border-t"><strong className="text-teal-900">Cần thanh toán: {formatCurrency(total)}</strong><button type="submit" disabled={busy || !items.length} className="px-4 py-3 rounded-xl bg-teal-700 text-white font-bold disabled:opacity-50">{busy ? 'Đang lưu…' : 'Lưu phiếu thu bán lẻ'}</button></div>
     </form></AccessGuard>
     {lastInvoice && <div role="status" className="rounded-xl bg-teal-50 border border-teal-200 p-3 flex flex-wrap items-center justify-between gap-2"><span>Đã lưu {lastInvoice.code} · {formatCurrency(lastInvoice.totalAmount)}</span><button type="button" onClick={() => onPrint(lastInvoice)} className="flex items-center gap-2 font-semibold text-teal-800"><Printer className="w-4 h-4" />Xem / In phiếu thu</button></div>}
-    <section className="bg-white rounded-xl border p-4 space-y-3"><h2 className="font-bold text-slate-800">Phiếu thu khách ngoài ({sales.length})</h2>{sales.slice(0, 30).map(i => <button key={i.id} type="button" onClick={() => onPrint(i)} className="w-full p-3 border rounded-xl text-left flex flex-wrap gap-2 justify-between text-sm"><span><strong>{i.code}</strong> · {i.customerName}<span className="block text-xs text-slate-500">{i.time} {i.date} · {i.status === 'PAID' ? 'Đã thanh toán' : `Còn nợ ${formatCurrency(i.debtAmount)}`}</span></span><span className="font-mono font-bold text-teal-800">{formatCurrency(i.totalAmount)}</span></button>)}</section>
+    <section className="bg-white rounded-xl border p-4 space-y-3">
+      <h2 className="font-bold text-slate-800">Phiếu thu khách ngoài ({sales.length})</h2>
+      {sales.slice(0, 30).map(i => {
+        const isCancelled = i.status === 'CANCELLED';
+        return (
+          <div key={i.id} className={`p-3 border rounded-xl flex flex-wrap items-center justify-between gap-2 text-sm ${isCancelled ? 'bg-slate-50 border-dashed border-slate-300 opacity-70' : 'bg-white hover:border-teal-200'}`}>
+            <div className="min-w-[180px]">
+              <div className="flex items-center gap-2">
+                <strong className={isCancelled ? 'line-through text-slate-500' : 'text-slate-900'}>{i.code}</strong>
+                {isCancelled && <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-700">ĐÃ HỦY</span>}
+                <span className="text-slate-700">· {i.customerName || 'Khách lẻ'}</span>
+              </div>
+              <div className="text-xs text-slate-500 mt-0.5">
+                {i.time} {i.date} {i.customerPhone && `· ${i.customerPhone}`}
+                <span className="ml-2 font-medium">
+                  {isCancelled ? 'Vé đã hủy bỏ' : i.status === 'PAID' ? '· Đã thanh toán' : `· Còn nợ ${formatCurrency(i.debtAmount)}`}
+                </span>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className={`font-mono font-bold ${isCancelled ? 'line-through text-slate-400' : 'text-teal-800'}`}>
+                {formatCurrency(i.totalAmount)}
+              </span>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => onPrint(i)}
+                  className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 text-slate-700 text-xs flex items-center gap-1"
+                  title="Xem / In phiếu thu"
+                >
+                  <Printer className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">In</span>
+                </button>
+                {!isCancelled && (
+                  <AccessGuard action="sale.create">
+                    <button
+                      type="button"
+                      onClick={() => setEditingInvoice(i)}
+                      className="p-1.5 rounded-lg border border-teal-200 bg-teal-50 hover:bg-teal-100 text-teal-800 text-xs flex items-center gap-1 font-semibold"
+                      title="Sửa nội dung vé"
+                    >
+                      <Edit2 className="w-3.5 h-3.5" />
+                      <span>Sửa</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteInvoice(i)}
+                      className="p-1.5 rounded-lg border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs flex items-center gap-1"
+                      title="Hủy / Xóa vé sai nội dung"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Xóa</span>
+                    </button>
+                  </AccessGuard>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </section>
+
+    {/* Modal Sửa vé */}
+    {editingInvoice && (
+      <EditServiceSaleModal
+        invoice={editingInvoice}
+        onClose={() => setEditingInvoice(null)}
+      />
+    )}
   </div>;
 }
+

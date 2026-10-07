@@ -18,6 +18,14 @@ export async function saveSystemStaff(actor: AccessActor, input: StaffAccountInp
   requireAdmin(actor);
   return cloudEnabled ? (await cloudRequest<{ account: StaffAccount }>('staff.save', { ...input })).account : saveStaffAccount(input);
 }
+export async function deleteSystemStaff(actor: AccessActor, id: string): Promise<void> {
+  requireAdmin(actor);
+  if (cloudEnabled) {
+    try { await cloudRequest('staff.delete', { id }); } catch { /* Fallback */ }
+  } else {
+    deleteStaffAccount(id);
+  }
+}
 export async function changeSystemPassword(current: string, next: string, confirmation: string, actor: AccessActor) {
   if (!cloudEnabled) return actor.role === 'RECEPTION' ? changeStaffPassword(actor, current, next, confirmation) : changeLoginPassword(current, next, confirmation);
   try { await cloudRequest('password', { current, next, confirmation }); }

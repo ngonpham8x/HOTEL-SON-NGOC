@@ -3,7 +3,7 @@ import type { AccessActor, ActionId, StaffAccount, StaffAccountInput } from '../
 import { canAct as actorCanAct, canView as actorCanView, requireAction as actorRequireAction } from '../utils/permissions';
 import { cloudEnabled } from '../utils/cloudHotel';
 import { freshStaffActor, parseStaffSession, STAFF_SESSION_KEY } from '../utils/staffAccounts';
-import { listSystemStaff, saveSystemStaff } from '../utils/systemAuth';
+import { listSystemStaff, saveSystemStaff, deleteSystemStaff } from '../utils/systemAuth';
 
 export interface AccessContextValue {
   actor: AccessActor;
@@ -13,6 +13,7 @@ export interface AccessContextValue {
   requireAction: (action: ActionId) => void;
   listStaffAccounts: () => Promise<StaffAccount[]>;
   saveStaffAccount: (input: StaffAccountInput) => Promise<StaffAccount>;
+  deleteStaffAccount: (id: string) => Promise<void>;
 }
 const AccessContext = createContext<AccessContextValue | null>(null);
 export function getFreshAccessActor(actor: AccessActor): AccessActor {
@@ -32,6 +33,7 @@ export function AccessProvider({ actor, children }: { actor: AccessActor; childr
     requireAction: action => actorRequireAction(getFreshAccessActor(actor), action),
     listStaffAccounts: () => listSystemStaff(getFreshAccessActor(actor)),
     saveStaffAccount: input => saveSystemStaff(getFreshAccessActor(actor), input),
+    deleteStaffAccount: id => deleteSystemStaff(getFreshAccessActor(actor), id),
   }), [actor]);
   return <AccessContext.Provider value={value}>{children}</AccessContext.Provider>;
 }

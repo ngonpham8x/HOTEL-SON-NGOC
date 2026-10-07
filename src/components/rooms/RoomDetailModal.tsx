@@ -37,6 +37,9 @@ export const RoomDetailModal: React.FC<RoomDetailModalProps> = ({ room, onClose,
     removeServiceFromStay,
     updateRoomCleanStatus,
     updateStayCompanions,
+    cancelCheckIn,
+    deleteRoom,
+    requestConfirm,
     showToast,
   } = useHotel();
   const [selectedServiceId, setSelectedServiceId] = useState<string>(services[0]?.id || '');
@@ -91,6 +94,45 @@ export const RoomDetailModal: React.FC<RoomDetailModalProps> = ({ room, onClose,
     if (!activeStay) return;
     const updated = (activeStay.companionGuests || []).filter(g => g.id !== guestId);
     try { await updateStayCompanions(activeStay.id, updated); } catch (err) { showToast(err instanceof Error ? err.message : 'Không cập nhật được khách.', 'error'); return; }
+  };
+
+  const handleCancelStay = () => {
+    if (!activeStay) return;
+    requestConfirm({
+      title: `Hủy nhận phòng ${room.number}?`,
+      message: `Thao tác này dùng khi bạn nhận phòng nhầm hoặc sai thông tin phòng. Phòng ${room.number} sẽ được đưa về trạng thái TRỐNG SẠCH ngay lập tức và không phát sinh hóa đơn trả phòng. Bạn có chắc chắn muốn hủy?`,
+      confirmLabel: 'Xác nhận hủy nhận phòng',
+      cancelLabel: 'Quay lại',
+      isDangerous: true,
+      onConfirm: async () => {
+        try {
+          await cancelCheckIn(activeStay.id);
+          showToast(`Đã hủy lượt nhận phòng ${room.number}.`, 'success');
+          onClose();
+        } catch (err) {
+          showToast(err instanceof Error ? err.message : 'Không thể hủy nhận phòng.', 'error');
+        }
+      },
+    });
+  };
+
+  const handleDeleteRoom = () => {
+    requestConfirm({
+      title: `Xóa phòng ${room.number}?`,
+      message: `Bạn có chắc chắn muốn xóa phòng ${room.number}? Thao tác này dùng để xóa các phòng bị tạo sai nội dung.`,
+      confirmLabel: 'Xác nhận xóa phòng',
+      cancelLabel: 'Quay lại',
+      isDangerous: true,
+      onConfirm: async () => {
+        try {
+          await deleteRoom(room.id);
+          showToast(`Đã xóa thành công phòng ${room.number}.`, 'success');
+          onClose();
+        } catch (err) {
+          showToast(err instanceof Error ? err.message : 'Không thể xóa phòng.', 'error');
+        }
+      },
+    });
   };
 
   return (
@@ -188,6 +230,15 @@ export const RoomDetailModal: React.FC<RoomDetailModalProps> = ({ room, onClose,
                       >
                         <Edit className="w-3 h-3 text-emerald-700" />
                         <span>Sửa thông tin / Cọc</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleCancelStay}
+                        className="px-2.5 py-1 bg-white hover:bg-rose-50 text-rose-700 border border-rose-300 rounded-lg text-[11px] font-bold flex items-center gap-1 transition-colors shadow-2xs"
+                        title="Hủy lượt nhận phòng nếu thông tin bị sai"
+                      >
+                        <Trash2 className="w-3 h-3 text-rose-600" />
+                        <span>Hủy nhận phòng</span>
                       </button>
                     </AccessGuard>
                     <span className="font-mono text-emerald-800 text-[11px] font-semibold bg-emerald-100 px-2 py-0.5 rounded">
@@ -486,6 +537,20 @@ export const RoomDetailModal: React.FC<RoomDetailModalProps> = ({ room, onClose,
                 <Edit className="w-3.5 h-3.5 text-teal-700 shrink-0" />
                 <span>Sửa phòng</span>
               </button></AccessGuard>
+            )}
+
+            {!activeStay && (
+              <AccessGuard action="room.delete">
+                <button
+                  type="button"
+                  onClick={handleDeleteRoom}
+                  className="flex-1 sm:flex-none px-3 py-2 bg-white border border-rose-300 hover:bg-rose-50 rounded-xl text-xs font-semibold text-rose-700 flex items-center justify-center gap-1.5 transition-colors shadow-2xs"
+                  title="Xóa phòng bị tạo sai nội dung"
+                >
+                  <Trash2 className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                  <span>Xóa phòng</span>
+                </button>
+              </AccessGuard>
             )}
           </div>
 
