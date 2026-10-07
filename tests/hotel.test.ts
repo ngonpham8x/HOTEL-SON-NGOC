@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { localDate, localTime, stayDuration, validatePeriod, bookingConflict, invoiceRevenue, invoiceCollected, periodKeys, paymentBreakdown } from '../src/utils/hotelLogic';
+import { localDate, localTime, stayDuration, validatePeriod, bookingConflict, invoiceRevenue, invoiceCollected, periodKeys, paymentBreakdown, compareRooms, sortRooms } from '../src/utils/hotelLogic';
 import { readHotelData, serializeHotelData, validateHotelData, DATA_KEY } from '../src/utils/hotelStorage';
 import { INITIAL_ROOMS, INITIAL_SERVICES, INITIAL_STAYS, INITIAL_RESERVATIONS, INITIAL_INVOICES, INITIAL_DEBTS } from '../src/data/initialData';
 const data = { rooms: INITIAL_ROOMS, services: INITIAL_SERVICES, stays: INITIAL_STAYS, reservations: INITIAL_RESERVATIONS, invoices: INITIAL_INVOICES, debts: INITIAL_DEBTS };
@@ -52,4 +52,50 @@ test('later debt payments retain their actual methods and do not classify deposi
   const debt = { ...INITIAL_DEBTS[0], invoiceId: invoice.id, paymentHistory: [{ ...INITIAL_DEBTS[0].paymentHistory[0], date: '2026-10-03', time: '12:00', amount: 200000, method: 'TRANSFER' as const }] };
   const result = paymentBreakdown([invoice],[debt]);
   assert.equal(result.TRANSFER,200000); assert.equal(result.CASH,0); assert.equal(result.deposit,100000); assert.equal(result.other,0);
+});
+
+test('rooms are always sorted by floor and room number in natural order', () => {
+  const scrambled = [
+    { ...INITIAL_ROOMS[13], number: 'N14', floor: 2 },
+    { ...INITIAL_ROOMS[2], number: 'N03', floor: 1 },
+    { ...INITIAL_ROOMS[3], number: 'N04', floor: 1 },
+    { ...INITIAL_ROOMS[0], number: 'N01', floor: 1 },
+    { ...INITIAL_ROOMS[9], number: 'N10', floor: 2 },
+    { ...INITIAL_ROOMS[1], number: 'N02', floor: 1 },
+    { ...INITIAL_ROOMS[8], number: 'N09', floor: 2 },
+    { ...INITIAL_ROOMS[7], number: 'N08', floor: 2 },
+    { ...INITIAL_ROOMS[4], number: 'N05', floor: 1 },
+    { ...INITIAL_ROOMS[5], number: 'N06', floor: 1 },
+    { ...INITIAL_ROOMS[6], number: 'N07', floor: 1 },
+    { ...INITIAL_ROOMS[10], number: 'N11', floor: 2 },
+    { ...INITIAL_ROOMS[11], number: 'N12', floor: 2 },
+    { ...INITIAL_ROOMS[12], number: 'N13', floor: 2 },
+  ];
+  const sorted = sortRooms(scrambled);
+  assert.deepEqual(
+    sorted.map(r => r.number),
+    ['N01', 'N02', 'N03', 'N04', 'N05', 'N06', 'N07', 'N08', 'N09', 'N10', 'N11', 'N12', 'N13', 'N14']
+  );
+
+  const validated = validateHotelData({ ...data, rooms: scrambled });
+  assert.deepEqual(
+    validated.rooms.map(r => r.number),
+    ['N01', 'N02', 'N03', 'N04', 'N05', 'N06', 'N07', 'N08', 'N09', 'N10', 'N11', 'N12', 'N13', 'N14']
+  );
+});
+
+test('natural sort handles room numbers without leading zeros and varying prefixes', () => {
+  const items = [
+    { floor: 1, number: 'Phòng 10' },
+    { floor: 1, number: 'Phòng 2' },
+    { floor: 1, number: 'Phòng 1' },
+    { floor: 2, number: '201' },
+    { floor: 1, number: '102' },
+    { floor: 1, number: '101' },
+  ];
+  const sorted = sortRooms(items);
+  assert.deepEqual(
+    sorted.map(r => r.number),
+    ['101', '102', 'Phòng 1', 'Phòng 2', 'Phòng 10', '201']
+  );
 });

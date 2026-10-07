@@ -5,6 +5,7 @@ import { MobileTableToggle } from '../common/MobileTableToggle';
 import { useHotel } from '../../context/HotelContext';
 import { ServiceItem, Room, RoomType } from '../../types/hotel';
 import { formatCurrency } from '../../utils/formatters';
+import { sortRooms } from '../../utils/hotelLogic';
 import {
   Coffee,
   Plus,
@@ -515,7 +516,7 @@ export const ServiceCatalogView: React.FC<ServiceCatalogViewProps> = ({
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {roomTypesMeta.map(meta => {
-                    const roomsOfType = rooms.filter(r => r.type === meta.type);
+                    const roomsOfType = sortRooms(rooms.filter(r => r.type === meta.type));
                     const currentNightPrice = roomsOfType[0]?.pricePerNight || meta.defaultNight;
                     const currentHourPrice = roomsOfType[0]?.pricePerHour || meta.defaultHour;
 
@@ -590,7 +591,7 @@ export const ServiceCatalogView: React.FC<ServiceCatalogViewProps> = ({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {rooms.map(room => (
+                  {sortRooms(rooms).map(room => (
                     <tr key={room.id} className="hover:bg-slate-50 transition-colors">
                       <td data-label="Số Phòng" className="px-4 py-3 text-center font-mono font-extrabold text-sm text-teal-900">
                         {room.number}
@@ -817,7 +818,7 @@ export const ServiceCatalogView: React.FC<ServiceCatalogViewProps> = ({
                   Khi bạn lưu, giá mới sẽ được cập nhật đồng loạt cho toàn bộ các phòng thuộc hạng này:
                   {' '}
                   <strong>
-                    {rooms.filter(r => r.type === tariffModal.type).map(r => r.number).join(', ') || 'Chưa có phòng'}
+                    {sortRooms(rooms.filter(r => r.type === tariffModal.type)).map(r => r.number).join(', ') || 'Chưa có phòng'}
                   </strong>
                 </p>
               </div>

@@ -1,6 +1,6 @@
 import { AccessGuard } from '../common/AccessGuard';
 import React, { useState, useMemo } from 'react';
-import { invoiceRevenue, invoiceCollected } from '../../utils/hotelLogic';
+import { invoiceRevenue, invoiceCollected, sortRooms } from '../../utils/hotelLogic';
 import { useHotel } from '../../context/HotelContext';
 import { Room, RoomStatus } from '../../types/hotel';
 import { formatCurrency, getRoomStatusMeta } from '../../utils/formatters';
@@ -53,7 +53,7 @@ export const RoomRackView: React.FC<RoomRackViewProps> = ({
 
   // Filtered rooms
   const filteredRooms = useMemo(() => {
-    return rooms.filter(room => {
+    return sortRooms(rooms.filter(room => {
       // Floor filter
       if (selectedFloor !== 'ALL' && room.floor !== selectedFloor) return false;
       // Status filter
@@ -67,7 +67,7 @@ export const RoomRackView: React.FC<RoomRackViewProps> = ({
         if (!matchNumber && !matchType && !matchGuest) return false;
       }
       return true;
-    });
+    }));
   }, [rooms, selectedFloor, statusFilter, searchQuery]);
 
   // Counts

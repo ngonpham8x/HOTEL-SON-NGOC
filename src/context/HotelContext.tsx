@@ -1,6 +1,6 @@
-import { newId, localDate, localTime, dateTime, validatePeriod, stayDuration, money, roomDefaults, findBookingConflict, bookingConflictMessage } from '../utils/hotelLogic';
+import { newId, localDate, localTime, dateTime, validatePeriod, stayDuration, money, roomDefaults, findBookingConflict, bookingConflictMessage, sortRooms } from '../utils/hotelLogic';
 import { DATA_KEY, readHotelData, serializeHotelData, validateHotelData, type HotelData } from '../utils/hotelStorage';
-import React, { useContext, useState, useEffect, useRef } from 'react';
+import React, { useContext, useState, useEffect, useRef, useMemo } from 'react';
 import { HotelContext } from './HotelContextInstance';
 import { prepareServiceSale, type ServiceSaleInput } from '../utils/serviceSale';
 import { cloudEnabled, cloudRequest, CloudRequestError } from '../utils/cloudHotel';
@@ -159,12 +159,13 @@ export const HotelProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const closeConfirm = () => setConfirmModal(null);
   const commit = async (next: HotelData, operation: ActionId, recovering = false) => {
     const actor = getFreshAccessActor(access.actor);
-    authorizeHotelMutation(actor, dataRef.current, next, operation);
+    const normalizedNext: HotelData = { ...next, rooms: sortRooms(next.rooms) };
+    authorizeHotelMutation(actor, dataRef.current, normalizedNext, operation);
     if (cloudEnabled) {
       if (!cloudReady || writing.current) throw new Error('Đang cập nhật dữ liệu. Vui lòng chờ rồi thử lại.');
       writing.current = true;
       try {
-        const payload = { revision: cloudRevision.current, requestId: newId(), data: next, operation };
+        const payload = { revision: cloudRevision.current, requestId: newId(), data: normalizedNext, operation };
         let result: { revision: number; data: HotelData };
         try { result = await cloudRequest('write', payload); }
         catch (error) { if (error instanceof CloudRequestError && error.status !== 503 && error.status !== 504) throw error; result = await cloudRequest('write', payload); }
@@ -185,7 +186,7 @@ export const HotelProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       savedRef.current = saved;
       throw new Error('Dữ liệu vừa được cập nhật ở cửa sổ khác. Kiểm tra lại rồi thực hiện thao tác.');
     }
-    const serialized = serializeHotelData(next);
+    const serialized = serializeHotelData(normalizedNext);
     try {
       localStorage.setItem(DATA_KEY, serialized);
     } catch {
@@ -195,8 +196,8 @@ export const HotelProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     blockedRef.current = '';
     savedRef.current = serialized;
     setStorageError('');
-    dataRef.current = next;
-    setData(next);
+    dataRef.current = normalizedNext;
+    setData(normalizedNext);
   };
   useEffect(() => {
     if (cloudEnabled) {
@@ -225,7 +226,8 @@ export const HotelProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     window.addEventListener('storage', sync);
     return () => window.removeEventListener('storage', sync);
   }, []);
-  const { rooms, services, stays, reservations, invoices } = data;
+  const rooms = useMemo(() => sortRooms(data.rooms), [data.rooms]);
+  const { services, stays, reservations, invoices } = data;
   const debts = data.debts.map(d => ({ ...d, status: (d.remainingAmount === 0 ? 'SETTLED' : d.dueDate < today ? 'OVERDUE' : d.paidAmount > 0 ? 'PARTIAL' : 'UNPAID') as DebtRecord['status'] }));
   const ensureGuests = (room: Room, count: number) => { if (!Number.isInteger(count) || count < 1 || count > room.maxGuests) throw new Error(`Phòng ${room.number} chỉ nhận từ 1 đến ${room.maxGuests} khách.`); };
   const vacantStatus = (roomId: string, list = dataRef.current.reservations): RoomStatus => list.some(r => r.roomId === roomId && r.status === 'CONFIRMED') ? 'RESERVED' : 'AVAILABLE';

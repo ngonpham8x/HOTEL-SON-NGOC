@@ -82,3 +82,14 @@ export function bookingConflictMessage(entry: NonNullable<ReturnType<typeof find
 export function roomDefaults(room: Room): Room {
   return { ...room, allowsHourly: room.allowsHourly ?? true, defaultCheckInTime: room.defaultCheckInTime || '14:00', defaultCheckOutTime: room.defaultCheckOutTime || '12:00' };
 }
+
+export function compareRooms(a: Pick<Room, 'floor' | 'number'>, b: Pick<Room, 'floor' | 'number'>): number {
+  const floorA = Number.isFinite(a.floor) ? a.floor : 0;
+  const floorB = Number.isFinite(b.floor) ? b.floor : 0;
+  if (floorA !== floorB) return floorA - floorB;
+  return (a.number || '').trim().localeCompare((b.number || '').trim(), 'vi', { numeric: true, sensitivity: 'base' });
+}
+
+export function sortRooms<T extends Pick<Room, 'floor' | 'number'>>(rooms: T[]): T[] {
+  return [...rooms].sort(compareRooms);
+}

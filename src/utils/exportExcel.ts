@@ -1,4 +1,4 @@
-import { invoiceRevenue, invoiceCollected, localDate } from './hotelLogic';
+import { invoiceRevenue, invoiceCollected, localDate, sortRooms } from './hotelLogic';
 import type ExcelJS from 'exceljs';
 import { Invoice, DebtRecord, Room } from '../types/hotel';
 import { formatDate, getPaymentMethodName } from './formatters';
@@ -436,7 +436,7 @@ export const exportRoomsToExcel = async (
   headerRow.height = 26;
 
   let rowIdx = 5;
-  rooms.forEach((r, idx) => {
+  sortRooms(rooms).forEach((r, idx) => {
     const row = ws.getRow(rowIdx);
     row.values = [
       idx + 1,

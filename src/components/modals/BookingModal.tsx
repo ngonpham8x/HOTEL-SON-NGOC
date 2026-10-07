@@ -1,4 +1,4 @@
-import { localDate, stayDuration, validatePeriod, findBookingConflict, bookingConflictMessage, roomSchedule } from '../../utils/hotelLogic';
+import { localDate, stayDuration, validatePeriod, findBookingConflict, bookingConflictMessage, roomSchedule, sortRooms } from '../../utils/hotelLogic';
 import React, { useState } from 'react';
 import { useHotel } from '../../context/HotelContext';
 import { Room, CompanionGuest } from '../../types/hotel';
@@ -180,7 +180,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({ initialRoom, onClose
                 onChange={e => { const r = rooms.find(r => r.id === e.target.value); setRoomId(e.target.value); setCheckInTime(r?.defaultCheckInTime || '14:00'); setCheckOutTime(r?.defaultCheckOutTime || '12:00'); if (r?.allowsHourly === false) setPricingType('NIGHT'); }}
                 className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 font-bold focus:ring-2 focus:ring-teal-600 focus:bg-white focus:outline-none"
               >
-                {rooms.map(r => (
+                {sortRooms(rooms).map(r => (
                   <option key={r.id} value={r.id}>
                     Phòng {r.number} - {r.typeName} (T{r.floor}) - {r.status === 'MAINTENANCE' ? 'Bảo trì' : conflictFor(r.id) ? 'Trùng lịch đã chọn' : period ? 'Còn lịch đã chọn' : 'Chọn thời gian'}
                   </option>

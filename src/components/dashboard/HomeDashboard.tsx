@@ -1,4 +1,4 @@
-import { localDate, periodKeys, invoiceRevenue, invoiceCollected } from '../../utils/hotelLogic';
+import { localDate, periodKeys, invoiceRevenue, invoiceCollected, sortRooms } from '../../utils/hotelLogic';
 import React, { useState, useMemo } from 'react';
 import { useHotel } from '../../context/HotelContext';
 import { Room, RoomStatus, Invoice } from '../../types/hotel';
@@ -89,8 +89,8 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
 
   // Filtered rooms for the live matrix
   const displayedRooms = useMemo(() => {
-    if (roomFilter === 'ALL') return rooms;
-    return rooms.filter(r => r.status === roomFilter);
+    if (roomFilter === 'ALL') return sortRooms(rooms);
+    return sortRooms(rooms.filter(r => r.status === roomFilter));
   }, [rooms, roomFilter]);
 
   // Detailed Massage Tickets Analytics (Từng loại vé massage thư giãn)
@@ -795,7 +795,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
-                        {rooms.map(r => (
+                        {sortRooms(rooms).map(r => (
                           <tr key={r.id} className="hover:bg-slate-50">
                             <td className="py-2.5 px-3 font-mono font-bold text-teal-900">{r.number}</td>
                             <td className="py-2.5 px-3 font-semibold text-slate-600">Tầng {r.floor}</td>

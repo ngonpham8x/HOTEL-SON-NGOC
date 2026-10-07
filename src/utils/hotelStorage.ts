@@ -1,5 +1,5 @@
 import type { Room, ServiceItem, StayRecord, Reservation, Invoice, DebtRecord } from '../types/hotel';
-import { roomDefaults } from './hotelLogic';
+import { roomDefaults, sortRooms } from './hotelLogic';
 
 export interface HotelData { rooms: Room[]; services: ServiceItem[]; stays: StayRecord[]; reservations: Reservation[]; invoices: Invoice[]; debts: DebtRecord[] }
 export const DATA_KEY = 'son_ngoc_hotel_data_v3';
@@ -36,7 +36,7 @@ export function validateHotelData(input: unknown): HotelData {
     }
   }
   const result = input as HotelData;
-  return { ...result, rooms: result.rooms.map(roomDefaults) };
+  return { ...result, rooms: sortRooms(result.rooms.map(roomDefaults)) };
 }
 export function readHotelData(storage: Pick<Storage, 'getItem'>, defaults: HotelData): { data: HotelData; error: string } {
   try {

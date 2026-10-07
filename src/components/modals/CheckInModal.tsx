@@ -1,4 +1,4 @@
-import { localDate, localTime, stayDuration } from '../../utils/hotelLogic';
+import { localDate, localTime, stayDuration, sortRooms } from '../../utils/hotelLogic';
 import React, { useState } from 'react';
 import { useHotel } from '../../context/HotelContext';
 import { Room, CompanionGuest } from '../../types/hotel';
@@ -27,9 +27,9 @@ export const CheckInModal: React.FC<CheckInModalProps> = ({ initialRoom, onClose
   const { rooms, checkInDirect, showToast } = useHotel();
 
   // Find available rooms or default
-  const availableRooms = rooms.filter(
+  const availableRooms = sortRooms(rooms.filter(
     r => (r.status === 'AVAILABLE' || r.status === 'RESERVED') && r.cleanStatus === 'CLEAN'
-  );
+  ));
 
   const [roomId, setRoomId] = useState<string>(
     initialRoom ? initialRoom.id : availableRooms[0]?.id || ''
