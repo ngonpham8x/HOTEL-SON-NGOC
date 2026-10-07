@@ -24,6 +24,7 @@ export const Header: React.FC<HeaderProps> = ({
     setActiveTab,
     isMobileMenuOpen,
     setIsMobileMenuOpen,
+    toggleSidebar,
   } = useHotel();
 
   const occupiedCount = rooms.filter(r => r.status === 'OCCUPIED').length;
@@ -35,12 +36,18 @@ export const Header: React.FC<HeaderProps> = ({
     <header className="no-print bg-[#081e24] border-b border-teal-900/60 sticky top-0 z-30 min-h-14 px-2 sm:px-5 gap-2 text-white flex items-center justify-between shadow-md">
       {/* Left: Mobile Menu Toggle & Brand Wordmark */}
       <div className="flex items-center gap-1.5 sm:gap-3 min-w-0">
-        {/* Mobile Hamburger Toggle */}
+        {/* Menu Toggle (Mobile & Desktop) */}
         <button
-          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          className="p-1.5 -ml-1 text-teal-300 hover:text-white hover:bg-teal-900/60 rounded-lg lg:hidden transition-colors focus:outline-none"
+          onClick={() => {
+            if (typeof window !== 'undefined' && window.innerWidth >= 1024) {
+              toggleSidebar();
+            } else {
+              setIsMobileMenuOpen(!isMobileMenuOpen);
+            }
+          }}
+          className="p-1.5 -ml-1 text-teal-300 hover:text-white hover:bg-teal-900/60 rounded-lg transition-colors focus:outline-none cursor-pointer"
           aria-label="Ẩn hiện menu"
-          title={isMobileMenuOpen ? 'Đóng menu' : 'Mở menu'}
+          title="Ẩn hiện thanh menu (tăng diện tích màn hình)"
         >
           {isMobileMenuOpen ? <X className="w-5 h-5 text-amber-300" /> : <Menu className="w-5 h-5 text-teal-300" />}
         </button>

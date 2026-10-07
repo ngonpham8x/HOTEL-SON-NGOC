@@ -27,7 +27,7 @@ const ServiceSalesView = lazy(() => import('./components/services/ServiceSalesVi
 const StaffAccessManager = lazy(() => import('./components/auth/StaffAccessManager').then(m => ({ default: m.StaffAccessManager })));
 
 const MainLayout: React.FC<{ onLogout: () => void; onPasswordChanged: () => void }> = ({ onLogout, onPasswordChanged }) => {
-  const { activeTab, storageError, rooms } = useHotel();
+  const { activeTab, storageError, rooms, isSidebarCollapsed } = useHotel();
   const { canView, canAct, isAdmin } = useAccess();
 
   // Modal States
@@ -56,7 +56,7 @@ const MainLayout: React.FC<{ onLogout: () => void; onPasswordChanged: () => void
         <Sidebar onLogout={onLogout} onPasswordChanged={onPasswordChanged} />
 
         {/* Main Content Viewport */}
-        <main className="min-h-0 min-w-0 flex-1 overflow-y-auto p-3 sm:p-5 md:p-7 max-w-7xl mx-auto w-full">
+        <main className={`min-h-0 min-w-0 flex-1 overflow-y-auto p-3 sm:p-5 md:p-7 ${isSidebarCollapsed ? 'max-w-[1700px]' : 'max-w-7xl'} mx-auto w-full transition-[max-width] duration-300`}>
           <Suspense fallback={<p role="status" className="p-4 text-sm text-teal-800">Đang mở trang…</p>}>
           <div role="alert" className={storageError ? "no-print mb-4 p-3 bg-rose-50 border border-rose-300 rounded-xl text-sm text-rose-800" : "hidden"}>{storageError}</div>
           {activeTab === 'none' && <p role="status" className="rounded-xl bg-white p-5 border text-slate-700">Tài khoản chưa được cấp quyền xem mục nào. Vui lòng liên hệ quản lý.</p>}

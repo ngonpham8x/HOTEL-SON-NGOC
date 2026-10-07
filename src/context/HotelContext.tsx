@@ -75,6 +75,9 @@ export interface HotelContextType {
   setActiveTab: (tab: string) => void;
   isMobileMenuOpen: boolean;
   setIsMobileMenuOpen: (open: boolean) => void;
+  isSidebarCollapsed: boolean;
+  setIsSidebarCollapsed: (collapsed: boolean | ((prev: boolean) => boolean)) => void;
+  toggleSidebar: () => void;
   searchQuery: string;
   setSearchQuery: (query: string) => void;
 
@@ -132,6 +135,23 @@ export const HotelProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const access = useAccess();
   const [activeTab, setActiveTabState] = useState(() => firstAllowedModule(access.actor) || 'none');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    try {
+      return window.localStorage?.getItem('hotel_sidebar_collapsed') === 'true';
+    } catch {
+      return false;
+    }
+  });
+  const toggleSidebar = () => {
+    setIsSidebarCollapsed(prev => {
+      const next = !prev;
+      try {
+        window.localStorage?.setItem('hotel_sidebar_collapsed', String(next));
+      } catch {}
+      return next;
+    });
+  };
   const [searchQuery, setSearchQuery] = useState('');
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [confirmModal, setConfirmModal] = useState<ConfirmOptions | null>(null);
@@ -378,7 +398,7 @@ export const HotelProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
   if (!cloudReady) return <div className="p-6 text-teal-900"><p role="status">{storageError || 'Đang mở dữ liệu khách sạn…'}</p></div>;
   const visible = projectHotelData(access.actor, { ...data, debts });
-  return <HotelContext.Provider value={{ rooms: visible.rooms, services: visible.services, stays: visible.stays, reservations: visible.reservations, invoices: visible.invoices, debts: visible.debts, today, storageError, exportBackup, importBackup, activeTab, setActiveTab, isMobileMenuOpen, setIsMobileMenuOpen, searchQuery, setSearchQuery, toasts, showToast, removeToast, confirmModal, requestConfirm, closeConfirm, updateRoomCleanStatus, updateRoomStatus, addRoom, editRoom, deleteRoom, createReservation, cancelReservation, archiveReservation, checkInReservation, checkInDirect, addServiceToStay, removeServiceFromStay, updateStayCompanions, addService, editService, deleteService, updateRoomTypePricing, checkOutStay, sellServices, recordDebtPayment }}>{children}</HotelContext.Provider>;
+  return <HotelContext.Provider value={{ rooms: visible.rooms, services: visible.services, stays: visible.stays, reservations: visible.reservations, invoices: visible.invoices, debts: visible.debts, today, storageError, exportBackup, importBackup, activeTab, setActiveTab, isMobileMenuOpen, setIsMobileMenuOpen, isSidebarCollapsed, setIsSidebarCollapsed, toggleSidebar, searchQuery, setSearchQuery, toasts, showToast, removeToast, confirmModal, requestConfirm, closeConfirm, updateRoomCleanStatus, updateRoomStatus, addRoom, editRoom, deleteRoom, createReservation, cancelReservation, archiveReservation, checkInReservation, checkInDirect, addServiceToStay, removeServiceFromStay, updateStayCompanions, addService, editService, deleteService, updateRoomTypePricing, checkOutStay, sellServices, recordDebtPayment }}>{children}</HotelContext.Provider>;
 };
 
 export const useHotel = () => {

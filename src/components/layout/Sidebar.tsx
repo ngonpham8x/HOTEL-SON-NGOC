@@ -16,6 +16,8 @@ import {
   KeyRound,
   Ticket,
   ShieldCheck,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { HotelLogo } from '../common/HotelLogo';
 import { PWAInstallButton } from '../common/PWAInstallButton';
@@ -34,6 +36,8 @@ export const Sidebar: React.FC<{ onLogout: () => void; onPasswordChanged: () => 
     debts,
     isMobileMenuOpen,
     setIsMobileMenuOpen,
+    isSidebarCollapsed,
+    toggleSidebar,
   } = useHotel();
 
   const occupiedRooms = rooms.filter(r => r.status === 'OCCUPIED').length;
@@ -105,12 +109,29 @@ export const Sidebar: React.FC<{ onLogout: () => void; onPasswordChanged: () => 
         />
       )}
 
-      {/* Sidebar Container: Slide drawer on mobile, static sidebar on desktop */}
+      {/* Sidebar Container: Slide drawer on mobile, collapsible sidebar on desktop */}
       <aside
-        className={`no-print fixed top-0 bottom-0 left-0 z-50 w-[min(18rem,90vw)] lg:z-auto lg:w-64 lg:sticky lg:top-0 lg:h-full bg-[#092228] border-r border-teal-900/60 flex flex-col shrink-0 text-teal-100 shadow-2xl lg:shadow-none transition-transform duration-300 ease-in-out h-dvh ${
+        className={`no-print fixed top-0 bottom-0 left-0 z-50 w-[min(18rem,90vw)] lg:z-20 ${
+          isSidebarCollapsed ? 'lg:w-0 lg:border-r-0 lg:overflow-hidden' : 'lg:w-64 lg:overflow-visible'
+        } lg:sticky lg:top-0 lg:h-full bg-[#092228] border-r border-teal-900/60 flex flex-col shrink-0 text-teal-100 shadow-2xl lg:shadow-none transition-[width,transform] duration-300 ease-in-out h-dvh ${
           isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         }`}
       >
+        {/* Nút mũi tên thu gọn sidebar trên desktop khi đang mở */}
+        {!isSidebarCollapsed && (
+          <button
+            type="button"
+            onClick={toggleSidebar}
+            title="Thu gọn menu (tăng diện tích màn hình)"
+            aria-label="Thu gọn menu"
+            className="no-print hidden lg:flex absolute -right-3.5 top-[38%] z-40 items-center justify-center w-7 h-7 rounded-full bg-[#081e24] hover:bg-teal-700 text-teal-300 hover:text-white border border-teal-600/70 shadow-md transition-all hover:scale-110 active:scale-95 group cursor-pointer"
+          >
+            <ChevronLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
+          </button>
+        )}
+
+        {/* Khung nội dung giữ nguyên kích thước để hiệu ứng thu gọn trượt mượt mà */}
+        <div className="w-[min(18rem,90vw)] lg:w-64 h-full flex flex-col shrink-0">
         {/* Mobile-only Header inside drawer */}
         <div className="lg:hidden flex items-center justify-between p-3.5 border-b border-teal-900/60 bg-[#071b20]">
           <div className="flex items-center gap-2.5">
@@ -231,7 +252,21 @@ export const Sidebar: React.FC<{ onLogout: () => void; onPasswordChanged: () => 
             </div>
           </div>
         </div>
+        </div>
       </aside>
+
+      {/* Nút mũi tên mở lại sidebar trên desktop khi đang thu gọn */}
+      {isSidebarCollapsed && (
+        <button
+          type="button"
+          onClick={toggleSidebar}
+          title="Mở thanh menu (Sơ đồ phòng, Đặt phòng...)"
+          aria-label="Mở thanh menu"
+          className="no-print hidden lg:flex fixed left-0 top-[38%] z-40 items-center justify-center w-7 h-10 rounded-r-lg bg-[#081e24] hover:bg-teal-700 text-teal-300 hover:text-white border-y border-r border-teal-500/80 shadow-2xl transition-all duration-200 hover:w-8 group cursor-pointer"
+        >
+          <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+        </button>
+      )}
       {changingPassword && <Suspense fallback={null}><ChangePasswordDialog onClose={() => setChangingPassword(false)} onChanged={onPasswordChanged} /></Suspense>}
     </>
   );
