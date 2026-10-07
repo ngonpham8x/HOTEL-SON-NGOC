@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { MobileTableToggle } from '../common/MobileTableToggle';
 import { useHotel } from '../../context/HotelContext';
 import { useAccess } from '../../context/AccessContext';
+import { Reservation } from '../../types/hotel';
+import { EditReservationModal } from '../modals/EditReservationModal';
 import { formatCurrency, formatDate } from '../../utils/formatters';
 import {
   CalendarPlus,
@@ -12,6 +14,7 @@ import {
   Phone,
   Clock,
   CalendarCheck,
+  Edit2,
 } from 'lucide-react';
 
 interface ReservationListProps {
@@ -25,6 +28,7 @@ export const ReservationList: React.FC<ReservationListProps> = ({ onOpenBookingM
   const [search, setSearch] = useState<string>('');
   const [tableMode, setTableMode] = useState<'COMPACT' | 'TABLE'>('COMPACT');
   const [showArchived, setShowArchived] = useState(false);
+  const [editingReservation, setEditingReservation] = useState<Reservation | null>(null);
 
   const filtered = reservations.filter(res => {
     if (res.archived && !showArchived) return false;
@@ -254,6 +258,16 @@ export const ReservationList: React.FC<ReservationListProps> = ({ onOpenBookingM
                     <td data-label="Hành động" className="px-4 py-3 text-right">
                       {res.status === 'CONFIRMED' && (
                         <div className="flex items-center justify-end gap-2">
+                          {canAct('booking.create') && (
+                            <button
+                              type="button"
+                              onClick={() => setEditingReservation(res)}
+                              className="p-1.5 text-slate-500 hover:text-amber-700 hover:bg-amber-50 rounded-lg transition-colors"
+                              title="Sửa thông tin hoặc tiền đặt cọc"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </button>
+                          )}
                           {canAct('booking.cancel') && <button
                             onClick={() => handleCancel(res.id, res.code, res.customerName)}
                             className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
@@ -284,6 +298,13 @@ export const ReservationList: React.FC<ReservationListProps> = ({ onOpenBookingM
           </div>
         )}
       </div>
+      {/* Edit Reservation Modal */}
+      {editingReservation && (
+        <EditReservationModal
+          reservation={editingReservation}
+          onClose={() => setEditingReservation(null)}
+        />
+      )}
     </div>
   );
 };

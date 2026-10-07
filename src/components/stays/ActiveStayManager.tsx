@@ -1,8 +1,9 @@
 import { AccessGuard } from '../common/AccessGuard';
 import { useAccess } from '../../context/AccessContext';
-import React from 'react';
+import React, { useState } from 'react';
 import { useHotel } from '../../context/HotelContext';
-import { Room } from '../../types/hotel';
+import { Room, StayRecord } from '../../types/hotel';
+import { EditStayModal } from '../modals/EditStayModal';
 import { formatCurrency, formatDateTime } from '../../utils/formatters';
 import {
   User,
@@ -13,6 +14,7 @@ import {
   Plus,
   Clock,
   BedDouble,
+  Edit2,
 } from 'lucide-react';
 
 interface ActiveStayManagerProps {
@@ -28,6 +30,7 @@ export const ActiveStayManager: React.FC<ActiveStayManagerProps> = ({
   const { stays, rooms } = useHotel();
 
   const activeStays = stays.filter(s => s.status === 'ACTIVE');
+  const [editingStay, setEditingStay] = useState<StayRecord | null>(null);
 
   return (
     <div className="space-y-5">
@@ -144,6 +147,17 @@ export const ActiveStayManager: React.FC<ActiveStayManagerProps> = ({
                     <Plus className="w-3.5 h-3.5" />
                     <span>{canAct('stay.service.add') ? 'Thêm Minibar/DV' : 'Xem chi tiết'}</span>
                   </button>
+                  <AccessGuard action="stay.checkin">
+                    <button
+                      type="button"
+                      onClick={() => setEditingStay(stay)}
+                      className="px-2.5 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-lg text-xs font-semibold flex items-center justify-center gap-1 transition-colors"
+                      title="Sửa thông tin khách / cọc"
+                    >
+                      <Edit2 className="w-3.5 h-3.5" />
+                      <span>Sửa</span>
+                    </button>
+                  </AccessGuard>
                   <AccessGuard action="stay.checkout"><button
                     onClick={() => room && onCheckOutRoom(room)}
                     className="flex-1 px-3 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors shadow-xs"
@@ -156,6 +170,14 @@ export const ActiveStayManager: React.FC<ActiveStayManagerProps> = ({
             );
           })}
         </div>
+      )}
+
+      {/* Edit Stay Modal */}
+      {editingStay && (
+        <EditStayModal
+          stay={editingStay}
+          onClose={() => setEditingStay(null)}
+        />
       )}
     </div>
   );

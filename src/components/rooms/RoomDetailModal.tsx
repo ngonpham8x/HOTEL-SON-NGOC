@@ -3,6 +3,7 @@ import { useAccess } from '../../context/AccessContext';
 import React, { useState } from 'react';
 import { useHotel } from '../../context/HotelContext';
 import { Room, CompanionGuest } from '../../types/hotel';
+import { EditStayModal } from '../modals/EditStayModal';
 import { formatCurrency, formatDateTime } from '../../utils/formatters';
 import {
   X,
@@ -40,6 +41,7 @@ export const RoomDetailModal: React.FC<RoomDetailModalProps> = ({ room, onClose,
   } = useHotel();
   const [selectedServiceId, setSelectedServiceId] = useState<string>(services[0]?.id || '');
   const [serviceQuantity, setServiceQuantity] = useState<number>(1);
+  const [isEditingStay, setIsEditingStay] = useState(false);
 
   // Companion guest adding state
   const [isAddingCompanion, setIsAddingCompanion] = useState(false);
@@ -176,9 +178,22 @@ export const RoomDetailModal: React.FC<RoomDetailModalProps> = ({ room, onClose,
                     <User className="w-4 h-4 text-emerald-700" />
                     Khách đang lưu trú: {activeStay.customerName}
                   </h4>
-                  <span className="font-mono text-emerald-800 text-[11px] font-semibold bg-emerald-100 px-2 py-0.5 rounded">
+                  <div className="flex items-center gap-2">
+                    <AccessGuard action="stay.checkin">
+                      <button
+                        type="button"
+                        onClick={() => setIsEditingStay(true)}
+                        className="px-2.5 py-1 bg-white hover:bg-emerald-50 text-emerald-800 border border-emerald-300 rounded-lg text-[11px] font-bold flex items-center gap-1 transition-colors shadow-2xs"
+                        title="Sửa thông tin khách / cọc"
+                      >
+                        <Edit className="w-3 h-3 text-emerald-700" />
+                        <span>Sửa thông tin / Cọc</span>
+                      </button>
+                    </AccessGuard>
+                    <span className="font-mono text-emerald-800 text-[11px] font-semibold bg-emerald-100 px-2 py-0.5 rounded">
                     Mã lượt ở: {activeStay.code}
                   </span>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1 text-slate-600">
@@ -497,6 +512,13 @@ export const RoomDetailModal: React.FC<RoomDetailModalProps> = ({ room, onClose,
           </div>
         </div>
       </div>
+      {/* Sửa thông tin phòng đang ở */}
+      {isEditingStay && activeStay && (
+        <EditStayModal
+          stay={activeStay}
+          onClose={() => setIsEditingStay(false)}
+        />
+      )}
     </div>
   );
 };

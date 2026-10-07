@@ -103,9 +103,11 @@ export interface HotelContextType {
   cancelReservation: (resId: string) => Promise<void>;
   archiveReservation: (resId: string) => Promise<void>;
   checkInReservation: (resId: string) => Promise<void>;
+  updateReservation: (resId: string, updates: Partial<Reservation>) => Promise<void>;
 
   // Stays & Services actions
   checkInDirect: (data: Omit<StayRecord, 'id' | 'code' | 'status' | 'services'>, initialServices?: { serviceId: string; quantity: number }[]) => Promise<StayRecord>;
+  updateActiveStay: (stayId: string, updates: Partial<StayRecord>) => Promise<void>;
   addServiceToStay: (stayId: string, serviceId: string, quantity: number) => Promise<void>;
   removeServiceFromStay: (stayId: string, usageId: string) => Promise<void>;
   updateStayCompanions: (stayId: string, companions: CompanionGuest[]) => Promise<void>;
@@ -333,18 +335,72 @@ export const HotelProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const stay = prepareStay({ reservationId: res.id, roomId: room.id, roomNumber: room.number, customerName: res.customerName, phone: res.phone, idCard: res.idCard, companionGuests: res.companionGuests || [], checkInDate: localDate(), checkInTime: localTime(), expectedCheckOutDate: res.checkOutDate, expectedCheckOutTime: res.checkOutTime, pricingType, rateApplied: res.rateApplied ?? (pricingType === 'HOUR' ? room.pricePerHour : room.pricePerNight), deposit: res.depositAmount, notes: res.notes }, res.id);
     await commit({ ...db, stays: [stay, ...db.stays], reservations: db.reservations.map(r => r.id === res.id ? { ...r, status: 'CHECKED_IN' } : r), rooms: db.rooms.map(r => occupy(r, stay)) }, 'stay.checkin');
   };
-  const updateActiveStay = (stayId: string, update: (stay: StayRecord) => StayRecord, operation: ActionId) => {
+  const mutateActiveStay = (stayId: string, update: (stay: StayRecord) => StayRecord, operation: ActionId) => {
     const db = dataRef.current, stay = db.stays.find(s => s.id === stayId); if (!stay || stay.status !== 'ACTIVE') throw new Error('Lượt ở không còn hoạt động.');
     return commit({ ...db, stays: db.stays.map(s => s.id === stayId ? update(s) : s) }, operation);
   };
   const addServiceToStay = (stayId: string, serviceId: string, quantity: number) => {
     const srv = dataRef.current.services.find(s => s.id === serviceId); if (!srv || !Number.isInteger(quantity) || quantity < 1) throw new Error('Số lượng dịch vụ không hợp lệ.');
-    return updateActiveStay(stayId, stay => ({ ...stay, services: [...stay.services, { id: newId(), serviceId, name: srv.name, category: srv.category, quantity, unitPrice: srv.price, totalPrice: quantity * srv.price, timestamp: `${localDate()} ${localTime()}` }] }), 'stay.service.add');
+    return mutateActiveStay(stayId, stay => ({ ...stay, services: [...stay.services, { id: newId(), serviceId, name: srv.name, category: srv.category, quantity, unitPrice: srv.price, totalPrice: quantity * srv.price, timestamp: `${localDate()} ${localTime()}` }] }), 'stay.service.add');
   };
-  const removeServiceFromStay = async (stayId: string, usageId: string) => updateActiveStay(stayId, stay => ({ ...stay, services: stay.services.filter(s => s.id !== usageId) }), 'stay.service.remove');
-  const updateStayCompanions = (stayId: string, companions: CompanionGuest[]) => updateActiveStay(stayId, stay => {
+  const removeServiceFromStay = async (stayId: string, usageId: string) => mutateActiveStay(stayId, stay => ({ ...stay, services: stay.services.filter(s => s.id !== usageId) }), 'stay.service.remove');
+  const updateStayCompanions = (stayId: string, companions: CompanionGuest[]) => mutateActiveStay(stayId, stay => {
     const room = dataRef.current.rooms.find(r => r.id === stay.roomId); if (room) ensureGuests(room, 1 + companions.length); return { ...stay, companionGuests: companions };
   }, 'stay.guests');
+  const updateReservation = async (resId: string, updates: Partial<Reservation>) => {
+    const db = dataRef.current, res = db.reservations.find(r => r.id === resId);
+    if (!res || res.status !== 'CONFIRMED') throw new Error('Phiếu đặt phòng không còn chờ nhận phòng hoặc không tồn tại.');
+    const nextRes: Reservation = {
+      ...res,
+      customerName: updates.customerName !== undefined ? updates.customerName.trim() : res.customerName,
+      phone: updates.phone !== undefined ? updates.phone.trim() : res.phone,
+      idCard: updates.idCard !== undefined ? updates.idCard.trim() : res.idCard,
+      depositAmount: updates.depositAmount !== undefined ? money(updates.depositAmount, 'Tiền cọc') : res.depositAmount,
+      checkInDate: updates.checkInDate || res.checkInDate,
+      checkInTime: updates.checkInTime || res.checkInTime,
+      checkOutDate: updates.checkOutDate || res.checkOutDate,
+      checkOutTime: updates.checkOutTime || res.checkOutTime,
+      guestsCount: updates.guestsCount !== undefined ? Number(updates.guestsCount) : res.guestsCount,
+      pricingType: updates.pricingType || res.pricingType,
+      rateApplied: updates.rateApplied !== undefined ? money(updates.rateApplied, 'Đơn giá') : res.rateApplied,
+      estimatedTotal: updates.estimatedTotal !== undefined ? money(updates.estimatedTotal, 'Dự kiến tổng') : res.estimatedTotal,
+      notes: updates.notes !== undefined ? updates.notes : res.notes,
+    };
+    if (!nextRes.customerName) throw new Error('Tên khách không được để trống.');
+    validatePeriod(nextRes.checkInDate, nextRes.checkInTime, nextRes.checkOutDate, nextRes.checkOutTime);
+    await commit({
+      ...db,
+      reservations: db.reservations.map(r => r.id === resId ? nextRes : r),
+    }, 'booking.create');
+    showToast('Đã cập nhật thông tin đặt phòng / đặt cọc thành công.', 'success');
+  };
+  const updateActiveStay = async (stayId: string, updates: Partial<StayRecord>) => {
+    const db = dataRef.current, stay = db.stays.find(s => s.id === stayId);
+    if (!stay || stay.status !== 'ACTIVE') throw new Error('Lượt ở không còn hoạt động hoặc không tồn tại.');
+    const nextStay: StayRecord = {
+      ...stay,
+      customerName: updates.customerName !== undefined ? updates.customerName.trim() : stay.customerName,
+      phone: updates.phone !== undefined ? updates.phone.trim() : stay.phone,
+      idCard: updates.idCard !== undefined ? updates.idCard.trim() : stay.idCard,
+      deposit: updates.deposit !== undefined ? money(updates.deposit, 'Tiền cọc') : stay.deposit,
+      checkInDate: updates.checkInDate || stay.checkInDate,
+      checkInTime: updates.checkInTime || stay.checkInTime,
+      expectedCheckOutDate: updates.expectedCheckOutDate || stay.expectedCheckOutDate,
+      expectedCheckOutTime: updates.expectedCheckOutTime || stay.expectedCheckOutTime,
+      pricingType: updates.pricingType || stay.pricingType,
+      rateApplied: updates.rateApplied !== undefined ? money(updates.rateApplied, 'Đơn giá phòng') : stay.rateApplied,
+      notes: updates.notes !== undefined ? updates.notes : stay.notes,
+    };
+    if (!nextStay.customerName) throw new Error('Tên khách hàng không được để trống.');
+    validatePeriod(nextStay.checkInDate, nextStay.checkInTime, nextStay.expectedCheckOutDate, nextStay.expectedCheckOutTime);
+    const nextRooms = db.rooms.map(r => r.id === stay.roomId ? { ...r, currentGuestName: nextStay.customerName } : r);
+    await commit({
+      ...db,
+      rooms: nextRooms,
+      stays: db.stays.map(s => s.id === stayId ? nextStay : s),
+    }, 'stay.checkin');
+    showToast('Đã cập nhật thông tin phòng đang ở thành công.', 'success');
+  };
   const addService = (input: Omit<ServiceItem, 'id'>) => { money(input.price, 'Giá dịch vụ'); return commit({ ...dataRef.current, services: [...dataRef.current.services, { ...input, id: newId() }] }, 'service.configure'); };
   const editService = (id: string, updated: Partial<ServiceItem>) => { if (updated.price !== undefined) money(updated.price, 'Giá dịch vụ'); return commit({ ...dataRef.current, services: dataRef.current.services.map(s => s.id === id ? { ...s, ...updated, id } : s) }, 'service.configure'); };
   const deleteService = async (id: string) => {
@@ -398,7 +454,7 @@ export const HotelProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
   if (!cloudReady) return <div className="p-6 text-teal-900"><p role="status">{storageError || 'Đang mở dữ liệu khách sạn…'}</p></div>;
   const visible = projectHotelData(access.actor, { ...data, debts });
-  return <HotelContext.Provider value={{ rooms: visible.rooms, services: visible.services, stays: visible.stays, reservations: visible.reservations, invoices: visible.invoices, debts: visible.debts, today, storageError, exportBackup, importBackup, activeTab, setActiveTab, isMobileMenuOpen, setIsMobileMenuOpen, isSidebarCollapsed, setIsSidebarCollapsed, toggleSidebar, searchQuery, setSearchQuery, toasts, showToast, removeToast, confirmModal, requestConfirm, closeConfirm, updateRoomCleanStatus, updateRoomStatus, addRoom, editRoom, deleteRoom, createReservation, cancelReservation, archiveReservation, checkInReservation, checkInDirect, addServiceToStay, removeServiceFromStay, updateStayCompanions, addService, editService, deleteService, updateRoomTypePricing, checkOutStay, sellServices, recordDebtPayment }}>{children}</HotelContext.Provider>;
+  return <HotelContext.Provider value={{ rooms: visible.rooms, services: visible.services, stays: visible.stays, reservations: visible.reservations, invoices: visible.invoices, debts: visible.debts, today, storageError, exportBackup, importBackup, activeTab, setActiveTab, isMobileMenuOpen, setIsMobileMenuOpen, isSidebarCollapsed, setIsSidebarCollapsed, toggleSidebar, searchQuery, setSearchQuery, toasts, showToast, removeToast, confirmModal, requestConfirm, closeConfirm, updateRoomCleanStatus, updateRoomStatus, addRoom, editRoom, deleteRoom, createReservation, cancelReservation, archiveReservation, checkInReservation, updateReservation, checkInDirect, updateActiveStay, addServiceToStay, removeServiceFromStay, updateStayCompanions, addService, editService, deleteService, updateRoomTypePricing, checkOutStay, sellServices, recordDebtPayment }}>{children}</HotelContext.Provider>;
 };
 
 export const useHotel = () => {

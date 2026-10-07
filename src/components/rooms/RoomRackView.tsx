@@ -2,7 +2,9 @@ import { AccessGuard } from '../common/AccessGuard';
 import React, { useState, useMemo } from 'react';
 import { invoiceRevenue, invoiceCollected, sortRooms } from '../../utils/hotelLogic';
 import { useHotel } from '../../context/HotelContext';
-import { Room, RoomStatus } from '../../types/hotel';
+import { Room, RoomStatus, StayRecord, Reservation } from '../../types/hotel';
+import { EditStayModal } from '../modals/EditStayModal';
+import { EditReservationModal } from '../modals/EditReservationModal';
 import { formatCurrency, getRoomStatusMeta } from '../../utils/formatters';
 import {
   Sparkles,
@@ -38,6 +40,8 @@ export const RoomRackView: React.FC<RoomRackViewProps> = ({
   const { rooms, stays, reservations, invoices, debts, updateRoomCleanStatus, updateRoomStatus, searchQuery, setActiveTab, today, showToast } = useHotel();
   const [selectedFloor, setSelectedFloor] = useState<number | 'ALL'>('ALL');
   const [statusFilter, setStatusFilter] = useState<RoomStatus | 'ALL'>('ALL');
+  const [editingStay, setEditingStay] = useState<StayRecord | null>(null);
+  const [editingReservation, setEditingReservation] = useState<Reservation | null>(null);
 
   // Revenue & Debt KPIs for the top strip
   const todayStr = today;
@@ -376,15 +380,36 @@ export const RoomRackView: React.FC<RoomRackViewProps> = ({
                     {/* Dynamic state content */}
                     {isOccupied && activeStay && (
                       <div className="mt-3 p-2 bg-rose-50/60 rounded-lg border border-rose-100 space-y-1.5">
-                        <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-800 truncate">
-                          <User className="w-3.5 h-3.5 text-rose-600 shrink-0" />
-                          <span className="truncate">{activeStay.customerName}</span>
+                        <div className="flex items-center justify-between gap-1 text-xs font-semibold text-slate-800">
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <User className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                            <span className="truncate">{activeStay.customerName}</span>
+                          </div>
+                          <AccessGuard action="stay.checkin">
+                            <button
+                              type="button"
+                              onClick={e => {
+                                e.stopPropagation();
+                                setEditingStay(activeStay);
+                              }}
+                              title="Sửa thông tin khách / Tiền cọc"
+                              className="px-1.5 py-0.5 rounded bg-rose-100 hover:bg-rose-200 text-rose-700 text-[10px] font-bold flex items-center gap-0.5 shrink-0 transition-colors"
+                            >
+                              <Edit2 className="w-2.5 h-2.5" />
+                              <span>Sửa</span>
+                            </button>
+                          </AccessGuard>
                         </div>
                         <div className="flex items-center justify-between text-[11px] text-slate-500">
                           <span className="flex items-center gap-1">
                             <Clock className="w-3 h-3 text-slate-400" />
                             Vào: {activeStay.checkInDate.slice(5)} {activeStay.checkInTime}
                           </span>
+                          {activeStay.deposit > 0 && (
+                            <span className="font-mono text-emerald-700 font-semibold text-[10px]">
+                              Cọc: {formatCurrency(activeStay.deposit)}
+                            </span>
+                          )}
                         </div>
                         {serviceSum > 0 && (
                           <div className="flex items-center justify-between text-[11px] font-medium text-rose-700 pt-1 border-t border-rose-100">
@@ -399,9 +424,25 @@ export const RoomRackView: React.FC<RoomRackViewProps> = ({
 
                     {isReserved && activeRes && (
                       <div className="mt-3 p-2 bg-amber-50/70 rounded-lg border border-amber-100 space-y-1 text-xs">
-                        <div className="font-semibold text-slate-800 truncate flex items-center gap-1.5">
-                          <Calendar className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                          <span className="truncate">{activeRes.customerName}</span>
+                        <div className="font-semibold text-slate-800 flex items-center justify-between gap-1">
+                          <div className="truncate flex items-center gap-1.5 min-w-0">
+                            <Calendar className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                            <span className="truncate">{activeRes.customerName}</span>
+                          </div>
+                          <AccessGuard action="booking.create">
+                            <button
+                              type="button"
+                              onClick={e => {
+                                e.stopPropagation();
+                                setEditingReservation(activeRes);
+                              }}
+                              title="Sửa thông tin cọc / đặt phòng"
+                              className="px-1.5 py-0.5 rounded bg-amber-100 hover:bg-amber-200 text-amber-800 text-[10px] font-bold flex items-center gap-0.5 shrink-0 transition-colors"
+                            >
+                              <Edit2 className="w-2.5 h-2.5" />
+                              <span>Sửa cọc</span>
+                            </button>
+                          </AccessGuard>
                         </div>
                         <p className="text-[11px] text-slate-500">
                           Đến: {activeRes.checkInDate.slice(5)} lúc {activeRes.checkInTime}
@@ -447,6 +488,19 @@ export const RoomRackView: React.FC<RoomRackViewProps> = ({
                         >
                           Chi tiết / DV
                         </button>
+                        {activeStay && (
+                          <AccessGuard action="stay.checkin">
+                            <button
+                              type="button"
+                              onClick={() => setEditingStay(activeStay)}
+                              className="px-2.5 py-1.5 text-xs font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-lg transition-colors text-center flex items-center justify-center gap-1"
+                              title="Sửa thông tin khách / cọc"
+                            >
+                              <Edit2 className="w-3 h-3" />
+                              <span>Sửa</span>
+                            </button>
+                          </AccessGuard>
+                        )}
                         <AccessGuard action="stay.checkout"><button
                           onClick={() => onCheckOutRoom(room)}
                           className="flex-1 px-2 py-1.5 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-lg transition-colors text-center"
@@ -471,13 +525,28 @@ export const RoomRackView: React.FC<RoomRackViewProps> = ({
                         </button></AccessGuard>
                       </>
                     ) : isReserved ? (
-                      <AccessGuard action="stay.checkin"><button
-                        onClick={() => onCheckInRoom(room)}
-                        className="w-full px-2 py-1.5 text-xs font-semibold text-white bg-amber-600 hover:bg-amber-700 rounded-lg transition-colors text-center flex items-center justify-center gap-1"
-                      >
-                        <CheckCircle className="w-3.5 h-3.5" />
-                        <span>Nhận phòng ngay</span>
-                      </button></AccessGuard>
+                      <>
+                        {activeRes && (
+                          <AccessGuard action="booking.create">
+                            <button
+                              type="button"
+                              onClick={() => setEditingReservation(activeRes)}
+                              className="px-2.5 py-1.5 text-xs font-semibold text-amber-800 bg-amber-100 hover:bg-amber-200 border border-amber-300 rounded-lg transition-colors text-center flex items-center justify-center gap-1"
+                              title="Sửa thông tin cọc / đặt phòng"
+                            >
+                              <Edit2 className="w-3 h-3" />
+                              <span>Sửa cọc</span>
+                            </button>
+                          </AccessGuard>
+                        )}
+                        <AccessGuard action="stay.checkin"><button
+                          onClick={() => onCheckInRoom(room)}
+                          className="flex-1 px-2 py-1.5 text-xs font-semibold text-white bg-amber-600 hover:bg-amber-700 rounded-lg transition-colors text-center flex items-center justify-center gap-1"
+                        >
+                          <CheckCircle className="w-3.5 h-3.5" />
+                          <span>Nhận phòng</span>
+                        </button></AccessGuard>
+                      </>
                     ) : isCleaning ? (
                       <AccessGuard action="room.clean"><button
                         onClick={() => updateRoomCleanStatus(room.id, 'CLEAN').catch(error => showToast(error.message, 'error'))}
@@ -500,6 +569,22 @@ export const RoomRackView: React.FC<RoomRackViewProps> = ({
             );
           })}
         </div>
+      )}
+
+      {/* Edit Stay Modal */}
+      {editingStay && (
+        <EditStayModal
+          stay={editingStay}
+          onClose={() => setEditingStay(null)}
+        />
+      )}
+
+      {/* Edit Reservation Modal */}
+      {editingReservation && (
+        <EditReservationModal
+          reservation={editingReservation}
+          onClose={() => setEditingReservation(null)}
+        />
       )}
     </div>
   );

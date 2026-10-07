@@ -121,14 +121,25 @@ export function authorizeHotelMutation(actor: AccessActor, before: HotelData, ne
       for (const service of d.services.removed) if (before.stays.some(stay => stay.services.some(usage => usage.serviceId === service.id)) || before.invoices.some(invoice => invoice.services?.some(usage => usage.serviceId === service.id))) deny('Dịch vụ đã được sử dụng; không được xóa lịch sử liên quan.');
       break;
     case 'booking.create': {
-      scope('reservations', 'rooms'); if (d.reservations.added.length !== 1 || d.reservations.updated.length) deny();
-      const res = d.reservations.added[0]; if (res.status !== 'CONFIRMED' || res.archived || !Number.isSafeInteger(res.depositAmount)) deny();
-      validatePeriod(res.checkInDate, res.checkInTime, res.checkOutDate, res.checkOutTime);
-      const room = before.rooms.find(row => row.id === res.roomId);
-      if (!room || room.status === 'MAINTENANCE' || !Number.isInteger(res.guestsCount) || res.guestsCount < 1 || res.guestsCount > room.maxGuests) deny();
-      const pricingType = res.pricingType || 'NIGHT', rate = pricingType === 'HOUR' ? room.pricePerHour : room.pricePerNight;
-      if (!['NIGHT', 'HOUR'].includes(pricingType) || pricingType === 'HOUR' && room.allowsHourly === false || res.rateApplied !== rate || res.estimatedTotal !== stayDuration({ checkInDate: res.checkInDate, checkInTime: res.checkInTime, pricingType }, res.checkOutDate, res.checkOutTime) * rate) deny('Giá đặt phòng không khớp bảng giá.');
-      roomUpdates([res.roomId], ['status']); for (const { old, next: room } of d.rooms.updated) if (old.status !== 'AVAILABLE' || room.status !== 'RESERVED') deny();
+      scope('reservations', 'rooms');
+      if (d.reservations.added.length === 1 && !d.reservations.updated.length) {
+        const res = d.reservations.added[0]; if (res.status !== 'CONFIRMED' || res.archived || !Number.isSafeInteger(res.depositAmount) || res.depositAmount < 0) deny();
+        validatePeriod(res.checkInDate, res.checkInTime, res.checkOutDate, res.checkOutTime);
+        const room = before.rooms.find(row => row.id === res.roomId);
+        if (!room || room.status === 'MAINTENANCE' || !Number.isInteger(res.guestsCount) || res.guestsCount < 1 || res.guestsCount > room.maxGuests) deny();
+        const pricingType = res.pricingType || 'NIGHT', rate = pricingType === 'HOUR' ? room.pricePerHour : room.pricePerNight;
+        if (!['NIGHT', 'HOUR'].includes(pricingType) || pricingType === 'HOUR' && room.allowsHourly === false || res.rateApplied !== rate || res.estimatedTotal !== stayDuration({ checkInDate: res.checkInDate, checkInTime: res.checkInTime, pricingType }, res.checkOutDate, res.checkOutTime) * rate) deny('Giá đặt phòng không khớp bảng giá.');
+        roomUpdates([res.roomId], ['status']); for (const { old, next: room } of d.rooms.updated) if (old.status !== 'AVAILABLE' || room.status !== 'RESERVED') deny();
+      } else if (d.reservations.added.length === 0 && d.reservations.updated.length === 1 && !d.reservations.removed.length && !d.rooms.added.length && !d.rooms.removed.length && !d.rooms.updated.length) {
+        const { old, next: res } = d.reservations.updated[0];
+        if (old.status !== 'CONFIRMED' || res.status !== 'CONFIRMED' || old.id !== res.id || old.roomId !== res.roomId || old.code !== res.code) deny();
+        if (!Number.isSafeInteger(res.depositAmount) || res.depositAmount < 0) deny('Tiền cọc không hợp lệ.');
+        if (!res.customerName?.trim()) deny('Tên khách không được để trống.');
+        validatePeriod(res.checkInDate, res.checkInTime, res.checkOutDate, res.checkOutTime);
+        if (!onlyFields(old, res, ['customerName', 'phone', 'idCard', 'checkInDate', 'checkInTime', 'checkOutDate', 'checkOutTime', 'guestsCount', 'notes', 'pricingType', 'rateApplied', 'estimatedTotal'])) deny();
+      } else {
+        deny();
+      }
       break;
     }
     case 'booking.cancel': {
@@ -142,19 +153,36 @@ export function authorizeHotelMutation(actor: AccessActor, before: HotelData, ne
       for (const { old, next: res } of d.reservations.updated) if (old.status !== 'CANCELLED' || old.depositAmount !== 0 || old.archived || res.archived !== true || !onlyFields(old, res, ['archived']) || before.stays.some(stay => ('reservationId' in stay && stay.reservationId === old.id) || stay.roomId === old.roomId && stay.customerName === old.customerName && stay.phone === old.phone)) deny('Chỉ lưu trữ phiếu đã hủy, không có cọc và chưa nhận phòng.');
       break;
     case 'stay.checkin': {
-      scope('stays', 'rooms', 'reservations'); if (d.stays.added.length !== 1 || d.stays.updated.length || d.reservations.added.length || d.reservations.updated.length > 1) deny();
-      const stay = d.stays.added[0]; if (stay.status !== 'ACTIVE' || !before.rooms.some(room => room.id === stay.roomId) || stay.services.some(usage => !validUsage(usage, before))) deny();
-      const sourceRoom = before.rooms.find(room => room.id === stay.roomId)!;
-      if (!['AVAILABLE', 'RESERVED'].includes(sourceRoom.status) || sourceRoom.cleanStatus !== 'CLEAN' || before.stays.some(row => row.roomId === stay.roomId && row.status === 'ACTIVE') || !Number.isSafeInteger(stay.deposit) || !Number.isSafeInteger(stay.rateApplied)) deny();
-      validatePeriod(stay.checkInDate, stay.checkInTime, stay.expectedCheckOutDate, stay.expectedCheckOutTime);
-      if (dateTime(stay.checkInDate, stay.checkInTime) > Date.now() + 60000 || (stay.companionGuests?.length || 0) + 1 > sourceRoom.maxGuests || stay.reservationId && !d.reservations.updated.length) deny();
-      for (const { old, next: res } of d.reservations.updated) if (old.status !== 'CONFIRMED' || res.status !== 'CHECKED_IN' || !onlyFields(old, res, ['status']) || stay.roomId !== res.roomId || stay.deposit !== res.depositAmount || stay.customerName !== res.customerName || stay.phone !== res.phone || stay.reservationId !== res.id) deny();
-      const sourceReservation = d.reservations.updated[0]?.old;
-      const expectedPricingType = sourceReservation ? sourceReservation.pricingType || 'NIGHT' : stay.pricingType;
-      const expectedRate = sourceReservation?.rateApplied ?? (expectedPricingType === 'HOUR' ? sourceRoom.pricePerHour : sourceRoom.pricePerNight);
-      if (!['NIGHT', 'HOUR'].includes(stay.pricingType) || stay.rateApplied !== expectedRate || stay.pricingType !== expectedPricingType || stay.pricingType === 'HOUR' && sourceRoom.allowsHourly === false) deny('Đơn giá nhận phòng không khớp giá đã đặt hoặc bảng giá.');
-      roomUpdates([stay.roomId], ['status', 'currentStayId', 'currentGuestName']);
-      const room = next.rooms.find(row => row.id === stay.roomId); if (!room || room.status !== 'OCCUPIED' || room.currentStayId !== stay.id || room.currentGuestName !== stay.customerName) deny();
+      scope('stays', 'rooms', 'reservations');
+      if (d.stays.added.length === 1 && !d.stays.updated.length && !d.reservations.added.length && d.reservations.updated.length <= 1) {
+        const stay = d.stays.added[0]; if (stay.status !== 'ACTIVE' || !before.rooms.some(room => room.id === stay.roomId) || stay.services.some(usage => !validUsage(usage, before))) deny();
+        const sourceRoom = before.rooms.find(room => room.id === stay.roomId)!;
+        if (!['AVAILABLE', 'RESERVED'].includes(sourceRoom.status) || sourceRoom.cleanStatus !== 'CLEAN' || before.stays.some(row => row.roomId === stay.roomId && row.status === 'ACTIVE') || !Number.isSafeInteger(stay.deposit) || !Number.isSafeInteger(stay.rateApplied)) deny();
+        validatePeriod(stay.checkInDate, stay.checkInTime, stay.expectedCheckOutDate, stay.expectedCheckOutTime);
+        if (dateTime(stay.checkInDate, stay.checkInTime) > Date.now() + 60000 || (stay.companionGuests?.length || 0) + 1 > sourceRoom.maxGuests || stay.reservationId && !d.reservations.updated.length) deny();
+        for (const { old, next: res } of d.reservations.updated) if (old.status !== 'CONFIRMED' || res.status !== 'CHECKED_IN' || !onlyFields(old, res, ['status']) || stay.roomId !== res.roomId || stay.deposit !== res.depositAmount || stay.customerName !== res.customerName || stay.phone !== res.phone || stay.reservationId !== res.id) deny();
+        const sourceReservation = d.reservations.updated[0]?.old;
+        const expectedPricingType = sourceReservation ? sourceReservation.pricingType || 'NIGHT' : stay.pricingType;
+        const expectedRate = sourceReservation?.rateApplied ?? (expectedPricingType === 'HOUR' ? sourceRoom.pricePerHour : sourceRoom.pricePerNight);
+        if (!['NIGHT', 'HOUR'].includes(stay.pricingType) || stay.rateApplied !== expectedRate || stay.pricingType !== expectedPricingType || stay.pricingType === 'HOUR' && sourceRoom.allowsHourly === false) deny('Đơn giá nhận phòng không khớp giá đã đặt hoặc bảng giá.');
+        roomUpdates([stay.roomId], ['status', 'currentStayId', 'currentGuestName']);
+        const room = next.rooms.find(row => row.id === stay.roomId); if (!room || room.status !== 'OCCUPIED' || room.currentStayId !== stay.id || room.currentGuestName !== stay.customerName) deny();
+      } else if (d.stays.added.length === 0 && d.stays.updated.length === 1 && !d.stays.removed.length && !d.reservations.added.length && !d.reservations.updated.length) {
+        const { old, next: stay } = d.stays.updated[0];
+        if (old.status !== 'ACTIVE' || stay.status !== 'ACTIVE' || old.id !== stay.id || old.roomId !== stay.roomId || old.code !== stay.code) deny();
+        if (!Number.isSafeInteger(stay.deposit) || stay.deposit < 0) deny('Tiền cọc không hợp lệ.');
+        if (!Number.isSafeInteger(stay.rateApplied) || stay.rateApplied < 0) deny('Đơn giá không hợp lệ.');
+        if (!stay.customerName?.trim()) deny('Tên khách không được để trống.');
+        if (!['NIGHT', 'HOUR'].includes(stay.pricingType)) deny('Hình thức giá không hợp lệ.');
+        validatePeriod(stay.checkInDate, stay.checkInTime, stay.expectedCheckOutDate, stay.expectedCheckOutTime);
+        if (!onlyFields(old, stay, ['customerName', 'phone', 'idCard', 'checkInDate', 'checkInTime', 'expectedCheckOutDate', 'expectedCheckOutTime', 'pricingType', 'rateApplied', 'deposit', 'notes'])) deny();
+        updatesOnly(d.rooms);
+        for (const { old: rOld, next: rNext } of d.rooms.updated) {
+          if (rOld.id !== stay.roomId || !onlyFields(rOld, rNext, ['currentGuestName']) || rNext.currentGuestName !== stay.customerName) deny();
+        }
+      } else {
+        deny();
+      }
       break;
     }
     case 'stay.guests':
