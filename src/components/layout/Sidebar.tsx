@@ -196,11 +196,29 @@ export const Sidebar: React.FC<{ onLogout: () => void; onPasswordChanged: () => 
             </div>
           </div>}
 
-          {/* PWA Install Button on Mobile/Sidebar */}
-          <PWAInstallButton variant="sidebar" />
-          <div className="grid grid-cols-2 gap-2">
-            <button type="button" aria-label="Đổi mật khẩu" onClick={() => { setChangingPassword(true); setIsMobileMenuOpen(false); }} className="min-h-10 flex items-center justify-center gap-1.5 px-2 py-2 rounded-lg text-[11px] font-semibold text-teal-200 hover:bg-teal-900/60 hover:text-white border border-teal-900/70 focus-visible:outline-2 focus-visible:outline-teal-400"><KeyRound className="w-3.5 h-3.5 shrink-0" />Đổi mật khẩu</button>
-            <button type="button" aria-label="Đăng xuất" onClick={onLogout} className="min-h-10 flex items-center justify-center gap-1.5 px-2 py-2 rounded-lg text-[11px] font-semibold text-teal-200 hover:bg-teal-900/60 hover:text-white border border-teal-900/70 focus-visible:outline-2 focus-visible:outline-teal-400"><LogOut className="w-3.5 h-3.5 shrink-0" />Đăng xuất</button>
+          {/* Action buttons: Cài app, Đổi mật khẩu, Đăng xuất chung 1 hàng */}
+          <div className="flex items-center gap-1.5">
+            <PWAInstallButton variant="sidebar" />
+            <button
+              type="button"
+              aria-label="Đổi mật khẩu"
+              title="Đổi mật khẩu"
+              onClick={() => { setChangingPassword(true); setIsMobileMenuOpen(false); }}
+              className="min-h-10 flex-1 min-w-0 flex items-center justify-center gap-1 px-1.5 py-2 rounded-lg text-[11px] font-semibold text-teal-200 hover:bg-teal-900/60 hover:text-white border border-teal-900/70 focus-visible:outline-2 focus-visible:outline-teal-400"
+            >
+              <KeyRound className="w-3.5 h-3.5 shrink-0" />
+              <span className="truncate">Đổi MK</span>
+            </button>
+            <button
+              type="button"
+              aria-label="Đăng xuất"
+              title="Đăng xuất"
+              onClick={onLogout}
+              className="min-h-10 flex-1 min-w-0 flex items-center justify-center gap-1 px-1.5 py-2 rounded-lg text-[11px] font-semibold text-teal-200 hover:bg-teal-900/60 hover:text-white border border-teal-900/70 focus-visible:outline-2 focus-visible:outline-teal-400"
+            >
+              <LogOut className="w-3.5 h-3.5 shrink-0" />
+              <span className="truncate">Đăng xuất</span>
+            </button>
           </div>
 
           <div className="pt-1.5 border-t border-teal-900/60 text-[10px] space-y-0.5 text-teal-300/80">
