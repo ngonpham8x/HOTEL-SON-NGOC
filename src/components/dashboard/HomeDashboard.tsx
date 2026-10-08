@@ -31,6 +31,7 @@ import {
 import { HotelLogo } from '../common/HotelLogo';
 import { AccessGuard } from '../common/AccessGuard';
 import { useAccess } from '../../context/AccessContext';
+import { InvoiceListTable } from '../invoices/InvoiceListTable';
 
 interface HomeDashboardProps {
   onSelectRoom: (room: Room) => void;
@@ -826,42 +827,13 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
                     </div>
                   </div>
 
-                  <h4 className="font-bold text-slate-900 text-sm pt-2">Danh sách phiếu thu trong ngày hôm nay:</h4>
-                  <div className="border border-slate-200 rounded-xl overflow-hidden">
-                    <table className="w-full text-left border-collapse">
-                      <thead className="bg-slate-100 text-[11px] font-bold text-slate-700 uppercase">
-                        <tr>
-                          <th className="py-2.5 px-3">Mã PT</th>
-                          <th className="py-2.5 px-3">Phòng</th>
-                          <th className="py-2.5 px-3">Khách hàng</th>
-                          <th className="py-2.5 px-3">Tiền phòng</th>
-                          <th className="py-2.5 px-3">Vé Massage</th>
-                          <th className="py-2.5 px-3">Tổng cộng</th>
-                          <th className="py-2.5 px-3">Đã thu</th>
-                          <th className="py-2.5 px-3">Trạng thái</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100">
-                        {todayInvoices.map(inv => (
-                          <tr key={inv.id} className="hover:bg-slate-50">
-                            <td className="py-2.5 px-3 font-mono font-bold text-teal-800">{inv.code}</td>
-                            <td className="py-2.5 px-3 font-mono font-bold">{inv.roomNumber}</td>
-                            <td className="py-2.5 px-3">{inv.customerName}</td>
-                            <td className="py-2.5 px-3 font-mono">{formatCurrency(inv.roomCharge)}</td>
-                            <td className="py-2.5 px-3 font-mono text-teal-700 font-bold">{formatCurrency(inv.massageCharge || 0)}</td>
-                            <td className="py-2.5 px-3 font-mono font-bold">{formatCurrency(invoiceRevenue(inv))}</td>
-                            <td className="py-2.5 px-3 font-mono text-emerald-700">{formatCurrency(invoiceCollected(inv))}</td>
-                            <td className="py-2.5 px-3">
-                              <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                                inv.status === 'PAID' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
-                              }`}>
-                                {inv.status === 'PAID' ? 'Đã thu đủ' : 'Ghi nợ'}
-                              </span>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                  <h4 className="font-bold text-slate-900 text-sm pt-2">Danh sách phiếu thu trong ngày hôm nay ({todayInvoices.length} phiếu):</h4>
+                  <div className="border border-slate-200 rounded-xl overflow-hidden bg-white">
+                    <InvoiceListTable
+                      invoices={todayInvoices}
+                      emptyMessage="Chưa có phiếu thu nào hôm nay"
+                      showDateColumn={false}
+                    />
                   </div>
                 </div>
               )}
@@ -889,43 +861,12 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
                   </div>
 
                   <h4 className="font-bold text-slate-900 text-sm pt-2">Danh sách phiếu thu trong tuần này ({thisWeekInvoices.length} phiếu):</h4>
-                  <div className="border border-slate-200 rounded-xl overflow-hidden">
-                    <table className="w-full text-left border-collapse">
-                      <thead className="bg-slate-100 text-[11px] font-bold text-slate-700 uppercase">
-                        <tr>
-                          <th className="py-2.5 px-3">Ngày</th>
-                          <th className="py-2.5 px-3">Mã PT</th>
-                          <th className="py-2.5 px-3">Phòng</th>
-                          <th className="py-2.5 px-3">Khách hàng</th>
-                          <th className="py-2.5 px-3">Tiền phòng</th>
-                          <th className="py-2.5 px-3">Vé Massage</th>
-                          <th className="py-2.5 px-3">Tổng cộng</th>
-                          <th className="py-2.5 px-3">Đã thu</th>
-                          <th className="py-2.5 px-3">Trạng thái</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100">
-                        {thisWeekInvoices.map(inv => (
-                          <tr key={inv.id} className="hover:bg-slate-50">
-                            <td className="py-2.5 px-3 text-[11px] font-mono text-slate-500">{formatDate(inv.date).slice(0, 5)}</td>
-                            <td className="py-2.5 px-3 font-mono font-bold text-teal-800">{inv.code}</td>
-                            <td className="py-2.5 px-3 font-mono font-bold">{inv.roomNumber}</td>
-                            <td className="py-2.5 px-3">{inv.customerName}</td>
-                            <td className="py-2.5 px-3 font-mono">{formatCurrency(inv.roomCharge)}</td>
-                            <td className="py-2.5 px-3 font-mono text-teal-700 font-bold">{formatCurrency(inv.massageCharge || 0)}</td>
-                            <td className="py-2.5 px-3 font-mono font-bold">{formatCurrency(invoiceRevenue(inv))}</td>
-                            <td className="py-2.5 px-3 font-mono text-emerald-700">{formatCurrency(invoiceCollected(inv))}</td>
-                            <td className="py-2.5 px-3">
-                              <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                                inv.status === 'PAID' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
-                              }`}>
-                                {inv.status === 'PAID' ? 'Đã thu đủ' : 'Ghi nợ'}
-                              </span>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                  <div className="border border-slate-200 rounded-xl overflow-hidden bg-white">
+                    <InvoiceListTable
+                      invoices={thisWeekInvoices}
+                      emptyMessage="Chưa có phiếu thu nào trong tuần này"
+                      showDateColumn={true}
+                    />
                   </div>
                 </div>
               )}
@@ -1003,43 +944,13 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
                   </div>
 
                   <h4 className="font-bold text-slate-900 text-sm pt-2">Danh sách phiếu thu trong năm {thisYear} ({thisYearInvoices.length} phiếu):</h4>
-                  <div className="border border-slate-200 rounded-xl overflow-hidden max-h-96 overflow-y-auto">
-                    <table className="w-full text-left border-collapse">
-                      <thead className="bg-slate-100 text-[11px] font-bold text-slate-700 uppercase sticky top-0">
-                        <tr>
-                          <th className="py-2.5 px-3">Ngày</th>
-                          <th className="py-2.5 px-3">Mã PT</th>
-                          <th className="py-2.5 px-3">Phòng</th>
-                          <th className="py-2.5 px-3">Khách hàng</th>
-                          <th className="py-2.5 px-3">Tiền phòng</th>
-                          <th className="py-2.5 px-3">Vé Massage</th>
-                          <th className="py-2.5 px-3">Tổng cộng</th>
-                          <th className="py-2.5 px-3">Đã thu</th>
-                          <th className="py-2.5 px-3">Trạng thái</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100">
-                        {thisYearInvoices.map(inv => (
-                          <tr key={inv.id} className="hover:bg-slate-50">
-                            <td className="py-2.5 px-3 text-[11px] font-mono text-slate-500">{formatDate(inv.date)}</td>
-                            <td className="py-2.5 px-3 font-mono font-bold text-teal-800">{inv.code}</td>
-                            <td className="py-2.5 px-3 font-mono font-bold">{inv.roomNumber}</td>
-                            <td className="py-2.5 px-3">{inv.customerName}</td>
-                            <td className="py-2.5 px-3 font-mono">{formatCurrency(inv.roomCharge)}</td>
-                            <td className="py-2.5 px-3 font-mono text-teal-700 font-bold">{formatCurrency(inv.massageCharge || 0)}</td>
-                            <td className="py-2.5 px-3 font-mono font-bold">{formatCurrency(invoiceRevenue(inv))}</td>
-                            <td className="py-2.5 px-3 font-mono text-emerald-700">{formatCurrency(invoiceCollected(inv))}</td>
-                            <td className="py-2.5 px-3">
-                              <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                                inv.status === 'PAID' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
-                              }`}>
-                                {inv.status === 'PAID' ? 'Đã thu đủ' : 'Ghi nợ'}
-                              </span>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                  <div className="border border-slate-200 rounded-xl overflow-hidden bg-white">
+                    <InvoiceListTable
+                      invoices={thisYearInvoices}
+                      emptyMessage={`Chưa có phiếu thu nào trong năm ${thisYear}`}
+                      showDateColumn={true}
+                      maxHeightClass="max-h-96"
+                    />
                   </div>
                 </div>
               )}

@@ -126,6 +126,8 @@ export interface HotelContextType {
   cancelCheckIn: (stayId: string) => Promise<void>;
   updateServiceSale: (invoiceId: string, params: ServiceSaleInput) => Promise<Invoice>;
   cancelServiceSale: (invoiceId: string) => Promise<void>;
+  updateRoomInvoice: (invoiceId: string, updates: { customerName?: string; phone?: string; paymentMethod?: PaymentMethod; notes?: string }) => Promise<Invoice>;
+  cancelRoomInvoice: (invoiceId: string) => Promise<void>;
 
   // Debt actions
   recordDebtPayment: (debtId: string, amount: number, method: PaymentMethod, collectedBy: string, notes?: string) => Promise<void>;
@@ -529,6 +531,81 @@ export const HotelProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }, 'sale.create');
     showToast(`Đã hủy phiếu vé / dịch vụ ${oldInvoice.code}.`, 'success');
   };
+  const updateRoomInvoice = async (invoiceId: string, updates: { customerName?: string; phone?: string; paymentMethod?: PaymentMethod; notes?: string }): Promise<Invoice> => {
+    const db = dataRef.current;
+    const oldInvoice = db.invoices.find(i => i.id === invoiceId);
+    if (!oldInvoice) throw new Error('Không tìm thấy phiếu thu.');
+
+    const updatedInvoice: Invoice = {
+      ...oldInvoice,
+      customerName: updates.customerName !== undefined ? updates.customerName.trim() : oldInvoice.customerName,
+      phone: updates.phone !== undefined ? updates.phone.trim() : oldInvoice.phone,
+      paymentMethod: updates.paymentMethod || oldInvoice.paymentMethod,
+      notes: updates.notes !== undefined ? updates.notes : oldInvoice.notes,
+    };
+    if (!updatedInvoice.customerName) throw new Error('Tên khách hàng không được để trống.');
+
+    const nextDebts = db.debts.map(d => {
+      if (d.invoiceId === invoiceId) {
+        return {
+          ...d,
+          customerName: updatedInvoice.customerName,
+          phone: updatedInvoice.phone,
+          notes: updatedInvoice.notes,
+        };
+      }
+      return d;
+    });
+
+    const nextInvoices = db.invoices.map(i => i.id === invoiceId ? updatedInvoice : i);
+    await commit({
+      ...db,
+      invoices: nextInvoices,
+      debts: nextDebts,
+    }, 'stay.checkout');
+    showToast(`Đã cập nhật thông tin phiếu thu ${oldInvoice.code}.`, 'success');
+    return updatedInvoice;
+  };
+  const cancelRoomInvoice = async (invoiceId: string) => {
+    const db = dataRef.current;
+    const oldInvoice = db.invoices.find(i => i.id === invoiceId);
+    if (!oldInvoice) throw new Error('Không tìm thấy phiếu thu.');
+
+    const cancelledInvoice: Invoice = {
+      ...oldInvoice,
+      status: 'CANCELLED',
+      roomCharge: 0,
+      serviceCharge: 0,
+      massageCharge: 0,
+      surcharge: 0,
+      discount: 0,
+      depositDeducted: 0,
+      refundAmount: 0,
+      totalAmount: 0,
+      paidAmount: 0,
+      debtAmount: 0,
+    };
+
+    const nextDebts = db.debts.map(d => {
+      if (d.invoiceId === invoiceId) {
+        return {
+          ...d,
+          status: 'SETTLED' as const,
+          remainingAmount: 0,
+          notes: `${d.notes || ''} [Phiếu thu ${oldInvoice.code} đã hủy]`.trim(),
+        };
+      }
+      return d;
+    });
+
+    const nextInvoices = db.invoices.map(i => i.id === invoiceId ? cancelledInvoice : i);
+    await commit({
+      ...db,
+      invoices: nextInvoices,
+      debts: nextDebts,
+    }, 'stay.checkout');
+    showToast(`Đã hủy phiếu thu phòng ${oldInvoice.code}.`, 'success');
+  };
   const recordDebtPayment = async (debtId: string, amount: number, method: PaymentMethod, collectedBy: string, notes?: string) => {
     const db = dataRef.current, debt = db.debts.find(d => d.id === debtId); money(amount, 'Tiền thu nợ');
     if (!debt || amount <= 0 || amount > debt.remainingAmount || !['CASH', 'TRANSFER', 'CARD'].includes(method)) throw new Error('Số tiền thu vượt dư nợ hoặc phương thức không hợp lệ.');
@@ -546,7 +623,7 @@ export const HotelProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
   if (!cloudReady) return <div className="p-6 text-teal-900"><p role="status">{storageError || 'Đang mở dữ liệu khách sạn…'}</p></div>;
   const visible = projectHotelData(access.actor, { ...data, debts });
-  return <HotelContext.Provider value={{ rooms: visible.rooms, services: visible.services, stays: visible.stays, reservations: visible.reservations, invoices: visible.invoices, debts: visible.debts, today, storageError, exportBackup, importBackup, activeTab, setActiveTab, isMobileMenuOpen, setIsMobileMenuOpen, isSidebarCollapsed, setIsSidebarCollapsed, toggleSidebar, searchQuery, setSearchQuery, toasts, showToast, removeToast, confirmModal, requestConfirm, closeConfirm, updateRoomCleanStatus, updateRoomStatus, addRoom, editRoom, deleteRoom, createReservation, cancelReservation, archiveReservation, checkInReservation, updateReservation, checkInDirect, updateActiveStay, cancelCheckIn, addServiceToStay, removeServiceFromStay, updateStayCompanions, addService, editService, deleteService, updateRoomTypePricing, checkOutStay, sellServices, updateServiceSale, cancelServiceSale, recordDebtPayment }}>{children}</HotelContext.Provider>;
+  return <HotelContext.Provider value={{ rooms: visible.rooms, services: visible.services, stays: visible.stays, reservations: visible.reservations, invoices: visible.invoices, debts: visible.debts, today, storageError, exportBackup, importBackup, activeTab, setActiveTab, isMobileMenuOpen, setIsMobileMenuOpen, isSidebarCollapsed, setIsSidebarCollapsed, toggleSidebar, searchQuery, setSearchQuery, toasts, showToast, removeToast, confirmModal, requestConfirm, closeConfirm, updateRoomCleanStatus, updateRoomStatus, addRoom, editRoom, deleteRoom, createReservation, cancelReservation, archiveReservation, checkInReservation, updateReservation, checkInDirect, updateActiveStay, cancelCheckIn, addServiceToStay, removeServiceFromStay, updateStayCompanions, addService, editService, deleteService, updateRoomTypePricing, checkOutStay, sellServices, updateServiceSale, cancelServiceSale, updateRoomInvoice, cancelRoomInvoice, recordDebtPayment }}>{children}</HotelContext.Provider>;
 };
 
 export const useHotel = () => {

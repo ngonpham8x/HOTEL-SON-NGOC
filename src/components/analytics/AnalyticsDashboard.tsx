@@ -20,6 +20,7 @@ import {
   Ticket,
   Sparkles,
 } from 'lucide-react';
+import { InvoiceListTable } from '../invoices/InvoiceListTable';
 
 export const AnalyticsDashboard: React.FC = () => {
   const { invoices, rooms, debts, today } = useHotel();
@@ -75,13 +76,14 @@ export const AnalyticsDashboard: React.FC = () => {
   // =========================================================================
   const dailyData = useMemo(() => {
     const dayInvoices = invoices.filter(inv => inv.date === selectedDate);
+    const activeInvoices = dayInvoices.filter(inv => inv.status !== 'CANCELLED');
     const totalRevenue = dayInvoices.reduce((sum, i) => sum + invoiceRevenue(i), 0);
-    const roomRevenue = dayInvoices.reduce((sum, i) => sum + i.roomCharge, 0);
-    const massageRevenue = dayInvoices.reduce((sum, i) => sum + (i.massageCharge || 0), 0);
-    const serviceRevenue = dayInvoices.reduce((sum, i) => sum + i.serviceCharge, 0);
-    const surchargeRevenue = dayInvoices.reduce((sum, i) => sum + i.surcharge, 0);
+    const roomRevenue = activeInvoices.reduce((sum, i) => sum + i.roomCharge, 0);
+    const massageRevenue = activeInvoices.reduce((sum, i) => sum + (i.massageCharge || 0), 0);
+    const serviceRevenue = activeInvoices.reduce((sum, i) => sum + i.serviceCharge, 0);
+    const surchargeRevenue = activeInvoices.reduce((sum, i) => sum + i.surcharge, 0);
     const paidAmount = dayInvoices.reduce((sum, i) => sum + invoiceCollected(i), 0);
-    const debtAmount = dayInvoices.reduce((sum, i) => sum + i.debtAmount, 0);
+    const debtAmount = activeInvoices.reduce((sum, i) => sum + i.debtAmount, 0);
 
     // Yesterday comparison
     const curD = new Date(`${selectedDate}T12:00:00+07:00`);
@@ -165,13 +167,14 @@ export const AnalyticsDashboard: React.FC = () => {
     const weekInvoices = invoices.filter(inv => inv.date >= weekStart && inv.date <= weekEnd);
     const prevWeekInvoices = invoices.filter(inv => inv.date >= prevWeekStart && inv.date <= prevWeekEnd);
 
+    const activeInvoices = weekInvoices.filter(inv => inv.status !== 'CANCELLED');
     const totalRevenue = weekInvoices.reduce((sum, i) => sum + invoiceRevenue(i), 0);
     const prevRevenue = prevWeekInvoices.reduce((sum, i) => sum + invoiceRevenue(i), 0);
-    const roomRevenue = weekInvoices.reduce((sum, i) => sum + i.roomCharge, 0);
-    const massageRevenue = weekInvoices.reduce((sum, i) => sum + (i.massageCharge || 0), 0);
-    const serviceRevenue = weekInvoices.reduce((sum, i) => sum + i.serviceCharge + i.surcharge, 0);
+    const roomRevenue = activeInvoices.reduce((sum, i) => sum + i.roomCharge, 0);
+    const massageRevenue = activeInvoices.reduce((sum, i) => sum + (i.massageCharge || 0), 0);
+    const serviceRevenue = activeInvoices.reduce((sum, i) => sum + i.serviceCharge + i.surcharge, 0);
     const paidAmount = weekInvoices.reduce((sum, i) => sum + invoiceCollected(i), 0);
-    const debtAmount = weekInvoices.reduce((sum, i) => sum + i.debtAmount, 0);
+    const debtAmount = activeInvoices.reduce((sum, i) => sum + i.debtAmount, 0);
 
     const growth = prevRevenue > 0
       ? (((totalRevenue - prevRevenue) / prevRevenue) * 100).toFixed(1)
@@ -255,14 +258,15 @@ export const AnalyticsDashboard: React.FC = () => {
     const lastMonthInvoices = invoices.filter(inv => inv.date.startsWith(prevMonth));
 
     const calcMonth = (invs: typeof invoices, daysInMonth: number) => {
+      const activeInvs = invs.filter(i => i.status !== 'CANCELLED');
       const totalRevenue = invs.reduce((sum, i) => sum + invoiceRevenue(i), 0);
-      const roomRevenue = invs.reduce((sum, i) => sum + i.roomCharge, 0);
-      const massageRevenue = invs.reduce((sum, i) => sum + (i.massageCharge || 0), 0);
-      const serviceRevenue = invs.reduce((sum, i) => sum + i.serviceCharge, 0);
-      const surchargeRevenue = invs.reduce((sum, i) => sum + i.surcharge, 0);
+      const roomRevenue = activeInvs.reduce((sum, i) => sum + i.roomCharge, 0);
+      const massageRevenue = activeInvs.reduce((sum, i) => sum + (i.massageCharge || 0), 0);
+      const serviceRevenue = activeInvs.reduce((sum, i) => sum + i.serviceCharge, 0);
+      const surchargeRevenue = activeInvs.reduce((sum, i) => sum + i.surcharge, 0);
       const paidTotal = invs.reduce((sum, i) => sum + invoiceCollected(i), 0);
-      const debtTotal = invs.reduce((sum, i) => sum + i.debtAmount, 0);
-      const count = invs.length;
+      const debtTotal = activeInvs.reduce((sum, i) => sum + i.debtAmount, 0);
+      const count = activeInvs.length;
 
       // Group by day (1..31)
       const dayMap: { [day: number]: number } = {};
@@ -272,11 +276,11 @@ export const AnalyticsDashboard: React.FC = () => {
       });
 
       // Occupancy approximation
-      const estimatedRoomNights = invs.reduce((sum, i) => sum + (i.kind !== 'SERVICE' && i.pricingType === 'NIGHT' ? Math.max(1, i.durationNightsOrHours) : 0), 0);
+      const estimatedRoomNights = activeInvs.reduce((sum, i) => sum + (i.kind !== 'SERVICE' && i.pricingType === 'NIGHT' ? Math.max(1, i.durationNightsOrHours) : 0), 0);
       const totalAvailableRoomNights = totalRoomsCount * daysInMonth;
       const occupancyRate = totalAvailableRoomNights > 0 ? Math.min(100, Math.round((estimatedRoomNights / totalAvailableRoomNights) * 100)) : 0;
 
-      const nightRoomRevenue = invs.filter(i => i.pricingType === 'NIGHT').reduce((sum, i) => sum + i.roomCharge, 0);
+      const nightRoomRevenue = activeInvs.filter(i => i.pricingType === 'NIGHT').reduce((sum, i) => sum + i.roomCharge, 0);
       const adr = estimatedRoomNights > 0 ? Math.round(nightRoomRevenue / estimatedRoomNights) : 0;
       const revPar = totalAvailableRoomNights > 0 ? Math.round(roomRevenue / totalAvailableRoomNights) : 0;
 
@@ -330,13 +334,14 @@ export const AnalyticsDashboard: React.FC = () => {
     const curYearInvoices = invoices.filter(inv => inv.date.startsWith(curYear));
     const prevYearInvoices = invoices.filter(inv => inv.date.startsWith(prevYear));
 
+    const activeInvoices = curYearInvoices.filter(inv => inv.status !== 'CANCELLED');
     const totalRevenue = curYearInvoices.reduce((sum, i) => sum + invoiceRevenue(i), 0);
     const prevRevenue = prevYearInvoices.reduce((sum, i) => sum + invoiceRevenue(i), 0);
-    const roomRevenue = curYearInvoices.reduce((sum, i) => sum + i.roomCharge, 0);
-    const massageRevenue = curYearInvoices.reduce((sum, i) => sum + (i.massageCharge || 0), 0);
-    const serviceRevenue = curYearInvoices.reduce((sum, i) => sum + i.serviceCharge + i.surcharge, 0);
+    const roomRevenue = activeInvoices.reduce((sum, i) => sum + i.roomCharge, 0);
+    const massageRevenue = activeInvoices.reduce((sum, i) => sum + (i.massageCharge || 0), 0);
+    const serviceRevenue = activeInvoices.reduce((sum, i) => sum + i.serviceCharge + i.surcharge, 0);
     const paidAmount = curYearInvoices.reduce((sum, i) => sum + invoiceCollected(i), 0);
-    const debtAmount = curYearInvoices.reduce((sum, i) => sum + i.debtAmount, 0);
+    const debtAmount = activeInvoices.reduce((sum, i) => sum + i.debtAmount, 0);
 
     const growth = prevRevenue > 0
       ? (((totalRevenue - prevRevenue) / prevRevenue) * 100).toFixed(1)
@@ -651,71 +656,11 @@ export const AnalyticsDashboard: React.FC = () => {
               </h4>
             </div>
 
-            {dailyData.invoices.length === 0 ? (
-              <div className="p-8 text-center text-slate-400 text-xs">
-                Không có phiếu thu nào phát sinh trong ngày {formatDate(selectedDate)}
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold border-b border-slate-200">
-                    <tr>
-                      <th className="px-4 py-2.5">Mã PT</th>
-                      <th className="px-4 py-2.5">Phòng</th>
-                      <th className="px-4 py-2.5">Khách hàng</th>
-                      <th className="px-4 py-2.5 text-right">Tiền phòng</th>
-                      <th className="px-4 py-2.5 text-right">Vé Massage</th>
-                      <th className="px-4 py-2.5 text-right">Minibar/DV</th>
-                      <th className="px-4 py-2.5 text-right">Tổng cộng</th>
-                      <th className="px-4 py-2.5 text-right">Đã thu</th>
-                      <th className="px-4 py-2.5 text-right">Ghi nợ</th>
-                      <th className="px-4 py-2.5 text-center">Hình thức</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {dailyData.invoices.map(inv => (
-                      <tr key={inv.id} className="hover:bg-slate-50">
-                        <td className="px-4 py-2.5 font-mono font-semibold text-slate-900">
-                          {inv.code}
-                          <span className="block text-[10px] text-slate-400 font-normal">
-                            {inv.time}
-                          </span>
-                        </td>
-                        <td className="px-4 py-2.5 font-bold font-mono text-teal-800">
-                          {inv.kind === 'SERVICE' ? 'Khách ngoài' : `P.${inv.roomNumber}`}
-                        </td>
-                        <td className="px-4 py-2.5 font-semibold text-slate-800">
-                          {inv.customerName}
-                        </td>
-                        <td className="px-4 py-2.5 text-right font-mono text-slate-700">
-                          {formatCurrency(inv.roomCharge)}
-                        </td>
-                        <td className="px-4 py-2.5 text-right font-mono font-bold text-teal-700">
-                          {formatCurrency(inv.massageCharge || 0)}
-                        </td>
-                        <td className="px-4 py-2.5 text-right font-mono text-slate-700">
-                          {formatCurrency(inv.serviceCharge + inv.surcharge)}
-                        </td>
-                        <td className="px-4 py-2.5 text-right font-mono font-bold text-slate-900">
-                          {formatCurrency(invoiceRevenue(inv))}
-                        </td>
-                        <td className="px-4 py-2.5 text-right font-mono text-emerald-700 font-semibold">
-                          {formatCurrency(invoiceCollected(inv))}
-                        </td>
-                        <td className="px-4 py-2.5 text-right font-mono text-rose-700 font-semibold">
-                          {inv.debtAmount > 0 ? formatCurrency(inv.debtAmount) : '-'}
-                        </td>
-                        <td className="px-4 py-2.5 text-center">
-                          <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-700">
-                            {getPaymentMethodName(inv.paymentMethod)}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+            <InvoiceListTable
+              invoices={dailyData.invoices}
+              emptyMessage={`Không có phiếu thu nào phát sinh trong ngày ${formatDate(selectedDate)}`}
+              showDateColumn={false}
+            />
           </div>
         </div>
       )}
@@ -982,62 +927,12 @@ export const AnalyticsDashboard: React.FC = () => {
               </h4>
             </div>
 
-            {weeklyData.invoices.length === 0 ? (
-              <div className="p-8 text-center text-slate-400 text-xs">
-                Không có phiếu thu nào phát sinh trong tuần {weeklyData.shortLabel}
-              </div>
-            ) : (
-              <div className="overflow-x-auto max-h-96 overflow-y-auto">
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold border-b border-slate-200 sticky top-0">
-                    <tr>
-                      <th className="px-4 py-2.5">Ngày</th>
-                      <th className="px-4 py-2.5">Mã PT</th>
-                      <th className="px-4 py-2.5">Phòng</th>
-                      <th className="px-4 py-2.5">Khách hàng</th>
-                      <th className="px-4 py-2.5 text-right">Tiền phòng</th>
-                      <th className="px-4 py-2.5 text-right">Vé Massage</th>
-                      <th className="px-4 py-2.5 text-right">Tổng cộng</th>
-                      <th className="px-4 py-2.5 text-right">Đã thu</th>
-                      <th className="px-4 py-2.5 text-right">Ghi nợ</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {weeklyData.invoices.map(inv => (
-                      <tr key={inv.id} className="hover:bg-slate-50">
-                        <td className="px-4 py-2.5 text-slate-500 font-mono text-[11px]">
-                          {formatDate(inv.date).slice(0, 5)}
-                        </td>
-                        <td className="px-4 py-2.5 font-mono font-semibold text-slate-900">
-                          {inv.code}
-                        </td>
-                        <td className="px-4 py-2.5 font-bold font-mono text-teal-800">
-                          {inv.kind === 'SERVICE' ? 'Khách ngoài' : `P.${inv.roomNumber}`}
-                        </td>
-                        <td className="px-4 py-2.5 font-semibold text-slate-800">
-                          {inv.customerName}
-                        </td>
-                        <td className="px-4 py-2.5 text-right font-mono text-slate-700">
-                          {formatCurrency(inv.roomCharge)}
-                        </td>
-                        <td className="px-4 py-2.5 text-right font-mono text-teal-700 font-bold">
-                          {formatCurrency(inv.massageCharge || 0)}
-                        </td>
-                        <td className="px-4 py-2.5 text-right font-mono font-bold text-slate-900">
-                          {formatCurrency(invoiceRevenue(inv))}
-                        </td>
-                        <td className="px-4 py-2.5 text-right font-mono text-emerald-700 font-semibold">
-                          {formatCurrency(invoiceCollected(inv))}
-                        </td>
-                        <td className="px-4 py-2.5 text-right font-mono text-rose-700 font-semibold">
-                          {inv.debtAmount > 0 ? formatCurrency(inv.debtAmount) : '-'}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+            <InvoiceListTable
+              invoices={weeklyData.invoices}
+              emptyMessage={`Không có phiếu thu nào phát sinh trong tuần ${weeklyData.shortLabel}`}
+              showDateColumn={true}
+              maxHeightClass="max-h-96"
+            />
           </div>
         </div>
       )}

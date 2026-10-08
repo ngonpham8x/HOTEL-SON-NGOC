@@ -127,3 +127,22 @@ test('checkin uses the current room tariff or the preserved booking rate and rej
   assert.doesNotThrow(() => authorizeHotelMutation(staff, booked, converted, 'stay.checkin'));
   assert.throws(() => authorizeHotelMutation(staff, booked, { ...converted, stays: [{ ...converted.stays[0], rateApplied: room.pricePerNight }] }, 'stay.checkin'), /Đơn giá/);
 });
+
+test('editing and cancelling a room invoice is allowed under stay.checkout', () => {
+  const staff = { ...ADMIN_ACTOR, permissions: { views: ['stays' as const, 'rooms' as const], actions: ['stay.checkout' as const] } };
+  const roomInvoice = { ...INITIAL_INVOICES[0], id: 'inv-room-1', code: 'HD-ROOM1', customerName: 'Khách A', phone: '0901234567', status: 'PAID' as const };
+  const before: HotelData = { ...empty(), invoices: [roomInvoice] };
+
+  // Edit customerName and phone
+  const edited: HotelData = { ...before, invoices: [{ ...roomInvoice, customerName: 'Khách B', phone: '0909999999' }] };
+  assert.doesNotThrow(() => authorizeHotelMutation(staff, before, edited, 'stay.checkout'));
+
+  // Reject empty customer name
+  const emptyName: HotelData = { ...before, invoices: [{ ...roomInvoice, customerName: '   ' }] };
+  assert.throws(() => authorizeHotelMutation(staff, before, emptyName, 'stay.checkout'), /Tên khách không được để trống/);
+
+  // Cancel invoice
+  const cancelled: HotelData = { ...before, invoices: [{ ...roomInvoice, status: 'CANCELLED' as const }] };
+  assert.doesNotThrow(() => authorizeHotelMutation(staff, before, cancelled, 'stay.checkout'));
+});
+

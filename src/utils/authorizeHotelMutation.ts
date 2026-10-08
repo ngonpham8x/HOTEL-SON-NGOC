@@ -207,7 +207,26 @@ export function authorizeHotelMutation(actor: AccessActor, before: HotelData, ne
       break;
     }
     case 'stay.checkout': {
-      scope('stays', 'rooms', 'invoices', 'debts'); updatesOnly(d.stays); if (d.stays.updated.length !== 1) deny();
+      scope('stays', 'rooms', 'invoices', 'debts');
+      if (d.invoices.added.length === 0 && d.invoices.updated.length === 1 && d.stays.added.length === 0 && d.stays.updated.length === 0 && d.rooms.added.length === 0 && d.rooms.updated.length === 0) {
+        const { old, next: invoice } = d.invoices.updated[0];
+        if (old.id !== invoice.id || old.code !== invoice.code) deny();
+        if (invoice.status === 'CANCELLED') {
+          updatesOnly(d.debts);
+          for (const { old: dOld, next: dNext } of d.debts.updated) {
+            if (dOld.invoiceId !== invoice.id || dNext.invoiceId !== invoice.id) deny();
+          }
+        } else {
+          if (!onlyFields(old, invoice, ['customerName', 'phone', 'paymentMethod', 'notes'])) deny();
+          if (!invoice.customerName?.trim()) deny('Tên khách không được để trống.');
+          updatesOnly(d.debts);
+          for (const { old: dOld, next: dNext } of d.debts.updated) {
+            if (dOld.invoiceId !== invoice.id || !onlyFields(dOld, dNext, ['customerName', 'phone', 'notes'])) deny();
+          }
+        }
+        break;
+      }
+      updatesOnly(d.stays); if (d.stays.updated.length !== 1) deny();
       const { old, next: stay } = d.stays.updated[0]; if (old.status !== 'ACTIVE' || stay.status !== 'CHECKED_OUT' || !onlyFields(old, stay, ['status', 'actualCheckOutDate', 'actualCheckOutTime'])) deny();
       const invoice = newInvoice('ROOM'); if (invoice.stayId !== old.id || invoice.roomNumber !== old.roomNumber || invoice.customerName !== old.customerName || !equal(invoice.services || [], old.services) || invoice.serviceCharge !== old.services.reduce((sum, usage) => sum + usage.totalPrice, 0) || invoice.depositDeducted > old.deposit || before.invoices.some(row => row.stayId === old.id)) deny();
       if (!stay.actualCheckOutDate || !stay.actualCheckOutTime || !Number.isFinite(dateTime(stay.actualCheckOutDate, stay.actualCheckOutTime))) deny();
