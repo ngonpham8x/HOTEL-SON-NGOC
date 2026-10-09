@@ -96,51 +96,51 @@ export const DebtManagement: React.FC = () => {
 
   return (
     <div className="space-y-5">
-      {/* Top Banner & KPI Stat Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white p-4 rounded-xl border border-rose-200 shadow-2xs">
+      {/* Top Banner & KPI Stat Cards (Song song 2 cột trên mobile) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
+        <div className="bg-white p-3 sm:p-4 rounded-xl border border-rose-200 shadow-2xs">
           <div className="flex items-center justify-between text-rose-700">
-            <span className="text-xs font-semibold">Tổng nợ cần thu hồi</span>
-            <BadgeAlert className="w-4 h-4" />
+            <span className="text-[11px] sm:text-xs font-semibold truncate">Tổng nợ cần thu</span>
+            <BadgeAlert className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
           </div>
-          <p className="text-2xl font-bold font-mono text-rose-800 mt-1">
+          <p className="text-base sm:text-2xl font-bold font-mono text-rose-800 mt-1 truncate">
             {formatCurrency(totalRemaining)}
           </p>
-          <p className="text-[11px] text-slate-500 mt-1">
-            Từ <strong>{activeDebtorsCount}</strong> khách hàng / đơn vị nợ
+          <p className="text-[10px] sm:text-[11px] text-slate-500 mt-1 truncate">
+            Từ <strong>{activeDebtorsCount}</strong> khách hàng / đơn vị
           </p>
         </div>
 
-        <div className="bg-white p-4 rounded-xl border border-emerald-200 shadow-2xs">
+        <div className="bg-white p-3 sm:p-4 rounded-xl border border-emerald-200 shadow-2xs">
           <div className="flex items-center justify-between text-emerald-700">
-            <span className="text-xs font-semibold">Đã thu hồi được</span>
-            <CheckCircle2 className="w-4 h-4" />
+            <span className="text-[11px] sm:text-xs font-semibold truncate">Đã thu hồi được</span>
+            <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
           </div>
-          <p className="text-2xl font-bold font-mono text-emerald-800 mt-1">
+          <p className="text-base sm:text-2xl font-bold font-mono text-emerald-800 mt-1 truncate">
             {formatCurrency(totalPaid)}
           </p>
-          <p className="text-[11px] text-slate-500 mt-1">
-            Tỷ lệ thu hồi: <strong>{totalOriginalDebt > 0 ? Math.round((totalPaid / totalOriginalDebt) * 100) : 0}%</strong>
+          <p className="text-[10px] sm:text-[11px] text-slate-500 mt-1 truncate">
+            Thu hồi: <strong>{totalOriginalDebt > 0 ? Math.round((totalPaid / totalOriginalDebt) * 100) : 0}%</strong>
           </p>
         </div>
 
-        <div className="bg-white p-4 rounded-xl border border-amber-200 shadow-2xs">
+        <div className="bg-white p-3 sm:p-4 rounded-xl border border-amber-200 shadow-2xs">
           <div className="flex items-center justify-between text-amber-700">
-            <span className="text-xs font-semibold">Nợ quá hạn</span>
-            <AlertTriangle className="w-4 h-4" />
+            <span className="text-[11px] sm:text-xs font-semibold truncate">Nợ quá hạn</span>
+            <AlertTriangle className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
           </div>
-          <p className="text-2xl font-bold font-mono text-amber-800 mt-1">
+          <p className="text-base sm:text-2xl font-bold font-mono text-amber-800 mt-1 truncate">
             {overdueCount} hồ sơ
           </p>
-          <p className="text-[11px] text-slate-500 mt-1">
-            Cần liên hệ nhắc nợ gấp
+          <p className="text-[10px] sm:text-[11px] text-slate-500 mt-1 truncate">
+            Cần nhắc nợ gấp
           </p>
         </div>
 
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs flex flex-col justify-between">
+        <div className="bg-white p-3 sm:p-4 rounded-xl border border-slate-200 shadow-2xs flex flex-col justify-between">
           <div className="flex items-center justify-between text-slate-600">
-            <span className="text-xs font-semibold">Báo cáo & Đối soát</span>
-            <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
+            <span className="text-[11px] sm:text-xs font-semibold truncate">Báo cáo sổ nợ</span>
+            <FileSpreadsheet className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-600 shrink-0" />
           </div>
           <AccessGuard action="data.export"><button
             onClick={handleExportExcel}

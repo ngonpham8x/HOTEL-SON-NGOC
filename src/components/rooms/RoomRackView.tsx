@@ -92,66 +92,66 @@ export const RoomRackView: React.FC<RoomRackViewProps> = ({
 
   return (
     <div className="space-y-5">
-      {/* Top Quick KPI Strip: Revenue & Room Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
-        <AccessGuard anyView={['dashboard', 'analytics']}><div className="bg-white p-3.5 rounded-xl border border-slate-200/90 shadow-2xs">
+      {/* Top Quick KPI Strip: Revenue & Room Stats (Song song 2 cột trên mobile) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3.5">
+        <AccessGuard anyView={['dashboard', 'analytics']}><div className="bg-white p-3 sm:p-3.5 rounded-xl border border-slate-200/90 shadow-2xs">
           <div className="flex items-center justify-between text-slate-500 text-xs">
-            <span className="font-semibold">Doanh thu hôm nay</span>
-            <span className="text-[10px] font-mono text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded font-bold">{today.split('-').slice(1).reverse().join('/')}</span>
+            <span className="font-semibold text-[11px] sm:text-xs truncate">Hôm nay</span>
+            <span className="text-[10px] font-mono text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded font-bold shrink-0">{today.split('-').slice(1).reverse().join('/')}</span>
           </div>
-          <p className="text-xl font-bold font-mono text-slate-900 mt-1">
+          <p className="text-base sm:text-xl font-bold font-mono text-slate-900 mt-1 truncate">
             {formatCurrency(todayRevenue)}
           </p>
-          <div className="mt-1.5 flex items-center justify-between text-[11px] text-slate-500 border-t border-slate-100 pt-1.5">
-            <span>Thực thu: <strong className="text-emerald-700 font-mono">{formatCurrency(todayPaid)}</strong></span>
+          <div className="mt-1.5 flex items-center justify-between text-[10px] sm:text-[11px] text-slate-500 border-t border-slate-100 pt-1.5 truncate">
+            <span className="truncate">Thực thu: <strong className="text-emerald-700 font-mono">{formatCurrency(todayPaid)}</strong></span>
           </div>
         </div></AccessGuard>
 
-        <AccessGuard anyView={['dashboard', 'analytics']}><div className="bg-white p-3.5 rounded-xl border border-slate-200/90 shadow-2xs">
+        <AccessGuard anyView={['dashboard', 'analytics']}><div className="bg-white p-3 sm:p-3.5 rounded-xl border border-slate-200/90 shadow-2xs">
           <div className="flex items-center justify-between text-slate-500 text-xs">
-            <span className="font-semibold">Doanh thu tháng này</span>
-            <span className="text-[10px] text-blue-700 font-bold bg-blue-50 px-1.5 py-0.5 rounded">Tháng này</span>
+            <span className="font-semibold text-[11px] sm:text-xs truncate">Tháng này</span>
+            <span className="text-[10px] text-blue-700 font-bold bg-blue-50 px-1.5 py-0.5 rounded shrink-0">Tháng này</span>
           </div>
-          <p className="text-xl font-bold font-mono text-emerald-800 mt-1">
+          <p className="text-base sm:text-xl font-bold font-mono text-emerald-800 mt-1 truncate">
             {formatCurrency(thisMonthRevenue)}
           </p>
-          <div className="mt-1.5 flex items-center justify-between text-[11px] text-slate-500 border-t border-slate-100 pt-1.5">
+          <div className="mt-1.5 flex items-center justify-between text-[10px] sm:text-[11px] text-slate-500 border-t border-slate-100 pt-1.5">
             <AccessGuard view="analytics"><button
               onClick={() => setActiveTab('analytics')}
-              className="text-emerald-700 font-bold hover:underline"
+              className="text-emerald-700 font-bold hover:underline truncate"
             >
-              So sánh tháng trước →
+              So sánh tháng →
             </button></AccessGuard>
           </div>
         </div></AccessGuard>
 
-        <div className="bg-white p-3.5 rounded-xl border border-slate-200/90 shadow-2xs">
+        <div className="bg-white p-3 sm:p-3.5 rounded-xl border border-slate-200/90 shadow-2xs">
           <div className="flex items-center justify-between text-slate-500 text-xs">
-            <span className="font-semibold">Công suất sử dụng</span>
-            <span className="text-[10px] text-purple-700 font-bold bg-purple-50 px-1.5 py-0.5 rounded">{occupancyRate}%</span>
+            <span className="font-semibold text-[11px] sm:text-xs truncate">Công suất</span>
+            <span className="text-[10px] text-purple-700 font-bold bg-purple-50 px-1.5 py-0.5 rounded shrink-0">{occupancyRate}%</span>
           </div>
-          <p className="text-xl font-bold font-mono text-purple-900 mt-1">
+          <p className="text-base sm:text-xl font-bold font-mono text-purple-900 mt-1 truncate">
             {counts.occupied}/{rooms.length} phòng
           </p>
-          <div className="mt-1.5 flex items-center justify-between text-[11px] text-slate-500 border-t border-slate-100 pt-1.5">
-            <span>Trống sẵn sàng: <strong className="text-emerald-700 font-bold">{counts.available}</strong> phòng</span>
+          <div className="mt-1.5 flex items-center justify-between text-[10px] sm:text-[11px] text-slate-500 border-t border-slate-100 pt-1.5 truncate">
+            <span className="truncate">Trống: <strong className="text-emerald-700 font-bold">{counts.available}</strong> phòng</span>
           </div>
         </div>
 
-        <AccessGuard view="debt"><div className="bg-white p-3.5 rounded-xl border border-rose-200 shadow-2xs">
+        <AccessGuard view="debt"><div className="bg-white p-3 sm:p-3.5 rounded-xl border border-rose-200 shadow-2xs">
           <div className="flex items-center justify-between text-rose-700 text-xs">
-            <span className="font-semibold">Công nợ khách nợ</span>
-            <span className="text-[10px] text-rose-800 font-bold bg-rose-50 px-1.5 py-0.5 rounded">{activeDebtorsCount} khách</span>
+            <span className="font-semibold text-[11px] sm:text-xs truncate">Khách nợ</span>
+            <span className="text-[10px] text-rose-800 font-bold bg-rose-50 px-1.5 py-0.5 rounded shrink-0">{activeDebtorsCount} đoàn</span>
           </div>
-          <p className="text-xl font-bold font-mono text-rose-800 mt-1">
+          <p className="text-base sm:text-xl font-bold font-mono text-rose-800 mt-1 truncate">
             {formatCurrency(totalRemainingDebt)}
           </p>
-          <div className="mt-1.5 flex items-center justify-between text-[11px] text-slate-500 border-t border-rose-100 pt-1.5">
+          <div className="mt-1.5 flex items-center justify-between text-[10px] sm:text-[11px] text-slate-500 border-t border-rose-100 pt-1.5">
             <button
               onClick={() => setActiveTab('debt')}
-              className="text-rose-700 font-bold hover:underline"
+              className="text-rose-700 font-bold hover:underline truncate"
             >
-              Xử lý thu nợ →
+              Thu nợ →
             </button>
           </div>
         </div></AccessGuard>

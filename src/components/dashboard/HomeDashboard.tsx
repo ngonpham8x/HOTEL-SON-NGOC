@@ -324,7 +324,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
           <div className="flex items-center gap-2">
             <TrendingUp className="w-4 h-4 text-teal-600" />
             <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">
-              Thống Kê Doanh Thu: Ngày · Tuần · Tháng · Năm
+              Thống Kê Doanh Thu: Ngày · Tuần · Tháng
             </h3>
           </div>
           <span className="text-[11px] text-slate-500 hidden sm:inline">
@@ -332,154 +332,139 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
           </span>
         </div>
 
-        {/* 4 Revenue Cards for Day, Week, Month, Year */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
-        {/* Card 1: Doanh thu hôm nay */}
-        <div
-          onClick={() => setDetailModal('TODAY_REVENUE')}
-          className="bg-white p-3.5 rounded-xl border border-teal-200/90 shadow-2xs hover:shadow-md hover:border-teal-500 transition-all cursor-pointer group"
-          title="Bấm để xem danh sách phiếu thu và nguồn thu hôm nay"
-        >
-          <div className="flex items-center justify-between text-slate-500 text-xs">
-            <span className="font-semibold text-slate-700">Doanh thu hôm nay ({formatDate(today).slice(0, 5)})</span>
-            <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-teal-600 transition-colors" />
-          </div>
-          <p className="text-xl font-bold font-mono text-slate-900 mt-1">
-            {formatCurrency(todayRevenue)}
-          </p>
-          <div className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
-            <span>Phòng: <strong className="text-slate-800 font-mono">{formatCurrency(todayRoomRev)}</strong></span>
-            <span>Massage: <strong className="text-teal-700 font-mono">{formatCurrency(todayMassageRev)}</strong></span>
-          </div>
-        </div>
-
-        {/* Card: Doanh thu Tuần này */}
-        <div
-          onClick={() => setDetailModal('WEEK_REVENUE')}
-          className="bg-white p-3.5 rounded-xl border border-teal-200/90 shadow-2xs hover:shadow-md hover:border-teal-500 transition-all cursor-pointer group"
-          title="Bấm để xem danh sách phiếu thu tuần này"
-        >
-          <div className="flex items-center justify-between text-slate-500 text-xs">
-            <span className="font-semibold text-slate-700 flex items-center gap-1.5">
-              <BarChart2 className="w-3.5 h-3.5 text-blue-600" />
-              <span>Tuần này ({weekRange.label})</span>
-            </span>
-            <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-teal-600 transition-colors" />
-          </div>
-          <p className="text-xl font-bold font-mono text-blue-900 mt-1">
-            {formatCurrency(thisWeekRev)}
-          </p>
-          <div className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
-            <span>Phòng: <strong className="text-slate-800 font-mono">{formatCurrency(thisWeekRoomRev)}</strong></span>
-            <span>Massage: <strong className="text-teal-700 font-mono">{formatCurrency(thisWeekMassageRev)}</strong></span>
-          </div>
-        </div>
-
-        {/* Card 2: Doanh thu tháng này */}
-        <div
-          onClick={() => setDetailModal('MONTH_REVENUE')}
-          className="bg-white p-3.5 rounded-xl border border-teal-200/90 shadow-2xs hover:shadow-md hover:border-teal-500 transition-all cursor-pointer group"
-          title="Bấm để xem doanh thu tháng này và so sánh với tháng trước"
-        >
-          <div className="flex items-center justify-between text-slate-500 text-xs">
-            <span className="font-semibold text-slate-700">Doanh thu tháng này</span>
-            <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-teal-600 transition-colors" />
-          </div>
-          <p className="text-xl font-bold font-mono text-teal-800 mt-1">
-            {formatCurrency(thisMonthRev)}
-          </p>
-          <div className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
-            <span>Tháng trước: <strong className="text-slate-700 font-mono">{formatCurrency(lastMonthRev)}</strong></span>
-          </div>
-        </div>
-
-        {/* Card: Doanh thu Cả Năm */}
-        <div
-          onClick={() => setDetailModal('YEAR_REVENUE')}
-          className="bg-white p-3.5 rounded-xl border border-teal-200/90 shadow-2xs hover:shadow-md hover:border-teal-500 transition-all cursor-pointer group"
-          title="Bấm để xem doanh thu cả năm"
-        >
-          <div className="flex items-center justify-between text-slate-500 text-xs">
-            <span className="font-semibold text-slate-700 flex items-center gap-1.5">
-              <Trophy className="w-3.5 h-3.5 text-amber-600" />
-              <span>Cả năm ({thisYear})</span>
-            </span>
-            <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-teal-600 transition-colors" />
-          </div>
-          <p className="text-xl font-bold font-mono text-amber-900 mt-1">
-            {formatCurrency(thisYearRev)}
-          </p>
-          <div className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
-            <span>Năm trước: <strong className="text-slate-700 font-mono">{formatCurrency(lastYearRev)}</strong></span>
-          </div>
-        </div>
-
-      </div>
-
-      {/* 3 Thẻ Vận Hành & Khách Nợ */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        {/* Card: Doanh thu Vé Massage Thư Giãn (Doanh thu riêng biệt) */}
-        <div
-          onClick={() => setDetailModal('MASSAGE_REVENUE')}
-          className="bg-gradient-to-br from-teal-50 to-cyan-50/70 p-3.5 rounded-xl border border-teal-300 shadow-2xs hover:shadow-md hover:border-teal-600 transition-all cursor-pointer group"
-          title="Bấm để xem thống kê từng loại vé Massage đã bán"
-        >
-          <div className="flex items-center justify-between text-teal-900 text-xs">
-            <span className="font-bold flex items-center gap-1">
-              <span>🌸 Vé Massage Thư Giãn</span>
-            </span>
-            <ChevronRight className="w-4 h-4 text-teal-600 group-hover:translate-x-0.5 transition-transform" />
-          </div>
-          <p className="text-xl font-bold font-mono text-teal-900 mt-1">
-            {formatCurrency(thisMonthMassageRev)}
-          </p>
-          <div className="mt-2 pt-2 border-t border-teal-200/60 flex items-center justify-between text-[11px] text-teal-800">
-            <span>Hôm nay: <strong className="font-mono">{formatCurrency(todayMassageRev)}</strong></span>
-            <span>Đã bán: <strong className="font-mono">{totalMassageTicketsCount} vé</strong></span>
-          </div>
-        </div>
-
-        {/* Card 4: Công suất phòng (15 phòng) */}
-        <div
-          onClick={() => setDetailModal('ROOM_OCCUPANCY')}
-          className="bg-white p-3.5 rounded-xl border border-teal-200/90 shadow-2xs hover:shadow-md hover:border-purple-500 transition-all cursor-pointer group"
-          title="Bấm để xem sơ đồ hiện trạng 15 phòng (Tầng 1 & Tầng 2)"
-        >
-          <div className="flex items-center justify-between text-slate-500 text-xs">
-            <span className="font-semibold text-slate-700">Công suất phòng</span>
-            <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-purple-600 transition-colors" />
-          </div>
-          <div className="flex items-baseline gap-2 mt-1">
-            <p className="text-xl font-bold font-mono text-purple-900">
-              {occupancyRate}%
+        {/* 3 Revenue Cards for Day, Week, Month (Song song 2 cột trên mobile) */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 sm:gap-3.5">
+          {/* Card 1: Doanh thu hôm nay */}
+          <div
+            onClick={() => setDetailModal('TODAY_REVENUE')}
+            className="bg-white p-2.5 sm:p-3.5 rounded-xl border border-teal-200/90 shadow-2xs hover:shadow-md hover:border-teal-500 transition-all cursor-pointer group"
+            title="Bấm để xem danh sách phiếu thu và nguồn thu hôm nay"
+          >
+            <div className="flex items-center justify-between text-slate-500 text-xs">
+              <span className="font-semibold text-slate-700 text-[11px] sm:text-xs truncate">
+                Hôm nay ({formatDate(today).slice(0, 5)})
+              </span>
+              <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-400 group-hover:text-teal-600 transition-colors shrink-0" />
+            </div>
+            <p className="text-base sm:text-xl font-bold font-mono text-slate-900 mt-1 truncate">
+              {formatCurrency(todayRevenue)}
             </p>
-            <span className="text-xs text-slate-500">
-              ({occupiedRooms.length}/{totalRooms} phòng)
-            </span>
+            <div className="mt-2 pt-2 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between text-[10px] sm:text-[11px] text-slate-500 gap-0.5 sm:gap-0">
+              <span className="truncate">Phòng: <strong className="text-slate-800 font-mono">{formatCurrency(todayRoomRev)}</strong></span>
+              <span className="truncate">Massage: <strong className="text-teal-700 font-mono">{formatCurrency(todayMassageRev)}</strong></span>
+            </div>
           </div>
-          <div className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
-            <span>Trống sẵn sàng: <strong className="text-emerald-700">{availableRooms.length} phòng</strong></span>
+
+          {/* Card 2: Doanh thu Tuần này */}
+          <div
+            onClick={() => setDetailModal('WEEK_REVENUE')}
+            className="bg-white p-2.5 sm:p-3.5 rounded-xl border border-teal-200/90 shadow-2xs hover:shadow-md hover:border-teal-500 transition-all cursor-pointer group"
+            title="Bấm để xem danh sách phiếu thu tuần này"
+          >
+            <div className="flex items-center justify-between text-slate-500 text-xs">
+              <span className="font-semibold text-slate-700 flex items-center gap-1 text-[11px] sm:text-xs truncate">
+                <BarChart2 className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                <span className="truncate">Tuần này ({weekRange.label})</span>
+              </span>
+              <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-400 group-hover:text-teal-600 transition-colors shrink-0" />
+            </div>
+            <p className="text-base sm:text-xl font-bold font-mono text-blue-900 mt-1 truncate">
+              {formatCurrency(thisWeekRev)}
+            </p>
+            <div className="mt-2 pt-2 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between text-[10px] sm:text-[11px] text-slate-500 gap-0.5 sm:gap-0">
+              <span className="truncate">Phòng: <strong className="text-slate-800 font-mono">{formatCurrency(thisWeekRoomRev)}</strong></span>
+              <span className="truncate">Massage: <strong className="text-teal-700 font-mono">{formatCurrency(thisWeekMassageRev)}</strong></span>
+            </div>
+          </div>
+
+          {/* Card 3: Doanh thu tháng này */}
+          <div
+            onClick={() => setDetailModal('MONTH_REVENUE')}
+            className="col-span-2 sm:col-span-1 bg-white p-2.5 sm:p-3.5 rounded-xl border border-teal-200/90 shadow-2xs hover:shadow-md hover:border-teal-500 transition-all cursor-pointer group"
+            title="Bấm để xem doanh thu tháng này và so sánh với tháng trước"
+          >
+            <div className="flex items-center justify-between text-slate-500 text-xs">
+              <span className="font-semibold text-slate-700 flex items-center gap-1 text-[11px] sm:text-xs truncate">
+                <Calendar className="w-3.5 h-3.5 text-teal-600 shrink-0" />
+                <span className="truncate">Doanh thu tháng này ({today.slice(5, 7)}/{today.slice(0, 4)})</span>
+              </span>
+              <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-400 group-hover:text-teal-600 transition-colors shrink-0" />
+            </div>
+            <p className="text-base sm:text-xl font-bold font-mono text-teal-800 mt-1 truncate">
+              {formatCurrency(thisMonthRev)}
+            </p>
+            <div className="mt-2 pt-2 border-t border-slate-100 flex flex-wrap items-center justify-between text-[10px] sm:text-[11px] text-slate-500 gap-1">
+              <span>Phòng: <strong className="text-slate-800 font-mono">{formatCurrency(thisMonthRoomRev)}</strong></span>
+              <span>Massage: <strong className="text-teal-700 font-mono">{formatCurrency(thisMonthMassageRev)}</strong></span>
+              <span>Tháng trước: <strong className="text-slate-700 font-mono">{formatCurrency(lastMonthRev)}</strong></span>
+            </div>
           </div>
         </div>
 
-        {/* Card 5: Tiền khách nợ */}
-        <AccessGuard view="debt"><div
-          onClick={() => setDetailModal('DEBT_LIST')}
-          className="bg-white p-3.5 rounded-xl border border-rose-200 shadow-2xs hover:shadow-md hover:border-rose-500 transition-all cursor-pointer group"
-          title="Bấm để xem danh sách khách nợ và xử lý thu tiền nợ"
-        >
-          <div className="flex items-center justify-between text-rose-700 text-xs">
-            <span className="font-semibold">Tiền khách nợ cần thu</span>
-            <ChevronRight className="w-4 h-4 text-rose-400 group-hover:text-rose-600 transition-colors" />
+        {/* 3 Thẻ Vận Hành & Khách Nợ (Song song 2 cột trên mobile) */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 sm:gap-3">
+          {/* Card: Doanh thu Vé Massage Thư Giãn (Doanh thu riêng biệt) */}
+          <div
+            onClick={() => setDetailModal('MASSAGE_REVENUE')}
+            className="bg-gradient-to-br from-teal-50 to-cyan-50/70 p-2.5 sm:p-3.5 rounded-xl border border-teal-300 shadow-2xs hover:shadow-md hover:border-teal-600 transition-all cursor-pointer group"
+            title="Bấm để xem thống kê từng loại vé Massage đã bán"
+          >
+            <div className="flex items-center justify-between text-teal-900 text-xs">
+              <span className="font-bold flex items-center gap-1 text-[11px] sm:text-xs truncate">
+                <span className="truncate">🌸 Vé Massage</span>
+              </span>
+              <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-teal-600 group-hover:translate-x-0.5 transition-transform shrink-0" />
+            </div>
+            <p className="text-base sm:text-xl font-bold font-mono text-teal-900 mt-1 truncate">
+              {formatCurrency(thisMonthMassageRev)}
+            </p>
+            <div className="mt-2 pt-2 border-t border-teal-200/60 flex flex-col sm:flex-row sm:items-center sm:justify-between text-[10px] sm:text-[11px] text-teal-800 gap-0.5 sm:gap-0">
+              <span className="truncate">Hôm nay: <strong className="font-mono">{formatCurrency(todayMassageRev)}</strong></span>
+              <span className="truncate">Đã bán: <strong className="font-mono">{totalMassageTicketsCount} vé</strong></span>
+            </div>
           </div>
-          <p className="text-xl font-bold font-mono text-rose-800 mt-1">
-            {formatCurrency(totalRemainingDebt)}
-          </p>
-          <div className="mt-2 pt-2 border-t border-rose-100 flex items-center justify-between text-[11px] text-slate-500">
-            <span>Khách nợ: <strong className="text-rose-700">{activeDebtorsCount} đoàn</strong></span>
+
+          {/* Card: Công suất phòng (15 phòng) */}
+          <div
+            onClick={() => setDetailModal('ROOM_OCCUPANCY')}
+            className="bg-white p-2.5 sm:p-3.5 rounded-xl border border-teal-200/90 shadow-2xs hover:shadow-md hover:border-purple-500 transition-all cursor-pointer group"
+            title="Bấm để xem sơ đồ hiện trạng 15 phòng (Tầng 1 & Tầng 2)"
+          >
+            <div className="flex items-center justify-between text-slate-500 text-xs">
+              <span className="font-semibold text-slate-700 text-[11px] sm:text-xs truncate">Công suất phòng</span>
+              <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-400 group-hover:text-purple-600 transition-colors shrink-0" />
+            </div>
+            <div className="flex items-baseline gap-1.5 sm:gap-2 mt-1">
+              <p className="text-base sm:text-xl font-bold font-mono text-purple-900">
+                {occupancyRate}%
+              </p>
+              <span className="text-[10px] sm:text-xs text-slate-500 truncate">
+                ({occupiedRooms.length}/{totalRooms} phòng)
+              </span>
+            </div>
+            <div className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between text-[10px] sm:text-[11px] text-slate-500">
+              <span className="truncate">Trống: <strong className="text-emerald-700">{availableRooms.length} phòng</strong></span>
+            </div>
           </div>
-        </div></AccessGuard>
-      </div>
+
+          {/* Card: Tiền khách nợ */}
+          <AccessGuard view="debt"><div
+            onClick={() => setDetailModal('DEBT_LIST')}
+            className="col-span-2 sm:col-span-1 bg-white p-2.5 sm:p-3.5 rounded-xl border border-rose-200 shadow-2xs hover:shadow-md hover:border-rose-500 transition-all cursor-pointer group"
+            title="Bấm để xem danh sách khách nợ và xử lý thu tiền nợ"
+          >
+            <div className="flex items-center justify-between text-rose-700 text-xs">
+              <span className="font-semibold text-[11px] sm:text-xs truncate">Tiền khách nợ cần thu</span>
+              <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-rose-400 group-hover:text-rose-600 transition-colors shrink-0" />
+            </div>
+            <p className="text-base sm:text-xl font-bold font-mono text-rose-800 mt-1 truncate">
+              {formatCurrency(totalRemainingDebt)}
+            </p>
+            <div className="mt-2 pt-2 border-t border-rose-100 flex items-center justify-between text-[10px] sm:text-[11px] text-slate-500">
+              <span>Khách nợ: <strong className="text-rose-700">{activeDebtorsCount} đoàn</strong></span>
+            </div>
+          </div></AccessGuard>
+        </div>
       </div>
 
       {/* 3. Doanh Thu Riêng Biệt 2 Loại Dịch Vụ: Tiền Phòng vs Vé Massage Thư Giãn */}

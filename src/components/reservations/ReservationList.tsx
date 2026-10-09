@@ -73,25 +73,25 @@ export const ReservationList: React.FC<ReservationListProps> = ({ onOpenBookingM
 
   return (
     <div className="space-y-5">
-      {/* Top Banner & Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-        <div className="bg-white p-4 rounded-xl border border-slate-200">
-          <p className="text-slate-500 text-xs font-medium">Chờ nhận phòng</p>
-          <p className="text-2xl font-bold font-mono text-amber-600 mt-1">{confirmedCount}</p>
+      {/* Top Banner & Stats (Song song 2 cột trên mobile) */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-4">
+        <div className="bg-white p-3 sm:p-4 rounded-xl border border-slate-200 shadow-2xs">
+          <p className="text-slate-500 text-[11px] sm:text-xs font-medium truncate">Chờ nhận phòng</p>
+          <p className="text-xl sm:text-2xl font-bold font-mono text-amber-600 mt-1 truncate">{confirmedCount}</p>
         </div>
-        <div className="bg-white p-4 rounded-xl border border-slate-200">
-          <p className="text-slate-500 text-xs font-medium">Tổng tiền cọc đang giữ</p>
-          <p className="text-xl font-bold font-mono text-emerald-700 mt-1">
+        <div className="bg-white p-3 sm:p-4 rounded-xl border border-slate-200 shadow-2xs">
+          <p className="text-slate-500 text-[11px] sm:text-xs font-medium truncate">Tiền cọc đang giữ</p>
+          <p className="text-base sm:text-xl font-bold font-mono text-emerald-700 mt-1 truncate">
             {formatCurrency(totalDeposit)}
           </p>
         </div>
-        <div className="bg-white p-4 rounded-xl border border-slate-200">
-          <p className="text-slate-500 text-xs font-medium">Đã nhận phòng thành công</p>
-          <p className="text-2xl font-bold font-mono text-slate-800 mt-1">{checkedInCount}</p>
+        <div className="bg-white p-3 sm:p-4 rounded-xl border border-slate-200 shadow-2xs">
+          <p className="text-slate-500 text-[11px] sm:text-xs font-medium truncate">Đã nhận phòng</p>
+          <p className="text-xl sm:text-2xl font-bold font-mono text-slate-800 mt-1 truncate">{checkedInCount}</p>
         </div>
-        <div className="bg-white p-4 rounded-xl border border-slate-200">
-          <p className="text-slate-500 text-xs font-medium">Đơn đã hủy</p>
-          <p className="text-2xl font-bold font-mono text-slate-400 mt-1">{cancelledCount}</p>
+        <div className="bg-white p-3 sm:p-4 rounded-xl border border-slate-200 shadow-2xs">
+          <p className="text-slate-500 text-[11px] sm:text-xs font-medium truncate">Đơn đã hủy</p>
+          <p className="text-xl sm:text-2xl font-bold font-mono text-slate-400 mt-1 truncate">{cancelledCount}</p>
         </div>
       </div>
 
