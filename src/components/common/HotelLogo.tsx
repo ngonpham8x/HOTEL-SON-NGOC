@@ -32,7 +32,7 @@ export const HotelLogo: React.FC<HotelLogoProps> = ({
       {/* Official Luxury Hotel Sơn Ngọc Emblem Badge */}
       <div
         className={`${sizeMap[size]} shrink-0 rounded-xl overflow-hidden shadow-xs ring-1 ring-amber-400/40 bg-[#f9f8f4] flex items-center justify-center p-0.5 transition-transform hover:scale-[1.02]`}
-        title="HOTEL SƠN NGỌC · Đà Lạt - Việt Nam"
+        title="HOTEL SƠN NGỌC"
       >
         <img
           src={imgSrc}
