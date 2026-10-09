@@ -174,8 +174,8 @@ function cropSquare(src, cx, cy, size, padFraction = 0.12, maxYCut = 9999, bgR =
 const masterBuf = readFileSync(new URL('../public/logo-original.png', import.meta.url));
 const master = decodePNG(masterBuf);
 
-// 1. Full logo square: Centered at (512, 260), removing "ĐÀ LẠT - VIỆT NAM" (maxYCut = 377).
-const fullCropped = cropSquare(master, 512, 260, 336, 0.18, 377);
+// 1. Full logo square: Centered at (512, 266), retaining the dot under "NGỌC" (y=379..387), removing "ĐÀ LẠT - VIỆT NAM" (y >= 390, maxYCut = 388).
+const fullCropped = cropSquare(master, 512, 266, 336, 0.18, 388);
 const square512 = resizeBilinear(fullCropped.data, fullCropped.size, fullCropped.size, 512, 512);
 const square512Png = encodePNG(square512, 512, 512);
 
@@ -194,8 +194,8 @@ writeFileSync(new URL('../public/apple-touch-icon-167.png', import.meta.url), en
 const apple152 = resizeBilinear(fullCropped.data, fullCropped.size, fullCropped.size, 152, 152);
 writeFileSync(new URL('../public/apple-touch-icon-152.png', import.meta.url), encodePNG(apple152, 152, 152));
 
-// 2. Maskable icon with 42% padding for safe circle cropping, removing "ĐÀ LẠT - VIỆT NAM"
-const maskableCropped = cropSquare(master, 512, 260, 336, 0.42, 377);
+// 2. Maskable icon with 42% padding for safe circle cropping, retaining the dot under "NGỌC"
+const maskableCropped = cropSquare(master, 512, 266, 336, 0.42, 388);
 const maskable512 = resizeBilinear(maskableCropped.data, maskableCropped.size, maskableCropped.size, 512, 512);
 writeFileSync(new URL('../public/pwa-maskable-512x512.png', import.meta.url), encodePNG(maskable512, 512, 512));
 

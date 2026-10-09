@@ -10,6 +10,7 @@ import {
   Printer,
   Edit2,
   Trash2,
+  Ban,
   User,
   Phone,
   DoorOpen,
@@ -33,7 +34,14 @@ export const InvoiceListTable: React.FC<InvoiceListTableProps> = ({
   showDateColumn = false,
   maxHeightClass,
 }) => {
-  const { cancelServiceSale, cancelRoomInvoice, requestConfirm, showToast } = useHotel();
+  const {
+    cancelServiceSale,
+    cancelRoomInvoice,
+    deleteInvoice,
+    clearCancelledInvoices,
+    requestConfirm,
+    showToast,
+  } = useHotel();
 
   const [editingServiceInvoice, setEditingServiceInvoice] = useState<Invoice | null>(null);
   const [editingRoomInvoice, setEditingRoomInvoice] = useState<Invoice | null>(null);
@@ -59,8 +67,8 @@ export const InvoiceListTable: React.FC<InvoiceListTableProps> = ({
 
     requestConfirm({
       title: `Xác nhận hủy phiếu thu ${inv.code}?`,
-      message: `Bạn có chắc chắn muốn xóa / hủy phiếu thu ${inv.code} (${inv.customerName}) không? Doanh thu ${formatCurrency(invoiceRevenue(inv))} của phiếu thu này sẽ được điều chỉnh về 0 và chuyển sang trạng thái ĐÃ HỦY.`,
-      confirmLabel: 'Xác nhận xóa / hủy',
+      message: `Bạn có chắc chắn muốn hủy phiếu thu ${inv.code} (${inv.customerName}) không? Doanh thu ${formatCurrency(invoiceRevenue(inv))} của phiếu thu này sẽ được điều chỉnh về 0 và chuyển sang trạng thái ĐÃ HỦY.`,
+      confirmLabel: 'Xác nhận hủy giao dịch',
       cancelLabel: 'Đóng',
       isDanger: true,
       onConfirm: async () => {
@@ -70,9 +78,45 @@ export const InvoiceListTable: React.FC<InvoiceListTableProps> = ({
           } else {
             await cancelRoomInvoice(inv.id);
           }
-          showToast(`Đã xóa / hủy phiếu thu ${inv.code} thành công.`, 'success');
+          showToast(`Đã hủy phiếu thu ${inv.code} thành công.`, 'success');
+        } catch (error) {
+          showToast(error instanceof Error ? error.message : 'Không thể hủy phiếu thu.', 'error');
+        }
+      },
+    });
+  };
+
+  const handlePermanentDelete = (inv: Invoice) => {
+    requestConfirm({
+      title: `Xóa vĩnh viễn phiếu thu ${inv.code}?`,
+      message: `Bạn có chắc chắn muốn xóa vĩnh viễn phiếu thu test ${inv.code} (${inv.customerName}) khỏi hệ thống? Dữ liệu này sẽ được xóa hoàn toàn và không thể khôi phục.`,
+      confirmLabel: 'Xác nhận xóa vĩnh viễn',
+      cancelLabel: 'Đóng',
+      isDanger: true,
+      onConfirm: async () => {
+        try {
+          await deleteInvoice(inv.id);
         } catch (error) {
           showToast(error instanceof Error ? error.message : 'Không thể xóa phiếu thu.', 'error');
+        }
+      },
+    });
+  };
+
+  const cancelledCount = invoices.filter(i => i.status === 'CANCELLED').length;
+
+  const handleClearAllCancelled = () => {
+    requestConfirm({
+      title: `Xóa sạch ${cancelledCount} phiếu thu đã hủy / test?`,
+      message: `Bạn có chắc chắn muốn xóa vĩnh viễn toàn bộ ${cancelledCount} phiếu thu đã hủy hoặc test trước đó khỏi hệ thống? Thao tác này sẽ dọn dẹp sạch danh sách.`,
+      confirmLabel: 'Xóa sạch tất cả',
+      cancelLabel: 'Đóng',
+      isDanger: true,
+      onConfirm: async () => {
+        try {
+          await clearCancelledInvoices();
+        } catch (error) {
+          showToast(error instanceof Error ? error.message : 'Không thể xóa phiếu thu đã hủy.', 'error');
         }
       },
     });
@@ -89,6 +133,25 @@ export const InvoiceListTable: React.FC<InvoiceListTableProps> = ({
 
   return (
     <>
+      {/* Thanh thông báo & nút dọn dẹp phiếu đã hủy / test */}
+      {cancelledCount > 0 && (
+        <div className="flex items-center justify-between px-3.5 py-2 bg-amber-50/80 border-b border-amber-200/70 text-xs">
+          <div className="flex items-center gap-1.5 text-amber-900 font-medium">
+            <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+            <span>Có <strong>{cancelledCount}</strong> phiếu thu đã hủy / test.</span>
+          </div>
+          <button
+            type="button"
+            onClick={handleClearAllCancelled}
+            className="px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded-md text-[11px] font-bold flex items-center gap-1 transition-colors shadow-xs"
+            title="Xóa sạch toàn bộ phiếu thu đã hủy / test"
+          >
+            <Trash2 className="w-3 h-3" />
+            <span>Xóa sạch phiếu đã hủy ({cancelledCount})</span>
+          </button>
+        </div>
+      )}
+
       {/* =================================================================== */}
       {/* 1. GIAO DIỆN MOBILE (< sm): DẠNG THẺ (CARD VIEW) CUỘN DỌC MƯỢT MÀ */}
       {/* =================================================================== */}
@@ -194,8 +257,8 @@ export const InvoiceListTable: React.FC<InvoiceListTableProps> = ({
                 </div>
               )}
 
-              {/* Hàng nút thao tác Mobile: In, Sửa, Xóa */}
-              <div className="flex items-center justify-end gap-1.5 pt-1 border-t border-slate-100">
+              {/* Hàng nút thao tác Mobile: In, Sửa, Hủy GD, Xóa vĩnh viễn */}
+              <div className="flex items-center justify-end gap-1.5 pt-1 border-t border-slate-100 flex-wrap">
                 <button
                   type="button"
                   onClick={() => setPrintingInvoice(inv)}
@@ -222,13 +285,23 @@ export const InvoiceListTable: React.FC<InvoiceListTableProps> = ({
                   <button
                     type="button"
                     onClick={() => handleDelete(inv)}
-                    className="px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors"
-                    title="Xóa / Hủy phiếu thu"
+                    className="px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors"
+                    title="Hủy giao dịch (doanh thu về 0)"
                   >
-                    <Trash2 className="w-3.5 h-3.5 text-rose-600" />
-                    <span>Xóa</span>
+                    <Ban className="w-3.5 h-3.5 text-amber-600" />
+                    <span>Hủy</span>
                   </button>
                 )}
+
+                <button
+                  type="button"
+                  onClick={() => handlePermanentDelete(inv)}
+                  className="px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors border border-rose-200/60"
+                  title={isCancelled ? 'Xóa vĩnh viễn phiếu thu đã hủy' : 'Xóa vĩnh viễn phiếu test khỏi hệ thống'}
+                >
+                  <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                  <span>Xóa</span>
+                </button>
               </div>
             </div>
           );
@@ -346,12 +419,21 @@ export const InvoiceListTable: React.FC<InvoiceListTableProps> = ({
                         <button
                           type="button"
                           onClick={() => handleDelete(inv)}
-                          className="p-1.5 text-rose-600 hover:text-rose-800 hover:bg-rose-50 rounded-md transition-colors"
-                          title="Xóa / Hủy phiếu thu"
+                          className="p-1.5 text-amber-600 hover:text-amber-800 hover:bg-amber-50 rounded-md transition-colors"
+                          title="Hủy giao dịch (doanh thu về 0)"
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
+                          <Ban className="w-3.5 h-3.5" />
                         </button>
                       )}
+
+                      <button
+                        type="button"
+                        onClick={() => handlePermanentDelete(inv)}
+                        className="p-1.5 text-rose-600 hover:text-rose-800 hover:bg-rose-50 rounded-md transition-colors"
+                        title={isCancelled ? 'Xóa vĩnh viễn phiếu thu đã hủy' : 'Xóa vĩnh viễn phiếu test khỏi hệ thống'}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
                     </div>
                   </td>
                 </tr>

@@ -128,6 +128,8 @@ export interface HotelContextType {
   cancelServiceSale: (invoiceId: string) => Promise<void>;
   updateRoomInvoice: (invoiceId: string, updates: { customerName?: string; phone?: string; paymentMethod?: PaymentMethod; notes?: string }) => Promise<Invoice>;
   cancelRoomInvoice: (invoiceId: string) => Promise<void>;
+  deleteInvoice: (invoiceId: string) => Promise<void>;
+  clearCancelledInvoices: () => Promise<void>;
 
   // Debt actions
   recordDebtPayment: (debtId: string, amount: number, method: PaymentMethod, collectedBy: string, notes?: string) => Promise<void>;
@@ -615,6 +617,56 @@ export const HotelProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }, 'stay.checkout');
     showToast(`Đã hủy phiếu thu phòng ${oldInvoice.code}.`, 'success');
   };
+  const deleteInvoice = async (invoiceId: string) => {
+    const db = dataRef.current;
+    const oldInvoice = db.invoices.find(i => i.id === invoiceId);
+    if (!oldInvoice) throw new Error('Không tìm thấy phiếu thu.');
+
+    const nextInvoices = db.invoices.filter(i => i.id !== invoiceId);
+    const nextDebts = db.debts.filter(d => d.invoiceId !== invoiceId);
+
+    if (access.actor.role === 'ADMIN') {
+      await commit({
+        ...db,
+        invoices: nextInvoices,
+        debts: nextDebts,
+      }, 'data.restore');
+    } else {
+      if (oldInvoice.status !== 'CANCELLED') {
+        if (oldInvoice.kind === 'SERVICE') {
+          await cancelServiceSale(invoiceId);
+        } else {
+          await cancelRoomInvoice(invoiceId);
+        }
+      } else {
+        throw new Error('Chỉ tài khoản Quản lý mới có quyền xóa vĩnh viễn phiếu thu khỏi hệ thống.');
+      }
+      return;
+    }
+    showToast(`Đã xóa vĩnh viễn phiếu thu ${oldInvoice.code} khỏi hệ thống.`, 'success');
+  };
+  const clearCancelledInvoices = async () => {
+    const db = dataRef.current;
+    const cancelled = db.invoices.filter(i => i.status === 'CANCELLED');
+    if (cancelled.length === 0) {
+      showToast('Không có phiếu thu đã hủy nào để xóa.', 'info');
+      return;
+    }
+    if (access.actor.role !== 'ADMIN') {
+      throw new Error('Chỉ tài khoản Quản lý mới có quyền xóa sạch các phiếu thu đã hủy.');
+    }
+
+    const cancelledIds = new Set(cancelled.map(i => i.id));
+    const nextInvoices = db.invoices.filter(i => !cancelledIds.has(i.id));
+    const nextDebts = db.debts.filter(d => !cancelledIds.has(d.invoiceId));
+
+    await commit({
+      ...db,
+      invoices: nextInvoices,
+      debts: nextDebts,
+    }, 'data.restore');
+    showToast(`Đã xóa sạch ${cancelled.length} phiếu thu đã hủy / test khỏi hệ thống.`, 'success');
+  };
   const recordDebtPayment = async (debtId: string, amount: number, method: PaymentMethod, collectedBy: string, notes?: string) => {
     const db = dataRef.current, debt = db.debts.find(d => d.id === debtId); money(amount, 'Tiền thu nợ');
     if (!debt || amount <= 0 || amount > debt.remainingAmount || !['CASH', 'TRANSFER', 'CARD'].includes(method)) throw new Error('Số tiền thu vượt dư nợ hoặc phương thức không hợp lệ.');
@@ -632,7 +684,7 @@ export const HotelProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
   if (!cloudReady) return <div className="p-6 text-teal-900"><p role="status">{storageError || 'Đang mở dữ liệu khách sạn…'}</p></div>;
   const visible = projectHotelData(access.actor, { ...data, debts });
-  return <HotelContext.Provider value={{ rooms: visible.rooms, services: visible.services, stays: visible.stays, reservations: visible.reservations, invoices: visible.invoices, debts: visible.debts, today, storageError, exportBackup, importBackup, activeTab, setActiveTab, isMobileMenuOpen, setIsMobileMenuOpen, isSidebarCollapsed, setIsSidebarCollapsed, toggleSidebar, searchQuery, setSearchQuery, toasts, showToast, removeToast, confirmModal, requestConfirm, closeConfirm, updateRoomCleanStatus, updateRoomStatus, addRoom, editRoom, deleteRoom, createReservation, cancelReservation, archiveReservation, checkInReservation, updateReservation, checkInDirect, updateActiveStay, cancelCheckIn, addServiceToStay, removeServiceFromStay, updateStayCompanions, addService, editService, deleteService, updateRoomTypePricing, checkOutStay, sellServices, updateServiceSale, cancelServiceSale, updateRoomInvoice, cancelRoomInvoice, recordDebtPayment }}>{children}</HotelContext.Provider>;
+  return <HotelContext.Provider value={{ rooms: visible.rooms, services: visible.services, stays: visible.stays, reservations: visible.reservations, invoices: visible.invoices, debts: visible.debts, today, storageError, exportBackup, importBackup, activeTab, setActiveTab, isMobileMenuOpen, setIsMobileMenuOpen, isSidebarCollapsed, setIsSidebarCollapsed, toggleSidebar, searchQuery, setSearchQuery, toasts, showToast, removeToast, confirmModal, requestConfirm, closeConfirm, updateRoomCleanStatus, updateRoomStatus, addRoom, editRoom, deleteRoom, createReservation, cancelReservation, archiveReservation, checkInReservation, updateReservation, checkInDirect, updateActiveStay, cancelCheckIn, addServiceToStay, removeServiceFromStay, updateStayCompanions, addService, editService, deleteService, updateRoomTypePricing, checkOutStay, sellServices, updateServiceSale, cancelServiceSale, updateRoomInvoice, cancelRoomInvoice, deleteInvoice, clearCancelledInvoices, recordDebtPayment }}>{children}</HotelContext.Provider>;
 };
 
 export const useHotel = () => {

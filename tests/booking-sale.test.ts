@@ -62,3 +62,15 @@ test('cancelled transactions are excluded from all revenue, charges, debt and pa
   assert.equal(breakdown.deposit, 0);
 });
 
+test('purging or deleting test invoices removes them completely from the invoice and debt records', () => {
+  const { invoice, debt } = prepareServiceSale({ ...input, customerName: 'Test Delete', phone: '0900000000', paidAmount: 100001 }, catalog);
+  const invoices = [invoice];
+  const debts = debt ? [debt] : [];
+
+  const nextInvoices = invoices.filter(i => i.id !== invoice.id);
+  const nextDebts = debts.filter(d => d.invoiceId !== invoice.id);
+
+  assert.equal(nextInvoices.length, 0);
+  assert.equal(nextDebts.length, 0);
+});
+

@@ -16,25 +16,25 @@ const saveWorkbook = async (workbook: ExcelJS.Workbook, fileName: string) => {
   window.URL.revokeObjectURL(url);
 };
 
-// Common header styling
+// Common header styling - Nhẹ nhàng, sáng sủa, màu xanh nhạt dễ nhìn
 const styleHeaderCell = (cell: ExcelJS.Cell) => {
   cell.fill = {
     type: 'pattern',
     pattern: 'solid',
-    fgColor: { argb: 'FF065F46' }, // Dark Emerald
+    fgColor: { argb: 'FFD0E8F5' }, // Soft Pastel Sky Blue (Màu xanh nhạt dịu mát)
   };
   cell.font = {
     name: 'Arial',
     size: 11,
     bold: true,
-    color: { argb: 'FFFFFFFF' },
+    color: { argb: 'FF0C4A6E' }, // Deep Navy Blue (Chữ xanh đậm sang trọng, dễ đọc)
   };
   cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
   cell.border = {
-    top: { style: 'thin', color: { argb: 'FF047857' } },
-    left: { style: 'thin', color: { argb: 'FF047857' } },
-    bottom: { style: 'medium', color: { argb: 'FF022C22' } },
-    right: { style: 'thin', color: { argb: 'FF047857' } },
+    top: { style: 'thin', color: { argb: 'FF94CAE9' } },
+    left: { style: 'thin', color: { argb: 'FF94CAE9' } },
+    bottom: { style: 'medium', color: { argb: 'FF0284C7' } },
+    right: { style: 'thin', color: { argb: 'FF94CAE9' } },
   };
 };
 
@@ -67,7 +67,7 @@ export const exportRevenueToExcel = async (
   ws.mergeCells('A1:P1');
   const titleCell = ws.getCell('A1');
   titleCell.value = 'HOTEL SƠN NGỌC - BÁO CÁO DOANH THU & GIAO DỊCH';
-  titleCell.font = { name: 'Arial', size: 16, bold: true, color: { argb: 'FF065F46' } };
+  titleCell.font = { name: 'Arial', size: 16, bold: true, color: { argb: 'FF0369A1' } };
   titleCell.alignment = { vertical: 'middle', horizontal: 'center' };
   ws.getRow(1).height = 32;
 
@@ -159,14 +159,14 @@ export const exportRevenueToExcel = async (
     row.getCell(18).alignment = { vertical: 'middle', horizontal: 'center' };
     row.getCell(19).alignment = { vertical: 'middle', horizontal: 'center' };
 
-    // Highlight row on zebra
+    // Highlight row on zebra (xanh phớt nhẹ nhàng)
     if (index % 2 === 1) {
       row.eachCell({ includeEmpty: true }, cell => {
         if (!cell.fill) {
           cell.fill = {
             type: 'pattern',
             pattern: 'solid',
-            fgColor: { argb: 'FFF8FAFC' },
+            fgColor: { argb: 'FFF0F9FF' }, // Soft Sky-50
           };
         }
       });
@@ -190,18 +190,18 @@ export const exportRevenueToExcel = async (
 
   ws.mergeCells(`A${currentRowIdx}:H${currentRowIdx}`);
   totalRow.height = 26;
-  totalRow.font = { name: 'Arial', size: 11, bold: true, color: { argb: 'FF065F46' } };
+  totalRow.font = { name: 'Arial', size: 11, bold: true, color: { argb: 'FF0C4A6E' } };
   totalRow.alignment = { vertical: 'middle', horizontal: 'right' };
 
   totalRow.eachCell({ includeEmpty: true }, (cell, colNumber) => {
     cell.fill = {
       type: 'pattern',
       pattern: 'solid',
-      fgColor: { argb: 'FFECFDF5' }, // Emerald-50
+      fgColor: { argb: 'FFE0F2FE' }, // Soft Sky-100 (Màu xanh nhạt dịu mát)
     };
     cell.border = {
-      top: { style: 'medium', color: { argb: 'FF059669' } },
-      bottom: { style: 'double', color: { argb: 'FF059669' } },
+      top: { style: 'medium', color: { argb: 'FF0284C7' } },
+      bottom: { style: 'double', color: { argb: 'FF0284C7' } },
     };
     if (colNumber >= 9 && colNumber <= 17) {
       cell.numFmt = '#,##0';
@@ -249,7 +249,7 @@ export const exportDebtsToExcel = async (
   ws.mergeCells('A1:K1');
   const titleCell = ws.getCell('A1');
   titleCell.value = 'HOTEL SƠN NGỌC - SỔ THEO DÕI CÔNG NỢ KHÁCH HÀNG';
-  titleCell.font = { name: 'Arial', size: 15, bold: true, color: { argb: 'FF991B1B' } }; // Rose/Red
+  titleCell.font = { name: 'Arial', size: 15, bold: true, color: { argb: 'FF0369A1' } };
   titleCell.alignment = { vertical: 'middle', horizontal: 'center' };
   ws.getRow(1).height = 30;
 
@@ -281,17 +281,7 @@ export const exportDebtsToExcel = async (
   headers.forEach((h, i) => {
     const cell = headerRow.getCell(i + 1);
     cell.value = h;
-    cell.fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'FF991B1B' }, // Deep Rose
-    };
-    cell.font = { name: 'Arial', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
-    cell.alignment = { vertical: 'middle', horizontal: 'center' };
-    cell.border = {
-      top: { style: 'thin', color: { argb: 'FF7F1D1D' } },
-      bottom: { style: 'medium', color: { argb: 'FF450A0A' } },
-    };
+    styleHeaderCell(cell);
   });
   headerRow.height = 26;
 
@@ -330,6 +320,19 @@ export const exportDebtsToExcel = async (
     row.getCell(7).alignment = { vertical: 'middle', horizontal: 'center' };
     row.getCell(12).alignment = { vertical: 'middle', horizontal: 'center' };
 
+    // Zebra striping nhẹ nhàng
+    if (idx % 2 === 1) {
+      row.eachCell({ includeEmpty: true }, cell => {
+        if (!cell.fill) {
+          cell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFF0F9FF' }, // Soft Sky-50
+          };
+        }
+      });
+    }
+
     rowIdx++;
   });
 
@@ -343,18 +346,18 @@ export const exportDebtsToExcel = async (
   totalRow.getCell(11).value = { formula: `SUM(K5:K${rowIdx - 1})` };
 
   totalRow.height = 26;
-  totalRow.font = { name: 'Arial', size: 11, bold: true, color: { argb: 'FF991B1B' } };
+  totalRow.font = { name: 'Arial', size: 11, bold: true, color: { argb: 'FF0C4A6E' } };
   totalRow.alignment = { vertical: 'middle', horizontal: 'right' };
 
   totalRow.eachCell({ includeEmpty: true }, (cell, c) => {
     cell.fill = {
       type: 'pattern',
       pattern: 'solid',
-      fgColor: { argb: 'FFFFF1F2' },
+      fgColor: { argb: 'FFE0F2FE' }, // Soft Sky-100 (Màu xanh nhạt dịu mát)
     };
     cell.border = {
-      top: { style: 'medium', color: { argb: 'FF991B1B' } },
-      bottom: { style: 'double', color: { argb: 'FF991B1B' } },
+      top: { style: 'medium', color: { argb: 'FF0284C7' } },
+      bottom: { style: 'double', color: { argb: 'FF0284C7' } },
     };
     if (c >= 8 && c <= 11) {
       cell.numFmt = '#,##0';
@@ -396,7 +399,7 @@ export const exportRoomsToExcel = async (
   ws.mergeCells('A1:J1');
   const titleCell = ws.getCell('A1');
   titleCell.value = 'HOTEL SƠN NGỌC - SƠ ĐỒ & BẢNG GIÁ PHÒNG';
-  titleCell.font = { name: 'Arial', size: 15, bold: true, color: { argb: 'FF1E3A8A' } };
+  titleCell.font = { name: 'Arial', size: 15, bold: true, color: { argb: 'FF0369A1' } };
   titleCell.alignment = { vertical: 'middle', horizontal: 'center' };
   ws.getRow(1).height = 30;
 
@@ -426,13 +429,7 @@ export const exportRoomsToExcel = async (
   headers.forEach((h, i) => {
     const cell = headerRow.getCell(i + 1);
     cell.value = h;
-    cell.fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'FF1E40AF' }, // Blue
-    };
-    cell.font = { name: 'Arial', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
-    cell.alignment = { vertical: 'middle', horizontal: 'center' };
+    styleHeaderCell(cell);
   });
   headerRow.height = 26;
 
@@ -467,6 +464,19 @@ export const exportRoomsToExcel = async (
     row.getCell(7).alignment = { vertical: 'middle', horizontal: 'center' };
     row.getCell(8).alignment = { vertical: 'middle', horizontal: 'center' };
     row.getCell(9).alignment = { vertical: 'middle', horizontal: 'center' };
+
+    // Zebra striping nhẹ nhàng
+    if (idx % 2 === 1) {
+      row.eachCell({ includeEmpty: true }, cell => {
+        if (!cell.fill) {
+          cell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFF0F9FF' }, // Soft Sky-50
+          };
+        }
+      });
+    }
 
     rowIdx++;
   });
