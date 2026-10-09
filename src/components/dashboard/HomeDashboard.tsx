@@ -1,4 +1,4 @@
-import { localDate, periodKeys, invoiceRevenue, invoiceCollected, sortRooms } from '../../utils/hotelLogic';
+import { localDate, periodKeys, invoiceRevenue, invoiceCollected, invoiceRoomCharge, invoiceMassageCharge, invoiceDebtAmount, isInvoiceActive, sortRooms } from '../../utils/hotelLogic';
 import React, { useState, useMemo } from 'react';
 import { useHotel } from '../../context/HotelContext';
 import { Room, RoomStatus, Invoice } from '../../types/hotel';
@@ -76,9 +76,9 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
   const todayInvoices = useMemo(() => invoices.filter(i => i.date === todayStr), [invoices, today]);
   const todayRevenue = useMemo(() => todayInvoices.reduce((sum, i) => sum + invoiceRevenue(i), 0), [todayInvoices]);
   const todayPaid = useMemo(() => todayInvoices.reduce((sum, i) => sum + invoiceCollected(i), 0), [todayInvoices]);
-  const todayDebt = useMemo(() => todayInvoices.reduce((sum, i) => sum + i.debtAmount, 0), [todayInvoices]);
-  const todayRoomRev = useMemo(() => todayInvoices.reduce((sum, i) => sum + i.roomCharge, 0), [todayInvoices]);
-  const todayMassageRev = useMemo(() => todayInvoices.reduce((sum, i) => sum + (i.massageCharge || 0), 0), [todayInvoices]);
+  const todayDebt = useMemo(() => todayInvoices.reduce((sum, i) => sum + invoiceDebtAmount(i), 0), [todayInvoices]);
+  const todayRoomRev = useMemo(() => todayInvoices.reduce((sum, i) => sum + invoiceRoomCharge(i), 0), [todayInvoices]);
+  const todayMassageRev = useMemo(() => todayInvoices.reduce((sum, i) => sum + invoiceMassageCharge(i), 0), [todayInvoices]);
 
   // 2. Tuần này (This Week: Thứ 2 -> Chủ Nhật)
   const weekRange = useMemo(() => {
@@ -101,22 +101,22 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
     [invoices, weekRange]
   );
   const thisWeekRev = useMemo(() => thisWeekInvoices.reduce((sum, i) => sum + invoiceRevenue(i), 0), [thisWeekInvoices]);
-  const thisWeekRoomRev = useMemo(() => thisWeekInvoices.reduce((sum, i) => sum + i.roomCharge, 0), [thisWeekInvoices]);
-  const thisWeekMassageRev = useMemo(() => thisWeekInvoices.reduce((sum, i) => sum + (i.massageCharge || 0), 0), [thisWeekInvoices]);
+  const thisWeekRoomRev = useMemo(() => thisWeekInvoices.reduce((sum, i) => sum + invoiceRoomCharge(i), 0), [thisWeekInvoices]);
+  const thisWeekMassageRev = useMemo(() => thisWeekInvoices.reduce((sum, i) => sum + invoiceMassageCharge(i), 0), [thisWeekInvoices]);
   const thisWeekPaid = useMemo(() => thisWeekInvoices.reduce((sum, i) => sum + invoiceCollected(i), 0), [thisWeekInvoices]);
-  const thisWeekDebt = useMemo(() => thisWeekInvoices.reduce((sum, i) => sum + i.debtAmount, 0), [thisWeekInvoices]);
+  const thisWeekDebt = useMemo(() => thisWeekInvoices.reduce((sum, i) => sum + invoiceDebtAmount(i), 0), [thisWeekInvoices]);
 
   // 3. Current and previous calendar months.
   const thisMonthInvoices = useMemo(() => invoices.filter(i => i.date.startsWith(keys.thisMonth)), [invoices, today]);
   const lastMonthInvoices = useMemo(() => invoices.filter(i => i.date.startsWith(keys.lastMonth)), [invoices, today]);
 
   const thisMonthRev = useMemo(() => thisMonthInvoices.reduce((sum, i) => sum + invoiceRevenue(i), 0), [thisMonthInvoices]);
-  const thisMonthRoomRev = useMemo(() => thisMonthInvoices.reduce((sum, i) => sum + i.roomCharge, 0), [thisMonthInvoices]);
-  const thisMonthMassageRev = useMemo(() => thisMonthInvoices.reduce((sum, i) => sum + (i.massageCharge || 0), 0), [thisMonthInvoices]);
+  const thisMonthRoomRev = useMemo(() => thisMonthInvoices.reduce((sum, i) => sum + invoiceRoomCharge(i), 0), [thisMonthInvoices]);
+  const thisMonthMassageRev = useMemo(() => thisMonthInvoices.reduce((sum, i) => sum + invoiceMassageCharge(i), 0), [thisMonthInvoices]);
   const lastMonthRev = useMemo(() => lastMonthInvoices.reduce((sum, i) => sum + invoiceRevenue(i), 0), [lastMonthInvoices]);
 
   const thisMonthPaid = useMemo(() => thisMonthInvoices.reduce((sum, i) => sum + invoiceCollected(i), 0), [thisMonthInvoices]);
-  const thisMonthDebt = useMemo(() => thisMonthInvoices.reduce((sum, i) => sum + i.debtAmount, 0), [thisMonthInvoices]);
+  const thisMonthDebt = useMemo(() => thisMonthInvoices.reduce((sum, i) => sum + invoiceDebtAmount(i), 0), [thisMonthInvoices]);
 
   // 4. Năm nay & Năm trước (This Year & Last Year)
   const thisYear = today.slice(0, 4);
@@ -130,10 +130,10 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
     [invoices, lastYear]
   );
   const thisYearRev = useMemo(() => thisYearInvoices.reduce((sum, i) => sum + invoiceRevenue(i), 0), [thisYearInvoices]);
-  const thisYearRoomRev = useMemo(() => thisYearInvoices.reduce((sum, i) => sum + i.roomCharge, 0), [thisYearInvoices]);
-  const thisYearMassageRev = useMemo(() => thisYearInvoices.reduce((sum, i) => sum + (i.massageCharge || 0), 0), [thisYearInvoices]);
+  const thisYearRoomRev = useMemo(() => thisYearInvoices.reduce((sum, i) => sum + invoiceRoomCharge(i), 0), [thisYearInvoices]);
+  const thisYearMassageRev = useMemo(() => thisYearInvoices.reduce((sum, i) => sum + invoiceMassageCharge(i), 0), [thisYearInvoices]);
   const thisYearPaid = useMemo(() => thisYearInvoices.reduce((sum, i) => sum + invoiceCollected(i), 0), [thisYearInvoices]);
-  const thisYearDebt = useMemo(() => thisYearInvoices.reduce((sum, i) => sum + i.debtAmount, 0), [thisYearInvoices]);
+  const thisYearDebt = useMemo(() => thisYearInvoices.reduce((sum, i) => sum + invoiceDebtAmount(i), 0), [thisYearInvoices]);
   const lastYearRev = useMemo(() => lastYearInvoices.reduce((sum, i) => sum + invoiceRevenue(i), 0), [lastYearInvoices]);
 
   // Thống kê bóc tách theo chu kỳ chọn (splitPeriod)
@@ -150,11 +150,12 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
       invs = thisYearInvoices;
       label = `Năm nay (${thisYear})`;
     }
-    const roomRev = invs.reduce((sum, i) => sum + i.roomCharge, 0);
-    const massageRev = invs.reduce((sum, i) => sum + (i.massageCharge || 0), 0);
+    const roomRev = invs.reduce((sum, i) => sum + invoiceRoomCharge(i), 0);
+    const massageRev = invs.reduce((sum, i) => sum + invoiceMassageCharge(i), 0);
     const total = invs.reduce((sum, i) => sum + invoiceRevenue(i), 0);
     const collected = invs.reduce((sum, i) => sum + invoiceCollected(i), 0);
-    const debt = invs.reduce((sum, i) => sum + i.debtAmount, 0);
+    const debt = invs.reduce((sum, i) => sum + invoiceDebtAmount(i), 0);
+    const count = invs.filter(isInvoiceActive).length;
     return {
       label,
       invoices: invs,
@@ -163,13 +164,22 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
       total,
       collected,
       debt,
-      count: invs.length,
+      count,
     };
   }, [splitPeriod, todayInvoices, thisWeekInvoices, thisMonthInvoices, thisYearInvoices, today, weekRange, thisMonthLabel, thisYear]);
 
-  // Debts
-  const totalRemainingDebt = useMemo(() => debts.reduce((sum, d) => sum + d.remainingAmount, 0), [debts]);
-  const activeDebtorsCount = useMemo(() => debts.filter(d => d.remainingAmount > 0).length, [debts]);
+  // Debts (loại trừ nợ của phiếu thu đã hủy)
+  const totalRemainingDebt = useMemo(() => debts.reduce((sum, d) => {
+    const inv = invoices.find(i => i.id === d.invoiceId);
+    if (inv && inv.status === 'CANCELLED') return sum;
+    return sum + (d.status !== 'SETTLED' ? d.remainingAmount : 0);
+  }, 0), [debts, invoices]);
+  const activeDebtorsCount = useMemo(() => debts.filter(d => {
+    if (d.remainingAmount <= 0 || d.status === 'SETTLED') return false;
+    const inv = invoices.find(i => i.id === d.invoiceId);
+    if (inv && inv.status === 'CANCELLED') return false;
+    return true;
+  }).length, [debts, invoices]);
 
   // Room Stats (Total 15 rooms: N01 - N15 on 2 floors)
   const totalRooms = rooms.length;
@@ -196,8 +206,8 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
       { id: 'srv-m5', name: 'Vé Combo Massage & Xông Hơi VIP (100p)', price: 450000, count: 0, total: 0 },
     ];
 
-    // Count from invoices
-    thisMonthInvoices.forEach(inv => {
+    // Count from invoices (chỉ tính phiếu thu hợp lệ, bỏ qua phiếu đã hủy)
+    thisMonthInvoices.filter(isInvoiceActive).forEach(inv => {
       (inv.services || []).forEach(s => {
         const item = list.find(l => l.name === s.name || l.id === s.serviceId);
         if (item) {
@@ -239,8 +249,8 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
       const dStr = localDate(d);
       const dayInvs = invoices.filter(inv => inv.date === dStr);
       const rev = dayInvs.reduce((s, inv) => s + invoiceRevenue(inv), 0);
-      const roomRev = dayInvs.reduce((s, inv) => s + inv.roomCharge, 0);
-      const massageRev = dayInvs.reduce((s, inv) => s + (inv.massageCharge || 0), 0);
+      const roomRev = dayInvs.reduce((s, inv) => s + invoiceRoomCharge(inv), 0);
+      const massageRev = dayInvs.reduce((s, inv) => s + invoiceMassageCharge(inv), 0);
       list.push({
         date: dStr,
         label: `${d.getDate()}/${d.getMonth() + 1}`,

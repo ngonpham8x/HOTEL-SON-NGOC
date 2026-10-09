@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { INITIAL_RESERVATIONS, INITIAL_STAYS, INITIAL_SERVICES } from '../src/data/initialData';
-import { bookingConflict, findBookingConflict, validatePeriod, invoiceRevenue, invoiceCollected, paymentBreakdown } from '../src/utils/hotelLogic';
+import { bookingConflict, findBookingConflict, validatePeriod, invoiceRevenue, invoiceCollected, invoiceRoomCharge, invoiceMassageCharge, invoiceServiceCharge, invoiceDebtAmount, isInvoiceActive, paymentBreakdown } from '../src/utils/hotelLogic';
 import { prepareServiceSale } from '../src/utils/serviceSale';
 const reservation = { ...INITIAL_RESERVATIONS[0], id: 'a', roomId: 'N07', status: 'CONFIRMED' as const, checkInDate: '2026-10-11', checkInTime: '14:00', checkOutDate: '2026-10-12', checkOutTime: '12:00' };
 const conflict = (date: string, time: string, endDate: string, endTime: string) => { const { start, end } = validatePeriod(date, time, endDate, endTime); return bookingConflict('N07', start, end, [reservation], []); };
@@ -46,3 +46,19 @@ test('partial walk-in payments create matching debt and require customer contact
 test('invalid sale amounts, duplicate items, removed services and fractional quantities are rejected', () => {
   for (const patch of [{ discount: 200003 }, { discount: -1 }, { paidAmount: 200002 }, { paidAmount: 0.5 }, { items: [] }, { items: [{ serviceId: 'missing', quantity: 1 }] }, { items: [{ serviceId: massage.id, quantity: 1.5 }] }, { items: [...input.items, ...input.items] }]) assert.throws(() => prepareServiceSale({ ...input, ...patch }, catalog));
 });
+test('cancelled transactions are excluded from all revenue, charges, debt and payment breakdown', () => {
+  const { invoice } = prepareServiceSale({ ...input, customerName: 'Cancelled Guest', phone: '0900000000', paidAmount: 100001 }, catalog);
+  const cancelled = { ...invoice, status: 'CANCELLED' as const };
+  assert.equal(isInvoiceActive(cancelled), false);
+  assert.equal(invoiceRevenue(cancelled), 0);
+  assert.equal(invoiceCollected(cancelled), 0);
+  assert.equal(invoiceRoomCharge(cancelled), 0);
+  assert.equal(invoiceMassageCharge(cancelled), 0);
+  assert.equal(invoiceServiceCharge(cancelled), 0);
+  assert.equal(invoiceDebtAmount(cancelled), 0);
+
+  const breakdown = paymentBreakdown([cancelled], []);
+  assert.equal(breakdown.TRANSFER, 0);
+  assert.equal(breakdown.deposit, 0);
+});
+

@@ -1,5 +1,5 @@
 import { AccessGuard } from '../common/AccessGuard';
-import { localDate, periodKeys, invoiceRevenue, invoiceCollected } from '../../utils/hotelLogic';
+import { localDate, periodKeys, invoiceRevenue, invoiceCollected, invoiceRoomCharge, invoiceServiceCharge, invoiceDebtAmount } from '../../utils/hotelLogic';
 import React, { useState, useMemo } from 'react';
 import { HotelLogo } from '../common/HotelLogo';
 import { useHotel } from '../../context/HotelContext';
@@ -53,12 +53,12 @@ export const ExportReportView: React.FC = () => {
 
   // Aggregate values
   const totalRev = filteredInvoices.reduce((sum, i) => sum + invoiceRevenue(i), 0);
-  const roomRev = filteredInvoices.reduce((sum, i) => sum + i.roomCharge, 0);
-  const serviceRev = filteredInvoices.reduce((sum, i) => sum + i.serviceCharge, 0);
-  const surchargeRev = filteredInvoices.reduce((sum, i) => sum + i.surcharge, 0);
-  const discountTotal = filteredInvoices.reduce((sum, i) => sum + i.discount, 0);
+  const roomRev = filteredInvoices.reduce((sum, i) => sum + invoiceRoomCharge(i), 0);
+  const serviceRev = filteredInvoices.reduce((sum, i) => sum + invoiceServiceCharge(i), 0);
+  const surchargeRev = filteredInvoices.reduce((sum, i) => sum + (i.status !== 'CANCELLED' ? i.surcharge : 0), 0);
+  const discountTotal = filteredInvoices.reduce((sum, i) => sum + (i.status !== 'CANCELLED' ? i.discount : 0), 0);
   const paidTotal = filteredInvoices.reduce((sum, i) => sum + invoiceCollected(i), 0);
-  const debtTotal = filteredInvoices.reduce((sum, i) => sum + i.debtAmount, 0);
+  const debtTotal = filteredInvoices.reduce((sum, i) => sum + invoiceDebtAmount(i), 0);
 
   const handlePrintPDF = () => {
     window.print();

@@ -170,13 +170,13 @@ export const InvoiceListTable: React.FC<InvoiceListTableProps> = ({
                 <div>
                   <span className="text-slate-400 block text-[10px]">Tiền phòng</span>
                   <span className="font-mono text-slate-700 font-medium">
-                    {formatCurrency(inv.roomCharge)}
+                    {formatCurrency(isCancelled ? 0 : inv.roomCharge)}
                   </span>
                 </div>
                 <div>
                   <span className="text-teal-600 block text-[10px]">Vé Massage</span>
                   <span className="font-mono text-teal-700 font-bold">
-                    {formatCurrency(inv.massageCharge || 0)}
+                    {formatCurrency(isCancelled ? 0 : (inv.massageCharge || 0))}
                   </span>
                 </div>
                 <div className="text-right">
@@ -292,13 +292,13 @@ export const InvoiceListTable: React.FC<InvoiceListTableProps> = ({
                     )}
                   </td>
                   <td className="px-3.5 py-2.5 text-right font-mono text-slate-700 whitespace-nowrap">
-                    {formatCurrency(inv.roomCharge)}
+                    {formatCurrency(isCancelled ? 0 : inv.roomCharge)}
                   </td>
                   <td className="px-3.5 py-2.5 text-right font-mono font-bold text-teal-700 whitespace-nowrap">
-                    {formatCurrency(inv.massageCharge || 0)}
+                    {formatCurrency(isCancelled ? 0 : (inv.massageCharge || 0))}
                   </td>
                   <td className="px-3.5 py-2.5 text-right font-mono text-slate-700 whitespace-nowrap">
-                    {formatCurrency(inv.serviceCharge + inv.surcharge)}
+                    {formatCurrency(isCancelled ? 0 : (inv.serviceCharge + inv.surcharge))}
                   </td>
                   <td className="px-3.5 py-2.5 text-right font-mono font-bold text-slate-900 whitespace-nowrap">
                     {formatCurrency(rev)}

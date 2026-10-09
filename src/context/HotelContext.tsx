@@ -516,9 +516,17 @@ export const HotelProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const cancelledInvoice: Invoice = {
       ...oldInvoice,
       status: 'CANCELLED',
+      roomCharge: 0,
+      serviceCharge: 0,
+      massageCharge: 0,
+      surcharge: 0,
+      discount: 0,
+      depositDeducted: 0,
+      refundAmount: 0,
       totalAmount: 0,
       paidAmount: 0,
       debtAmount: 0,
+      services: [],
     };
 
     const nextDebts = db.debts.filter(d => d.invoiceId !== invoiceId);
@@ -584,6 +592,7 @@ export const HotelProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       totalAmount: 0,
       paidAmount: 0,
       debtAmount: 0,
+      services: [],
     };
 
     const nextDebts = db.debts.map(d => {

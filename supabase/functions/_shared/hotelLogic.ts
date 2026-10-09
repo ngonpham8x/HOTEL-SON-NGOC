@@ -39,6 +39,21 @@ export function invoiceCollected(invoice: Invoice) {
   if (invoice.status === 'CANCELLED') return 0;
   return invoice.paidAmount + Math.min(invoice.depositDeducted, invoiceRevenue(invoice));
 }
+export function isInvoiceActive(invoice: Invoice): boolean {
+  return invoice.status !== 'CANCELLED';
+}
+export function invoiceRoomCharge(invoice: Invoice): number {
+  return invoice.status === 'CANCELLED' ? 0 : (invoice.roomCharge || 0);
+}
+export function invoiceMassageCharge(invoice: Invoice): number {
+  return invoice.status === 'CANCELLED' ? 0 : (invoice.massageCharge || 0);
+}
+export function invoiceServiceCharge(invoice: Invoice): number {
+  return invoice.status === 'CANCELLED' ? 0 : (invoice.serviceCharge || 0);
+}
+export function invoiceDebtAmount(invoice: Invoice): number {
+  return invoice.status === 'CANCELLED' ? 0 : (invoice.debtAmount || 0);
+}
 export function paymentBreakdown(invoices: Invoice[], debts: DebtRecord[]) {
   const result = { CASH: 0, TRANSFER: 0, CARD: 0, deposit: 0, other: 0 };
   const add = (method: PaymentMethod, amount: number) => {

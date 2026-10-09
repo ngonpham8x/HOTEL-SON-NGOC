@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useHotel } from '../../context/HotelContext';
-import { localDate, invoiceRevenue, invoiceCollected, paymentBreakdown } from '../../utils/hotelLogic';
+import { localDate, invoiceRevenue, invoiceCollected, invoiceRoomCharge, invoiceMassageCharge, invoiceServiceCharge, invoiceDebtAmount, isInvoiceActive, paymentBreakdown } from '../../utils/hotelLogic';
 import { formatCurrency, formatDate, getPaymentMethodName } from '../../utils/formatters';
 import {
   TrendingUp,
@@ -76,14 +76,14 @@ export const AnalyticsDashboard: React.FC = () => {
   // =========================================================================
   const dailyData = useMemo(() => {
     const dayInvoices = invoices.filter(inv => inv.date === selectedDate);
-    const activeInvoices = dayInvoices.filter(inv => inv.status !== 'CANCELLED');
+    const activeInvoices = dayInvoices.filter(isInvoiceActive);
     const totalRevenue = dayInvoices.reduce((sum, i) => sum + invoiceRevenue(i), 0);
-    const roomRevenue = activeInvoices.reduce((sum, i) => sum + i.roomCharge, 0);
-    const massageRevenue = activeInvoices.reduce((sum, i) => sum + (i.massageCharge || 0), 0);
-    const serviceRevenue = activeInvoices.reduce((sum, i) => sum + i.serviceCharge, 0);
-    const surchargeRevenue = activeInvoices.reduce((sum, i) => sum + i.surcharge, 0);
+    const roomRevenue = activeInvoices.reduce((sum, i) => sum + invoiceRoomCharge(i), 0);
+    const massageRevenue = activeInvoices.reduce((sum, i) => sum + invoiceMassageCharge(i), 0);
+    const serviceRevenue = activeInvoices.reduce((sum, i) => sum + invoiceServiceCharge(i), 0);
+    const surchargeRevenue = activeInvoices.reduce((sum, i) => sum + (i.status !== 'CANCELLED' ? i.surcharge : 0), 0);
     const paidAmount = dayInvoices.reduce((sum, i) => sum + invoiceCollected(i), 0);
-    const debtAmount = activeInvoices.reduce((sum, i) => sum + i.debtAmount, 0);
+    const debtAmount = activeInvoices.reduce((sum, i) => sum + invoiceDebtAmount(i), 0);
 
     // Yesterday comparison
     const curD = new Date(`${selectedDate}T12:00:00+07:00`);
@@ -115,7 +115,7 @@ export const AnalyticsDashboard: React.FC = () => {
       transferTotal: methods.TRANSFER,
       cardTotal: methods.CARD,
       depositTotal: methods.deposit,
-      count: dayInvoices.length,
+      count: activeInvoices.length,
     };
   }, [invoices, selectedDate, debts]);
 
@@ -167,14 +167,14 @@ export const AnalyticsDashboard: React.FC = () => {
     const weekInvoices = invoices.filter(inv => inv.date >= weekStart && inv.date <= weekEnd);
     const prevWeekInvoices = invoices.filter(inv => inv.date >= prevWeekStart && inv.date <= prevWeekEnd);
 
-    const activeInvoices = weekInvoices.filter(inv => inv.status !== 'CANCELLED');
+    const activeInvoices = weekInvoices.filter(isInvoiceActive);
     const totalRevenue = weekInvoices.reduce((sum, i) => sum + invoiceRevenue(i), 0);
     const prevRevenue = prevWeekInvoices.reduce((sum, i) => sum + invoiceRevenue(i), 0);
-    const roomRevenue = activeInvoices.reduce((sum, i) => sum + i.roomCharge, 0);
-    const massageRevenue = activeInvoices.reduce((sum, i) => sum + (i.massageCharge || 0), 0);
-    const serviceRevenue = activeInvoices.reduce((sum, i) => sum + i.serviceCharge + i.surcharge, 0);
+    const roomRevenue = activeInvoices.reduce((sum, i) => sum + invoiceRoomCharge(i), 0);
+    const massageRevenue = activeInvoices.reduce((sum, i) => sum + invoiceMassageCharge(i), 0);
+    const serviceRevenue = activeInvoices.reduce((sum, i) => sum + invoiceServiceCharge(i) + (i.status !== 'CANCELLED' ? i.surcharge : 0), 0);
     const paidAmount = weekInvoices.reduce((sum, i) => sum + invoiceCollected(i), 0);
-    const debtAmount = activeInvoices.reduce((sum, i) => sum + i.debtAmount, 0);
+    const debtAmount = activeInvoices.reduce((sum, i) => sum + invoiceDebtAmount(i), 0);
 
     const growth = prevRevenue > 0
       ? (((totalRevenue - prevRevenue) / prevRevenue) * 100).toFixed(1)
@@ -189,11 +189,12 @@ export const AnalyticsDashboard: React.FC = () => {
       cur.setDate(cur.getDate() + idx);
       const curDateStr = localDate(cur);
       const dayInvs = weekInvoices.filter(i => i.date === curDateStr);
+      const activeDayInvs = dayInvs.filter(isInvoiceActive);
       const dayRev = dayInvs.reduce((sum, i) => sum + invoiceRevenue(i), 0);
-      const dayRoom = dayInvs.reduce((sum, i) => sum + i.roomCharge, 0);
-      const dayMassage = dayInvs.reduce((sum, i) => sum + (i.massageCharge || 0), 0);
+      const dayRoom = activeDayInvs.reduce((sum, i) => sum + invoiceRoomCharge(i), 0);
+      const dayMassage = activeDayInvs.reduce((sum, i) => sum + invoiceMassageCharge(i), 0);
       const dayPaid = dayInvs.reduce((sum, i) => sum + invoiceCollected(i), 0);
-      const dayDebt = dayInvs.reduce((sum, i) => sum + i.debtAmount, 0);
+      const dayDebt = activeDayInvs.reduce((sum, i) => sum + invoiceDebtAmount(i), 0);
 
       // Prev week corresponding day
       const prevCur = new Date(cur);
@@ -213,7 +214,7 @@ export const AnalyticsDashboard: React.FC = () => {
         massageCharge: dayMassage,
         paid: dayPaid,
         debt: dayDebt,
-        count: dayInvs.length,
+        count: activeDayInvs.length,
       };
     });
 
@@ -239,7 +240,7 @@ export const AnalyticsDashboard: React.FC = () => {
       methods,
       daysBreakdown,
       maxDayRevenue,
-      count: weekInvoices.length,
+      count: activeInvoices.length,
     };
   }, [invoices, selectedWeekDate, debts]);
 
@@ -334,14 +335,14 @@ export const AnalyticsDashboard: React.FC = () => {
     const curYearInvoices = invoices.filter(inv => inv.date.startsWith(curYear));
     const prevYearInvoices = invoices.filter(inv => inv.date.startsWith(prevYear));
 
-    const activeInvoices = curYearInvoices.filter(inv => inv.status !== 'CANCELLED');
+    const activeInvoices = curYearInvoices.filter(isInvoiceActive);
     const totalRevenue = curYearInvoices.reduce((sum, i) => sum + invoiceRevenue(i), 0);
     const prevRevenue = prevYearInvoices.reduce((sum, i) => sum + invoiceRevenue(i), 0);
-    const roomRevenue = activeInvoices.reduce((sum, i) => sum + i.roomCharge, 0);
-    const massageRevenue = activeInvoices.reduce((sum, i) => sum + (i.massageCharge || 0), 0);
-    const serviceRevenue = activeInvoices.reduce((sum, i) => sum + i.serviceCharge + i.surcharge, 0);
+    const roomRevenue = activeInvoices.reduce((sum, i) => sum + invoiceRoomCharge(i), 0);
+    const massageRevenue = activeInvoices.reduce((sum, i) => sum + invoiceMassageCharge(i), 0);
+    const serviceRevenue = activeInvoices.reduce((sum, i) => sum + invoiceServiceCharge(i) + (i.status !== 'CANCELLED' ? i.surcharge : 0), 0);
     const paidAmount = curYearInvoices.reduce((sum, i) => sum + invoiceCollected(i), 0);
-    const debtAmount = activeInvoices.reduce((sum, i) => sum + i.debtAmount, 0);
+    const debtAmount = activeInvoices.reduce((sum, i) => sum + invoiceDebtAmount(i), 0);
 
     const growth = prevRevenue > 0
       ? (((totalRevenue - prevRevenue) / prevRevenue) * 100).toFixed(1)
@@ -355,14 +356,15 @@ export const AnalyticsDashboard: React.FC = () => {
 
       const mInvs = curYearInvoices.filter(i => i.date.startsWith(monthPrefix));
       const prevMInvs = prevYearInvoices.filter(i => i.date.startsWith(prevMonthPrefix));
+      const activeMInvs = mInvs.filter(isInvoiceActive);
 
       const mRevenue = mInvs.reduce((sum, i) => sum + invoiceRevenue(i), 0);
       const mPrevRevenue = prevMInvs.reduce((sum, i) => sum + invoiceRevenue(i), 0);
-      const mRoom = mInvs.reduce((sum, i) => sum + i.roomCharge, 0);
-      const mMassage = mInvs.reduce((sum, i) => sum + (i.massageCharge || 0), 0);
-      const mService = mInvs.reduce((sum, i) => sum + i.serviceCharge + i.surcharge, 0);
+      const mRoom = activeMInvs.reduce((sum, i) => sum + invoiceRoomCharge(i), 0);
+      const mMassage = activeMInvs.reduce((sum, i) => sum + invoiceMassageCharge(i), 0);
+      const mService = activeMInvs.reduce((sum, i) => sum + invoiceServiceCharge(i) + (i.status !== 'CANCELLED' ? i.surcharge : 0), 0);
       const mPaid = mInvs.reduce((sum, i) => sum + invoiceCollected(i), 0);
-      const mDebt = mInvs.reduce((sum, i) => sum + i.debtAmount, 0);
+      const mDebt = activeMInvs.reduce((sum, i) => sum + invoiceDebtAmount(i), 0);
 
       return {
         month: monthNum,
@@ -374,7 +376,7 @@ export const AnalyticsDashboard: React.FC = () => {
         serviceCharge: mService,
         paid: mPaid,
         debt: mDebt,
-        count: mInvs.length,
+        count: activeMInvs.length,
       };
     });
 
@@ -394,7 +396,7 @@ export const AnalyticsDashboard: React.FC = () => {
       monthsBreakdown,
       maxMonthRevenue,
       invoices: curYearInvoices,
-      count: curYearInvoices.length,
+      count: activeInvoices.length,
     };
   }, [invoices, selectedYear]);
 

@@ -52,8 +52,17 @@ export const RoomRackView: React.FC<RoomRackViewProps> = ({
     () => invoices.filter(i => i.date.startsWith(today.slice(0, 7))).reduce((s, i) => s + invoiceRevenue(i), 0),
     [invoices, today]
   );
-  const totalRemainingDebt = useMemo(() => debts.reduce((s, d) => s + d.remainingAmount, 0), [debts]);
-  const activeDebtorsCount = useMemo(() => debts.filter(d => d.remainingAmount > 0).length, [debts]);
+  const totalRemainingDebt = useMemo(() => debts.reduce((s, d) => {
+    const inv = invoices.find(i => i.id === d.invoiceId);
+    if (inv && inv.status === 'CANCELLED') return s;
+    return s + (d.status !== 'SETTLED' ? d.remainingAmount : 0);
+  }, 0), [debts, invoices]);
+  const activeDebtorsCount = useMemo(() => debts.filter(d => {
+    if (d.remainingAmount <= 0 || d.status === 'SETTLED') return false;
+    const inv = invoices.find(i => i.id === d.invoiceId);
+    if (inv && inv.status === 'CANCELLED') return false;
+    return true;
+  }).length, [debts, invoices]);
 
   // Filtered rooms
   const filteredRooms = useMemo(() => {

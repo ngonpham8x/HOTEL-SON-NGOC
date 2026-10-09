@@ -114,8 +114,9 @@ export const exportRevenueToExcel = async (
   let currentRowIdx = 5;
   invoices.forEach((inv, index) => {
     const row = ws.getRow(currentRowIdx);
-    const massageAmt = inv.massageCharge || 0;
-    const otherServiceAmt = Math.max(0, inv.serviceCharge - massageAmt);
+    const isCancelled = inv.status === 'CANCELLED';
+    const massageAmt = isCancelled ? 0 : (inv.massageCharge || 0);
+    const otherServiceAmt = isCancelled ? 0 : Math.max(0, inv.serviceCharge - (inv.massageCharge || 0));
     row.values = [
       index + 1,
       inv.code,
@@ -125,17 +126,17 @@ export const exportRevenueToExcel = async (
       inv.customerName,
       inv.phone || '---',
       inv.kind === 'SERVICE' ? 'Dịch vụ lẻ' : `${inv.durationNightsOrHours} ${inv.pricingType === 'NIGHT' ? 'đêm' : 'giờ'}`,
-      inv.roomCharge,
+      isCancelled ? 0 : inv.roomCharge,
       massageAmt,
       otherServiceAmt,
-      inv.surcharge,
-      inv.discount,
-      inv.depositDeducted,
+      isCancelled ? 0 : inv.surcharge,
+      isCancelled ? 0 : inv.discount,
+      isCancelled ? 0 : inv.depositDeducted,
       invoiceRevenue(inv),
       invoiceCollected(inv),
-      inv.debtAmount,
+      isCancelled ? 0 : inv.debtAmount,
       getPaymentMethodName(inv.paymentMethod),
-      inv.status === 'PAID' ? 'Đã thu đủ' : inv.status === 'PARTIAL' ? 'Thanh toán 1 phần' : 'Ghi nợ',
+      isCancelled ? 'Đã hủy' : (inv.status === 'PAID' ? 'Đã thu đủ' : inv.status === 'PARTIAL' ? 'Thanh toán 1 phần' : 'Ghi nợ'),
     ];
 
     applyThinBorders(row);
