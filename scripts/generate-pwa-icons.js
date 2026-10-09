@@ -143,8 +143,8 @@ function extractCleanTransparent(src) {
   for (let y = 0; y < src.height; y++) {
     for (let x = 0; x < src.width; x++) {
       const idx = (y * src.width + x) * 4;
-      // Strip 'ĐÀ LẠT - VIỆT NAM' (y >= 390)
-      if (y >= 390) {
+      // Strip noise above mountain peak (y < 144) and strip 'ĐÀ LẠT - VIỆT NAM' (y >= 390)
+      if (y >= 390 || y < 144) {
         clean[idx] = 0; clean[idx + 1] = 0; clean[idx + 2] = 0; clean[idx + 3] = 0;
         continue;
       }
@@ -184,8 +184,8 @@ function extractCleanTransparent(src) {
   return clean;
 }
 
-// 5. Crop transparent square region
-function cropTransparent(srcData, srcW, srcH, cx, cy, size, padFraction = 0.12) {
+// 5. Crop transparent square region with optional vertical boundaries
+function cropTransparent(srcData, srcW, srcH, cx, cy, size, padFraction = 0.12, maxYCut = 9999, minYCut = 0) {
   const half = Math.round(size / 2 * (1 + padFraction));
   const fullSize = half * 2;
   const out = Buffer.alloc(fullSize * fullSize * 4); // all 0 (transparent)
@@ -195,7 +195,7 @@ function cropTransparent(srcData, srcW, srcH, cx, cy, size, padFraction = 0.12) 
 
   for (let y = 0; y < fullSize; y++) {
     const sy = startY + y;
-    if (sy < 0 || sy >= srcH) continue;
+    if (sy < 0 || sy >= srcH || sy < minYCut || sy > maxYCut) continue;
     for (let x = 0; x < fullSize; x++) {
       const sx = startX + x;
       if (sx < 0 || sx >= srcW) continue;
@@ -232,16 +232,17 @@ const masterBuf = readFileSync(new URL('../public/logo-original.png', import.met
 const master = decodePNG(masterBuf);
 const cleanMaster = extractCleanTransparent(master);
 
-// 1. Transparent Emblem: Mountains + Diamond only (bounds x: 396..627, y: 144..270)
-// Center at (512, 207), size = 236, pad = 0.12 -> 100% transparent PNG
-const emblemCrop = cropTransparent(cleanMaster, master.width, master.height, 512, 207, 236, 0.12);
+// 1. Transparent Emblem: Mountains + Diamond ONLY (bounds x: 396..627, y: 144..270)
+// Center at (512, 207), size = 232, pad = 0.10, strictly between y = 144 and y = 270
+// (No "KHÁCH SẠN" or "SƠN NGỌC" text below the diamond!)
+const emblemCrop = cropTransparent(cleanMaster, master.width, master.height, 512, 207, 232, 0.10, 270, 144);
 const emblem512 = resizeBilinear(emblemCrop.data, emblemCrop.size, emblemCrop.size, 512, 512);
 const emblem512Png = encodePNG(emblem512, 512, 512);
 writeFileSync(new URL('../public/logo-emblem.png', import.meta.url), emblem512Png);
 
 // 2. Transparent Full Logo: Mountains + Diamond + KHÁCH SẠN + SƠN NGỌC (bounds x: 344..680, y: 144..387)
 // Retaining dot under NGỌC (y=379..386), removing ĐÀ LẠT - VIỆT NAM (y >= 390)
-const fullCrop = cropTransparent(cleanMaster, master.width, master.height, 512, 266, 338, 0.12);
+const fullCrop = cropTransparent(cleanMaster, master.width, master.height, 512, 266, 338, 0.12, 388, 144);
 const full512 = resizeBilinear(fullCrop.data, fullCrop.size, fullCrop.size, 512, 512);
 const full512Png = encodePNG(full512, 512, 512);
 writeFileSync(new URL('../public/logo-full.png', import.meta.url), full512Png);
@@ -265,13 +266,13 @@ const apple152 = resizeBilinear(pwa512Solid, 512, 512, 152, 152);
 writeFileSync(new URL('../public/apple-touch-icon-152.png', import.meta.url), encodePNG(apple152, 152, 152));
 
 // 4. PWA Maskable Icon on pure white with 42% safe padding for circular launcher masks
-const maskableCrop = cropTransparent(cleanMaster, master.width, master.height, 512, 266, 338, 0.42);
+const maskableCrop = cropTransparent(cleanMaster, master.width, master.height, 512, 266, 338, 0.42, 388, 144);
 const maskable512Trans = resizeBilinear(maskableCrop.data, maskableCrop.size, maskableCrop.size, 512, 512);
 const maskable512Solid = compositeOnSolid(maskable512Trans, 512, 255, 255, 255);
 writeFileSync(new URL('../public/pwa-maskable-512x512.png', import.meta.url), encodePNG(maskable512Solid, 512, 512));
 
-// 5. Favicon (32x32) transparent emblem
-const favCrop = cropTransparent(cleanMaster, master.width, master.height, 512, 207, 236, 0.06);
+// 5. Favicon (32x32) transparent emblem ONLY (y: 144..270)
+const favCrop = cropTransparent(cleanMaster, master.width, master.height, 512, 207, 232, 0.06, 270, 144);
 const fav32 = resizeBilinear(favCrop.data, favCrop.size, favCrop.size, 32, 32);
 const png32 = encodePNG(fav32, 32, 32);
 const icoHeader = Buffer.alloc(22);
