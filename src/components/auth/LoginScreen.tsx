@@ -62,7 +62,7 @@ export function LoginScreen({ onSuccess, notice }: { onSuccess: (actor: AccessAc
         <div className="lg:hidden flex items-center justify-center gap-3 mb-5"><HotelLogo size="lg" /><div className="min-w-0 text-left"><p className="font-bold text-lg leading-6 tracking-tight">HOTEL SƠN NGỌC</p><p className="text-[11px] leading-5 text-teal-700 mt-0.5">Hệ thống quản lý khách sạn</p></div></div>
         <div className="text-center lg:text-left">
           <span className="inline-flex rounded-full bg-teal-50 border border-teal-100 px-3 py-1 text-[10px] leading-5 font-semibold text-teal-800">Cổng quản trị Sơn Ngọc</span>
-          <h1 className="mt-3 text-[25px] sm:text-[28px] font-bold tracking-tight leading-tight">Chào mừng trở lại</h1>
+          <h1 className="sr-only">Đăng nhập hệ thống</h1>
           <p className="mt-2 text-[13px] leading-6 text-slate-500">{mode === 'ADMIN' ? 'Nhập mật khẩu để vào hệ thống quản lý.' : 'Đăng nhập tài khoản lễ tân do quản lý cấp.'}</p>
         </div>
         {notice && <p role="status" className="mt-4 rounded-xl border border-teal-200 bg-teal-50 p-3 text-xs leading-5 text-teal-900 break-words">{notice}</p>}
