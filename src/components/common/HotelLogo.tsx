@@ -12,22 +12,22 @@ export const HotelLogo: React.FC<HotelLogoProps> = ({
   showText = false,
 }) => {
   const sizeMap = {
-    sm: 'w-8 h-8',
-    md: 'w-10 h-10',
-    lg: 'w-12 h-12',
-    xl: 'w-16 h-16',
+    sm: 'w-9 h-9',
+    md: 'w-11 h-11',
+    lg: 'w-14 h-14',
+    xl: 'w-20 h-20',
   };
 
   return (
     <div className={`flex items-center gap-2.5 ${className}`}>
       {/* SVG Luxury Crest Emblem */}
       <div
-        className={`${sizeMap[size]} shrink-0 rounded-xl overflow-hidden shadow-sm border border-amber-300/40 bg-[#041a1f] flex items-center justify-center p-0.5`}
+        className={`${sizeMap[size]} shrink-0 rounded-xl overflow-hidden shadow-md ring-1 ring-amber-300/50 flex items-center justify-center`}
       >
         <img
           src="/icon.svg"
           alt="HOTEL SƠN NGỌC"
-          className="w-full h-full object-contain filter drop-shadow-xs"
+          className="w-full h-full object-contain"
         />
       </div>
 
