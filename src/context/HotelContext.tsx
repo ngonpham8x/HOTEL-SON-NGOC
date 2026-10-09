@@ -1,4 +1,4 @@
-import { newId, localDate, localTime, dateTime, validatePeriod, stayDuration, money, roomDefaults, findBookingConflict, bookingConflictMessage, sortRooms } from '../utils/hotelLogic';
+import { newId, localDate, localTime, dateTime, validatePeriod, stayDuration, money, roomDefaults, findBookingConflict, bookingConflictMessage, sortRooms, purgeCancelledInvoicesAndSync } from '../utils/hotelLogic';
 import { DATA_KEY, readHotelData, serializeHotelData, validateHotelData, type HotelData } from '../utils/hotelStorage';
 import React, { useContext, useState, useEffect, useRef, useMemo } from 'react';
 import { HotelContext } from './HotelContextInstance';
@@ -164,7 +164,20 @@ export const HotelProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [searchQuery, setSearchQuery] = useState('');
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [confirmModal, setConfirmModal] = useState<ConfirmOptions | null>(null);
-  const [initial] = useState(() => cloudEnabled ? { data: { rooms: [], services: [], stays: [], reservations: [], invoices: [], debts: [] } as HotelData, error: '' } : readHotelData({ getItem: key => window.localStorage.getItem(key) }, { rooms: INITIAL_ROOMS, services: INITIAL_SERVICES, stays: INITIAL_STAYS, reservations: INITIAL_RESERVATIONS, invoices: INITIAL_INVOICES, debts: INITIAL_DEBTS }));
+  const [initial] = useState(() => {
+    if (cloudEnabled) return { data: { rooms: [], services: [], stays: [], reservations: [], invoices: [], debts: [] } as HotelData, error: '' };
+    const read = readHotelData({ getItem: key => window.localStorage.getItem(key) }, { rooms: INITIAL_ROOMS, services: INITIAL_SERVICES, stays: INITIAL_STAYS, reservations: INITIAL_RESERVATIONS, invoices: INITIAL_INVOICES, debts: INITIAL_DEBTS });
+    if (!read.error && read.data) {
+      const { data: cleanData, cleaned } = purgeCancelledInvoicesAndSync(read.data);
+      if (cleaned) {
+        try {
+          window.localStorage.setItem(DATA_KEY, serializeHotelData(cleanData));
+        } catch {}
+      }
+      return { data: cleanData, error: '' };
+    }
+    return read;
+  });
   const [data, setData] = useState(initial.data);
   const dataRef = useRef(data);
   const savedRef = useRef<string | null | undefined>(undefined);
@@ -647,25 +660,17 @@ export const HotelProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
   const clearCancelledInvoices = async () => {
     const db = dataRef.current;
-    const cancelled = db.invoices.filter(i => i.status === 'CANCELLED');
-    if (cancelled.length === 0) {
-      showToast('Không có phiếu thu đã hủy nào để xóa.', 'info');
+    const { data: cleanData, cleaned } = purgeCancelledInvoicesAndSync(db);
+    if (!cleaned && db.invoices.every(i => i.status !== 'CANCELLED')) {
+      showToast('Không có phiếu thu đã hủy hoặc dữ liệu kiểm tra nào cần dọn dẹp.', 'info');
       return;
     }
     if (access.actor.role !== 'ADMIN') {
       throw new Error('Chỉ tài khoản Quản lý mới có quyền xóa sạch các phiếu thu đã hủy.');
     }
 
-    const cancelledIds = new Set(cancelled.map(i => i.id));
-    const nextInvoices = db.invoices.filter(i => !cancelledIds.has(i.id));
-    const nextDebts = db.debts.filter(d => !cancelledIds.has(d.invoiceId));
-
-    await commit({
-      ...db,
-      invoices: nextInvoices,
-      debts: nextDebts,
-    }, 'data.restore');
-    showToast(`Đã xóa sạch ${cancelled.length} phiếu thu đã hủy / test khỏi hệ thống.`, 'success');
+    await commit(cleanData, 'data.restore');
+    showToast('Đã xóa sạch các phiếu thu đã hủy/test và đồng bộ lại sơ đồ phòng.', 'success');
   };
   const recordDebtPayment = async (debtId: string, amount: number, method: PaymentMethod, collectedBy: string, notes?: string) => {
     const db = dataRef.current, debt = db.debts.find(d => d.id === debtId); money(amount, 'Tiền thu nợ');

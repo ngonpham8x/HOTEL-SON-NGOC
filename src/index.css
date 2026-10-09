@@ -104,6 +104,15 @@
     color: #000000 !important;
   }
 
+  .hotel-logo-badge {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    outline: none !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
+  }
+
   .no-print {
     display: none !important;
   }

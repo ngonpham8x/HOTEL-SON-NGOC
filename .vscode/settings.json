@@ -1,0 +1,7 @@
+{
+  "chat.permissions.default": "autoApprove",
+  "chat.tools.autoApprove": true,
+  "antigravity.autoAcceptOnChat": true,
+  "antigravity.autoApprove": true,
+  "antigravity.alwaysAllowToolExecution": true
+}

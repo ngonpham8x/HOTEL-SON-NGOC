@@ -1,5 +1,5 @@
 import { AccessGuard } from '../common/AccessGuard';
-import { localDate, periodKeys, invoiceRevenue, invoiceCollected, invoiceRoomCharge, invoiceServiceCharge, invoiceDebtAmount } from '../../utils/hotelLogic';
+import { localDate, periodKeys, invoiceRevenue, invoiceCollected, invoiceRoomCharge, invoiceServiceCharge, invoiceDebtAmount, isInvoiceActive } from '../../utils/hotelLogic';
 import React, { useState, useMemo } from 'react';
 import { HotelLogo } from '../common/HotelLogo';
 import { useHotel } from '../../context/HotelContext';
@@ -22,20 +22,21 @@ export const ExportReportView: React.FC = () => {
   const lastMonthLabel = keys.lastMonth.split('-').reverse().join('/');
   const [period, setPeriod] = useState<'THIS_MONTH' | 'LAST_MONTH' | 'TODAY' | 'ALL'>('THIS_MONTH');
 
-  // Filter invoices according to selected period
+  // Filter invoices according to selected period (strictly excluding cancelled invoices)
   const filteredInvoices = useMemo(() => {
+    const active = invoices.filter(isInvoiceActive);
     switch (period) {
       case 'THIS_MONTH':
-        return invoices.filter(i => i.date.startsWith(keys.thisMonth));
+        return active.filter(i => i.date.startsWith(keys.thisMonth));
       case 'LAST_MONTH':
-        return invoices.filter(i => i.date.startsWith(keys.lastMonth));
+        return active.filter(i => i.date.startsWith(keys.lastMonth));
       case 'TODAY':
-        return invoices.filter(i => i.date === today);
+        return active.filter(i => i.date === today);
       case 'ALL':
       default:
-        return invoices;
+        return active;
     }
-  }, [invoices, period, today]);
+  }, [invoices, period, today, keys.thisMonth, keys.lastMonth]);
 
   const periodTitle = useMemo(() => {
     switch (period) {

@@ -31,13 +31,13 @@ export const HotelLogo: React.FC<HotelLogoProps> = ({
     <div className={`flex items-center gap-2.5 ${className}`}>
       {/* Official Luxury Hotel Sơn Ngọc Emblem Badge */}
       <div
-        className={`${sizeMap[size]} shrink-0 rounded-xl overflow-hidden shadow-xs ring-1 ring-amber-400/40 bg-[#f9f8f4] flex items-center justify-center p-0.5 transition-transform hover:scale-[1.02]`}
+        className={`hotel-logo-badge ${sizeMap[size]} shrink-0 rounded-xl overflow-hidden shadow-xs ring-1 ring-amber-400/30 bg-white flex items-center justify-center p-0.5 transition-transform hover:scale-[1.02] print:bg-transparent print:ring-0 print:shadow-none print:p-0 print:rounded-none`}
         title="HOTEL SƠN NGỌC"
       >
         <img
           src={imgSrc}
           alt="HOTEL SƠN NGỌC"
-          className="w-full h-full object-contain select-none"
+          className="w-full h-full object-contain select-none print:object-contain"
           loading="eager"
         />
       </div>
