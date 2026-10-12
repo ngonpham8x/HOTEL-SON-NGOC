@@ -1,4 +1,6 @@
+import { ServiceSaleLifecycleModal } from './ServiceSaleLifecycleModal';
 import React, { useState } from 'react';
+import { useDialogFocus } from '../../hooks/useDialogFocus';
 import { useHotel } from '../../context/HotelContext';
 import type { Invoice, PaymentMethod } from '../../types/hotel';
 import { formatCurrency } from '../../utils/formatters';
@@ -24,7 +26,8 @@ export const EditServiceSaleModal: React.FC<EditServiceSaleModalProps> = ({
   invoice,
   onClose,
 }) => {
-  const { services, updateServiceSale, cancelServiceSale, requestConfirm, showToast, today } = useHotel();
+  const { services, debts, updateServiceSale, today } = useHotel();
+  const dialogRef = useDialogFocus(true, onClose);
 
   const [customerName, setCustomerName] = useState(invoice.customerName || '');
   const [phone, setPhone] = useState(invoice.phone || '');
@@ -43,7 +46,7 @@ export const EditServiceSaleModal: React.FC<EditServiceSaleModalProps> = ({
   const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'TRANSFER' | 'CARD'>(() => {
     return (invoice.paymentMethod === 'CARD' || invoice.paymentMethod === 'TRANSFER') ? invoice.paymentMethod : 'CASH';
   });
-  const [dueDate, setDueDate] = useState<string>(today);
+  const [dueDate, setDueDate] = useState<string>(() => debts.find(debt => debt.invoiceId === invoice.id)?.dueDate || today);
   const [notes, setNotes] = useState(invoice.notes || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -114,29 +117,16 @@ export const EditServiceSaleModal: React.FC<EditServiceSaleModalProps> = ({
     }
   };
 
-  const handleCancelSale = async () => {
-    requestConfirm({
-      title: `Hủy phiếu vé ${invoice.code}?`,
-      message: `Bạn có chắc chắn muốn hủy phiếu vé này do nhập sai thông tin? Toàn bộ doanh thu và công nợ của phiếu vé sẽ được hủy bỏ mà không ảnh hưởng đến số liệu khác.`,
-      confirmLabel: 'Xác nhận hủy vé',
-      cancelLabel: 'Quay lại',
-      isDangerous: true,
-      onConfirm: async () => {
-        try {
-          await cancelServiceSale(invoice.id);
-          onClose();
-        } catch (err) {
-          showToast(err instanceof Error ? err.message : 'Không thể hủy vé.', 'error');
-        }
-      },
-    });
-  };
+  const [processingCancellation, setProcessingCancellation] = useState(false);
+  const handleCancelSale = () => setProcessingCancellation(true);
 
   const inputClass = 'w-full min-w-0 mt-1 px-3 py-2 border border-slate-300 rounded-lg bg-white text-xs focus:outline-teal-600';
 
+  if (processingCancellation) return <ServiceSaleLifecycleModal invoice={invoice} onClose={onClose} />;
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-3 sm:p-4">
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-xl max-h-[92vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="edit-sale-title" tabIndex={-1} className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-xl max-h-[92dvh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
         {/* Header */}
         <div className="px-5 py-3.5 border-b border-slate-200 flex items-center justify-between bg-teal-900 text-white">
           <div className="flex items-center gap-2.5">
@@ -145,7 +135,7 @@ export const EditServiceSaleModal: React.FC<EditServiceSaleModalProps> = ({
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-sm font-bold text-white">Sửa phiếu bán vé / dịch vụ</h3>
+                <h3 id="edit-sale-title" className="text-sm font-bold text-white">Sửa phiếu bán vé / dịch vụ</h3>
                 <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-teal-800 text-teal-100 border border-teal-600">
                   {invoice.code}
                 </span>
@@ -167,6 +157,9 @@ export const EditServiceSaleModal: React.FC<EditServiceSaleModalProps> = ({
 
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-5 space-y-4 text-xs text-slate-700">
+          {invoice.services?.some(item => services.find(service => service.id === item.serviceId)?.price !== item.unitPrice) && (
+            <p role="status" className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-amber-900">Giá dịch vụ đã thay đổi kể từ lúc bán. Lưu chỉnh sửa sẽ tính lại phiếu theo bảng giá hiện tại; hãy kiểm tra tổng tiền và số tiền đã thu trước khi lưu.</p>
+          )}
           {error && (
             <div role="alert" className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700 font-medium flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 shrink-0" />
@@ -389,7 +382,7 @@ export const EditServiceSaleModal: React.FC<EditServiceSaleModalProps> = ({
               className="px-3 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors"
             >
               <Trash2 className="w-3.5 h-3.5" />
-              <span>Xóa / Hủy vé sai này</span>
+              <span>Hủy vé / Hoàn tiền</span>
             </button>
 
             <div className="flex items-center gap-2 ml-auto">

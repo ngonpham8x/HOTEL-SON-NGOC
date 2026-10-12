@@ -1,3 +1,6 @@
+import { ServiceSaleLifecycleModal } from '../modals/ServiceSaleLifecycleModal';
+import { pendingSaleRefund } from '../../utils/serviceSaleLifecycle';
+import { useAccess } from '../../context/AccessContext';
 import React, { useState } from 'react';
 import { useHotel } from '../../context/HotelContext';
 import type { Invoice } from '../../types/hotel';
@@ -34,6 +37,8 @@ export const InvoiceListTable: React.FC<InvoiceListTableProps> = ({
   showDateColumn = false,
   maxHeightClass,
 }) => {
+  const { canAct } = useAccess();
+  const [processingSale, setProcessingSale] = useState<Invoice | null>(null);
   const {
     cancelServiceSale,
     cancelRoomInvoice,
@@ -53,6 +58,7 @@ export const InvoiceListTable: React.FC<InvoiceListTableProps> = ({
       return;
     }
     if (inv.kind === 'SERVICE') {
+      if (inv.serviceLifecycle) { setProcessingSale(inv); return; }
       setEditingServiceInvoice(inv);
     } else {
       setEditingRoomInvoice(inv);
@@ -60,6 +66,7 @@ export const InvoiceListTable: React.FC<InvoiceListTableProps> = ({
   };
 
   const handleDelete = (inv: Invoice) => {
+    if (inv.kind === 'SERVICE') { setProcessingSale(inv); return; }
     if (inv.status === 'CANCELLED') {
       showToast('Phiếu thu này đã ở trạng thái hủy.', 'info');
       return;
@@ -133,6 +140,7 @@ export const InvoiceListTable: React.FC<InvoiceListTableProps> = ({
 
   return (
     <>
+      {processingSale && <ServiceSaleLifecycleModal invoice={processingSale} onClose={() => setProcessingSale(null)} />}
       {/* Thanh thông báo & nút dọn dẹp phiếu đã hủy / test */}
       {cancelledCount > 0 && (
         <div className="flex items-center justify-between px-3.5 py-2 bg-amber-50/80 border-b border-amber-200/70 text-xs">
@@ -257,6 +265,10 @@ export const InvoiceListTable: React.FC<InvoiceListTableProps> = ({
                 </div>
               )}
 
+              {inv.kind === 'SERVICE' && !isCancelled && <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                <span className="text-amber-800">{pendingSaleRefund(inv) > 0 ? `Chờ hoàn ${formatCurrency(pendingSaleRefund(inv))}` : inv.serviceLifecycle?.events.some(event => event.kind === 'CANCEL') ? 'Đã xử lý hủy vé / hoàn tiền' : 'Theo dõi sử dụng vé'}</span>
+                {(canAct('sale.create') || canAct('sale.cancel') || canAct('sale.refund')) && <button type="button" onClick={() => setProcessingSale(inv)} className="rounded-lg border border-teal-200 bg-teal-50 px-3 py-2 font-semibold text-teal-800">Sử dụng / Hủy / Hoàn</button>}
+              </div>}
               {/* Hàng nút thao tác Mobile: In, Sửa, Hủy GD, Xóa vĩnh viễn */}
               <div className="flex items-center justify-end gap-1.5 pt-1 border-t border-slate-100 flex-wrap">
                 <button
@@ -349,6 +361,7 @@ export const InvoiceListTable: React.FC<InvoiceListTableProps> = ({
                   )}
                   <td className="px-3.5 py-2.5 font-mono font-semibold text-slate-900 whitespace-nowrap">
                     {inv.code}
+                    {inv.kind === 'SERVICE' && <span className="block text-[10px] text-amber-800">{pendingSaleRefund(inv) > 0 ? `Chờ hoàn ${formatCurrency(pendingSaleRefund(inv))}` : inv.serviceLifecycle?.events.some(event => event.kind === 'CANCEL') ? 'Đã xử lý hủy / hoàn' : ''}</span>}
                     <span className="block text-[10px] text-slate-400 font-normal">
                       {inv.time}
                     </span>
@@ -371,7 +384,7 @@ export const InvoiceListTable: React.FC<InvoiceListTableProps> = ({
                     {formatCurrency(isCancelled ? 0 : (inv.massageCharge || 0))}
                   </td>
                   <td className="px-3.5 py-2.5 text-right font-mono text-slate-700 whitespace-nowrap">
-                    {formatCurrency(isCancelled ? 0 : (inv.serviceCharge + inv.surcharge))}
+                    {formatCurrency(isCancelled ? 0 : Math.max(0, inv.serviceCharge - (inv.massageCharge || 0)) + inv.surcharge)}
                   </td>
                   <td className="px-3.5 py-2.5 text-right font-mono font-bold text-slate-900 whitespace-nowrap">
                     {formatCurrency(rev)}
@@ -395,6 +408,7 @@ export const InvoiceListTable: React.FC<InvoiceListTableProps> = ({
                   </td>
                   <td className="px-3.5 py-2.5 text-center whitespace-nowrap">
                     <div className="flex items-center justify-center gap-1">
+                      {inv.kind === 'SERVICE' && !isCancelled && (canAct('sale.create') || canAct('sale.cancel') || canAct('sale.refund')) && <button type="button" onClick={() => setProcessingSale(inv)} className="rounded-lg border border-teal-200 bg-teal-50 px-2 py-1.5 text-xs font-semibold text-teal-800">Sử dụng / Hủy / Hoàn</button>}
                       <button
                         type="button"
                         onClick={() => setPrintingInvoice(inv)}

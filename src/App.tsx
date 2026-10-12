@@ -43,7 +43,7 @@ const MainLayout: React.FC<{ onLogout: () => void; onPasswordChanged: () => void
   const [editingRoom, setEditingRoom] = useState<Room | null | undefined>(undefined);
 
   return (
-    <div className={`${printedInvoice ? 'invoice-open' : ''} h-screen h-dvh overflow-hidden bg-[#e4f3f4] flex flex-col font-sans text-slate-800 selection:bg-teal-200 selection:text-teal-950`}>
+    <div className={`${printedInvoice ? 'invoice-open' : ''} hotel-shell h-screen h-dvh overflow-hidden bg-[#f4f7fa] flex flex-col font-sans text-slate-800 selection:bg-teal-200 selection:text-teal-950`}>
       {/* Top Header */}
       <Header
         onOpenQuickCheckIn={() => setIsQuickCheckInOpen(true)}

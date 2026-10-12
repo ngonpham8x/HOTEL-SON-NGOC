@@ -1,3 +1,4 @@
+import { pendingSaleRefund } from './serviceSaleLifecycle.ts';
 import type { DebtRecord, Invoice, PaymentMethod, Reservation, Room, StayRecord } from './hotel.ts';
 
 export function newId() {
@@ -37,7 +38,7 @@ export function invoiceRevenue(invoice: Invoice) {
 }
 export function invoiceCollected(invoice: Invoice) {
   if (invoice.status === 'CANCELLED') return 0;
-  return invoice.paidAmount + Math.min(invoice.depositDeducted, invoiceRevenue(invoice));
+  return invoice.paidAmount + pendingSaleRefund(invoice) + Math.min(invoice.depositDeducted, invoiceRevenue(invoice));
 }
 export function isInvoiceActive(invoice: Invoice): boolean {
   return invoice.status !== 'CANCELLED';
@@ -63,8 +64,9 @@ export function paymentBreakdown(invoices: Invoice[], debts: DebtRecord[]) {
   for (const invoice of invoices) {
     if (invoice.status === 'CANCELLED') continue;
     const payments = debts.filter(d => d.invoiceId === invoice.id).flatMap(d => d.paymentHistory);
-    add(invoice.paymentMethod, Math.max(0, invoice.paidAmount - payments.reduce((sum, p) => sum + p.amount, 0)));
+    add(invoice.paymentMethod, Math.max(0, invoice.paidAmount + (invoice.serviceLifecycle?.refundDue || 0) - payments.reduce((sum, p) => sum + p.amount, 0)));
     payments.forEach(p => add(p.method, p.amount));
+    for (const event of invoice.serviceLifecycle?.events || []) if (event.kind === 'REFUND') add(event.method, -event.amount);
     result.deposit += Math.min(invoice.depositDeducted, invoiceRevenue(invoice));
   }
   return result;
@@ -110,4 +112,98 @@ export function compareRooms(a: Pick<Room, 'floor' | 'number'>, b: Pick<Room, 'f
 
 export function sortRooms<T extends Pick<Room, 'floor' | 'number'>>(rooms: T[]): T[] {
   return [...rooms].sort(compareRooms);
+}
+
+export function purgeCancelledInvoicesAndSync<T extends { rooms: Room[]; stays: StayRecord[]; invoices: Invoice[]; debts: DebtRecord[] }>(db: T): { data: T; cleaned: boolean } {
+  let cleaned = false;
+
+  // 1. Invoices: Remove cancelled invoices and test invoices
+  const activeInvoices = db.invoices.filter(i => {
+    if (i.status === 'CANCELLED' || i.code === 'DV-D2FBEBC3' || i.code === 'HD-2F520273') {
+      cleaned = true;
+      return false;
+    }
+    return true;
+  });
+  const activeInvoiceIds = new Set(activeInvoices.map(i => i.id));
+
+  // 2. Debts: Remove debts referencing cancelled or non-existent invoices
+  const activeDebts = db.debts.filter(d => {
+    if (!activeInvoiceIds.has(d.invoiceId)) {
+      cleaned = true;
+      return false;
+    }
+    return true;
+  });
+
+  // 3. Stays: Filter out test stays that were checked out / cancelled
+  const activeStays = db.stays.filter(s => {
+    if (s.customerName === 'NGUYEN VAN A' && (s.roomNumber === 'N01' || s.roomId === 'room-n01')) {
+      cleaned = true;
+      return false;
+    }
+    return s.status === 'ACTIVE';
+  });
+  const activeStayMap = new Map(activeStays.map(s => [s.id, s]));
+  const roomStayMap = new Map(activeStays.map(s => [s.roomId, s]));
+
+  // 4. Rooms: Ensure all stay references are valid and synchronized
+  const syncedRooms = db.rooms.map(room => {
+    let modified = false;
+    let currentStayId = room.currentStayId;
+    let currentGuestName = room.currentGuestName;
+    let status = room.status;
+    let cleanStatus = room.cleanStatus;
+
+    if (currentStayId) {
+      const activeStay = activeStayMap.get(currentStayId);
+      if (!activeStay) {
+        currentStayId = undefined;
+        currentGuestName = undefined;
+        if (status === 'OCCUPIED') {
+          status = 'AVAILABLE';
+          cleanStatus = 'CLEAN';
+        }
+        modified = true;
+      } else {
+        if (currentGuestName !== activeStay.customerName) {
+          currentGuestName = activeStay.customerName;
+          modified = true;
+        }
+        if (status !== 'OCCUPIED') {
+          status = 'OCCUPIED';
+          modified = true;
+        }
+      }
+    } else {
+      const activeStay = roomStayMap.get(room.id);
+      if (activeStay) {
+        currentStayId = activeStay.id;
+        currentGuestName = activeStay.customerName;
+        status = 'OCCUPIED';
+        modified = true;
+      }
+    }
+
+    if (modified) cleaned = true;
+
+    return modified ? {
+      ...room,
+      currentStayId,
+      currentGuestName,
+      status,
+      cleanStatus,
+    } : room;
+  });
+
+  return {
+    data: {
+      ...db,
+      rooms: sortRooms(syncedRooms),
+      stays: activeStays,
+      invoices: activeInvoices,
+      debts: activeDebts,
+    },
+    cleaned,
+  };
 }

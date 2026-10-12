@@ -1,3 +1,5 @@
+import { remainingSaleServices, pendingSaleRefund } from '../../utils/serviceSaleLifecycle';
+import { invoiceCollected } from '../../utils/hotelLogic';
 import React from 'react';
 import { HotelLogo } from '../common/HotelLogo';
 import { Invoice } from '../../types/hotel';
@@ -106,7 +108,7 @@ export const InvoicePrintView: React.FC<InvoicePrintViewProps> = ({ invoice, onC
                 <td className="py-2.5 text-right font-mono">{formatCurrency(invoice.durationNightsOrHours ? invoice.roomCharge / invoice.durationNightsOrHours : 0)}</td>
                 <td className="py-2.5 text-right font-mono font-semibold">{formatCurrency(invoice.roomCharge)}</td>
               </tr>}
-              {invoice.services?.length ? invoice.services.map(item => <tr key={item.id}><td className="py-2.5 font-medium">{item.name}</td><td className="py-2.5 text-center font-mono">{item.quantity}</td><td className="py-2.5 text-right font-mono">{formatCurrency(item.unitPrice)}</td><td className="py-2.5 text-right font-mono font-semibold">{formatCurrency(item.totalPrice)}</td></tr>) : invoice.serviceCharge > 0 && (
+              {invoice.services?.length ? remainingSaleServices(invoice).map(item => <tr key={item.id}><td className="py-2.5 font-medium">{item.name}</td><td className="py-2.5 text-center font-mono">{item.quantity}</td><td className="py-2.5 text-right font-mono">{formatCurrency(item.unitPrice)}</td><td className="py-2.5 text-right font-mono font-semibold">{formatCurrency(item.totalPrice)}</td></tr>) : invoice.serviceCharge > 0 && (
                 <tr>
                   <td className="py-2.5 font-medium">Minibar, Nước giải khát & Dịch vụ</td>
                   <td className="py-2.5 text-center">Trọn gói</td>
@@ -116,7 +118,7 @@ export const InvoicePrintView: React.FC<InvoicePrintViewProps> = ({ invoice, onC
               )}
               {invoice.surcharge > 0 && (
                 <tr>
-                  <td className="py-2.5 font-medium">Phụ thu (check-out trễ / người phát sinh)</td>
+                  <td className="py-2.5 font-medium">{invoice.serviceLifecycle ? 'Phí hủy vé theo thỏa thuận' : 'Phụ thu (check-out trễ / người phát sinh)'}</td>
                   <td className="py-2.5 text-center">---</td>
                   <td className="py-2.5 text-right font-mono">{formatCurrency(invoice.surcharge)}</td>
                   <td className="py-2.5 text-right font-mono font-semibold">{formatCurrency(invoice.surcharge)}</td>
@@ -153,7 +155,7 @@ export const InvoicePrintView: React.FC<InvoicePrintViewProps> = ({ invoice, onC
             <div className="flex justify-between text-xs">
               <span className="text-slate-600">Đã thanh toán ({getPaymentMethodName(invoice.paymentMethod)}):</span>
               <span className="font-mono font-semibold text-emerald-700">
-                {formatCurrency(invoice.paidAmount)}
+                {formatCurrency(invoiceCollected(invoice))}
               </span>
             </div>
             {invoice.debtAmount > 0 && (
@@ -167,6 +169,11 @@ export const InvoicePrintView: React.FC<InvoicePrintViewProps> = ({ invoice, onC
           </div>
 
           {(invoice.refundAmount || 0) > 0 && <p className="font-bold text-amber-800">Tiền cọc hoàn lại: {formatCurrency(invoice.refundAmount || 0)}</p>}
+          {invoice.serviceLifecycle && <section className="space-y-2 rounded-lg border border-amber-200 p-3 text-xs">
+            <p className="font-bold">Tiền chờ hoàn: {formatCurrency(pendingSaleRefund(invoice))}</p>
+            <p>Vé gốc: {invoice.services?.map(item => `${item.name} × ${item.quantity}`).join(' · ')}</p>
+            {invoice.serviceLifecycle.events.map(event => <p key={event.id}>{event.date} {event.time} · {event.actorName} · {event.kind === 'REFUND' ? `Đã hoàn ${formatCurrency(event.amount)} (${getPaymentMethodName(event.method)}) ${event.notes}` : `${event.kind === 'USE' ? 'Đã dùng' : 'Đã hủy'}: ${event.items.map(item => `${invoice.services?.find(usage => usage.id === item.usageId)?.name} × ${item.quantity}`).join(' · ')}${event.kind === 'CANCEL' ? ` · Phí ${formatCurrency(event.fee)} · ${event.reason}` : ''}`}</p>)}
+          </section>}
           {/* Signatures */}
           <div className="grid grid-cols-2 gap-8 pt-8 text-center border-t border-slate-200">
             <div>

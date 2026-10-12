@@ -1,3 +1,4 @@
+import { applySaleEvent, adjustSaleDebts, sameSaleSnapshot, type SaleEventInput } from '../utils/serviceSaleLifecycle';
 import { newId, localDate, localTime, dateTime, validatePeriod, stayDuration, money, roomDefaults, findBookingConflict, bookingConflictMessage, sortRooms, purgeCancelledInvoicesAndSync } from '../utils/hotelLogic';
 import { DATA_KEY, readHotelData, serializeHotelData, validateHotelData, type HotelData } from '../utils/hotelStorage';
 import React, { useContext, useState, useEffect, useRef, useMemo } from 'react';
@@ -125,6 +126,7 @@ export interface HotelContextType {
   checkOutStay: (params: CheckOutParams) => Promise<Invoice>;
   sellServices: (params: ServiceSaleInput) => Promise<Invoice>;
   cancelCheckIn: (stayId: string) => Promise<void>;
+  processServiceSale: (invoiceId: string, input: SaleEventInput, expectedInvoice: Invoice) => Promise<Invoice>;
   updateServiceSale: (invoiceId: string, params: ServiceSaleInput) => Promise<Invoice>;
   cancelServiceSale: (invoiceId: string) => Promise<void>;
   updateRoomInvoice: (invoiceId: string, updates: { customerName?: string; phone?: string; paymentMethod?: PaymentMethod; notes?: string }) => Promise<Invoice>;
@@ -495,10 +497,23 @@ export const HotelProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     showToast(`Đã hủy nhận phòng sai cho phòng ${room.number}. Phòng đã trở về trạng thái trống.`, 'success');
   };
+  const processServiceSale = async (invoiceId: string, input: SaleEventInput, expectedInvoice: Invoice): Promise<Invoice> => {
+    const db = dataRef.current;
+    const old = db.invoices.find(invoice => invoice.id === invoiceId);
+    if (!old || !sameSaleSnapshot(old, expectedInvoice)) throw new Error('Phiếu đã thay đổi. Đóng và mở lại để kiểm tra trước khi xử lý.');
+    const actor = getFreshAccessActor(access.actor);
+    const operation = input.kind === 'CANCEL' ? 'sale.cancel' : input.kind === 'REFUND' ? 'sale.refund' : 'sale.create';
+    access.requireAction(operation);
+    const next = applySaleEvent(old, { ...input, id: newId(), date: localDate(), time: localTime(), actorId: actor.id, actorName: actor.displayName });
+    await commit({ ...db, invoices: db.invoices.map(invoice => invoice.id === invoiceId ? next : invoice), debts: adjustSaleDebts(db.debts, next) }, operation);
+    showToast(input.kind === 'USE' ? 'Đã ghi nhận vé sử dụng.' : input.kind === 'CANCEL' ? 'Đã ghi nhận hủy vé; tiền cần hoàn được theo dõi riêng.' : 'Đã ghi nhận tiền hoàn cho khách.', 'success');
+    return next;
+  };
   const updateServiceSale = async (invoiceId: string, params: ServiceSaleInput): Promise<Invoice> => {
     const db = dataRef.current;
     const oldInvoice = db.invoices.find(i => i.id === invoiceId);
     if (!oldInvoice || oldInvoice.kind !== 'SERVICE') throw new Error('Không tìm thấy phiếu vé dịch vụ.');
+    if (oldInvoice.serviceLifecycle) throw new Error('Phiếu đã có lịch sử xử lý vé. Không thể sửa giao dịch gốc.');
 
     const { invoice: newInv, debt: newDebt } = prepareServiceSale(params, db.services);
     const updatedInvoice: Invoice = {
@@ -528,6 +543,7 @@ export const HotelProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const db = dataRef.current;
     const oldInvoice = db.invoices.find(i => i.id === invoiceId);
     if (!oldInvoice || oldInvoice.kind !== 'SERVICE') throw new Error('Không tìm thấy phiếu vé dịch vụ.');
+    if (oldInvoice.serviceLifecycle) throw new Error('Phiếu đã có lịch sử xử lý vé. Hãy dùng Hủy vé / Hoàn tiền.');
 
     const cancelledInvoice: Invoice = {
       ...oldInvoice,
@@ -690,7 +706,7 @@ export const HotelProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
   if (!cloudReady) return <div className="p-6 text-teal-900"><p role="status">{storageError || 'Đang mở dữ liệu khách sạn…'}</p></div>;
   const visible = projectHotelData(access.actor, { ...data, debts });
-  return <HotelContext.Provider value={{ rooms: visible.rooms, services: visible.services, stays: visible.stays, reservations: visible.reservations, invoices: visible.invoices, debts: visible.debts, today, storageError, exportBackup, importBackup, activeTab, setActiveTab, isMobileMenuOpen, setIsMobileMenuOpen, isSidebarCollapsed, setIsSidebarCollapsed, toggleSidebar, searchQuery, setSearchQuery, toasts, showToast, removeToast, confirmModal, requestConfirm, closeConfirm, updateRoomCleanStatus, updateRoomStatus, addRoom, editRoom, deleteRoom, createReservation, cancelReservation, archiveReservation, checkInReservation, updateReservation, checkInDirect, updateActiveStay, cancelCheckIn, addServiceToStay, removeServiceFromStay, updateStayCompanions, addService, editService, deleteService, updateRoomTypePricing, checkOutStay, sellServices, updateServiceSale, cancelServiceSale, updateRoomInvoice, cancelRoomInvoice, deleteInvoice, clearCancelledInvoices, recordDebtPayment }}>{children}</HotelContext.Provider>;
+  return <HotelContext.Provider value={{ rooms: visible.rooms, services: visible.services, stays: visible.stays, reservations: visible.reservations, invoices: visible.invoices, debts: visible.debts, today, storageError, exportBackup, importBackup, activeTab, setActiveTab, isMobileMenuOpen, setIsMobileMenuOpen, isSidebarCollapsed, setIsSidebarCollapsed, toggleSidebar, searchQuery, setSearchQuery, toasts, showToast, removeToast, confirmModal, requestConfirm, closeConfirm, updateRoomCleanStatus, updateRoomStatus, addRoom, editRoom, deleteRoom, createReservation, cancelReservation, archiveReservation, checkInReservation, updateReservation, checkInDirect, updateActiveStay, cancelCheckIn, addServiceToStay, removeServiceFromStay, updateStayCompanions, addService, editService, deleteService, updateRoomTypePricing, checkOutStay, sellServices, processServiceSale, updateServiceSale, cancelServiceSale, updateRoomInvoice, cancelRoomInvoice, deleteInvoice, clearCancelledInvoices, recordDebtPayment }}>{children}</HotelContext.Provider>;
 };
 
 export const useHotel = () => {

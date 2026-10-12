@@ -1,4 +1,5 @@
 import React from 'react';
+import { useDialogFocus } from '../../hooks/useDialogFocus';
 import { useHotel } from '../../context/HotelContext';
 import {
   CheckCircle2,
@@ -11,6 +12,7 @@ import {
 
 export const NotificationOverlay: React.FC = () => {
   const { toasts, removeToast, confirmModal, closeConfirm, showToast } = useHotel();
+  const dialogRef = useDialogFocus(!!confirmModal, closeConfirm);
 
   return (
     <>
@@ -24,6 +26,7 @@ export const NotificationOverlay: React.FC = () => {
           return (
             <div
               key={toast.id}
+              role={isError || isWarning ? 'alert' : 'status'}
               className={`pointer-events-auto flex items-start gap-3 p-4 rounded-xl shadow-lg border text-xs animate-in slide-in-from-bottom-3 duration-200 ${
                 isSuccess
                   ? 'bg-emerald-900 text-white border-emerald-700'
@@ -46,6 +49,7 @@ export const NotificationOverlay: React.FC = () => {
               </div>
 
               <button
+                aria-label="Đóng thông báo"
                 onClick={() => removeToast(toast.id)}
                 className="shrink-0 text-white/70 hover:text-white p-0.5 rounded transition-colors"
               >
@@ -59,7 +63,7 @@ export const NotificationOverlay: React.FC = () => {
       {/* Confirmation Dialog Modal */}
       {confirmModal && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-md w-full overflow-hidden animate-in zoom-in-95 duration-150">
+          <div ref={dialogRef} role="alertdialog" aria-modal="true" aria-labelledby="confirm-title" aria-describedby="confirm-message" tabIndex={-1} className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-md w-full max-h-[calc(100dvh-2rem)] overflow-y-auto animate-in zoom-in-95 duration-150">
             <div
               className={`px-6 py-4 flex items-center gap-3 text-white ${
                 (confirmModal.isDangerous || confirmModal.isDanger) ? 'bg-rose-700' : 'bg-slate-900'
@@ -70,13 +74,13 @@ export const NotificationOverlay: React.FC = () => {
               ) : (
                 <HelpCircle className="w-5 h-5 text-emerald-400 shrink-0" />
               )}
-              <h3 className="text-sm font-bold leading-tight">
+              <h3 id="confirm-title" className="text-sm font-bold leading-tight">
                 {confirmModal.title}
               </h3>
             </div>
 
             <div className="p-6 space-y-4 text-xs text-slate-700">
-              <p className="text-sm font-medium leading-relaxed text-slate-800">
+              <p id="confirm-message" className="text-sm font-medium leading-relaxed text-slate-800">
                 {confirmModal.message}
               </p>
 

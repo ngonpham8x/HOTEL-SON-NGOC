@@ -1,3 +1,4 @@
+import { pendingSaleRefund } from './serviceSaleLifecycle';
 import { invoiceRevenue, invoiceCollected, localDate, sortRooms } from './hotelLogic';
 import type ExcelJS from 'exceljs';
 import { Invoice, DebtRecord, Room } from '../types/hotel';
@@ -230,6 +231,26 @@ export const exportRevenueToExcel = async (
     { width: 18 }, // Trạng Thái
   ];
 
+  const refunds = wb.addWorksheet('Hủy Vé và Hoàn Tiền');
+  refunds.columns = [
+    { header: 'Mã phiếu', key: 'code', width: 20 }, { header: 'Khách hàng', key: 'customer', width: 25 },
+    { header: 'Thời gian', key: 'time', width: 24 }, { header: 'Người xử lý', key: 'actor', width: 25 },
+    { header: 'Thao tác', key: 'kind', width: 20 }, { header: 'Chi tiết / lý do', key: 'detail', width: 65 },
+    { header: 'Phí giữ lại', key: 'fee', width: 18 }, { header: 'Đã hoàn thực tế', key: 'amount', width: 20 },
+    { header: 'Phương thức hoàn', key: 'method', width: 22 }, { header: 'Còn chờ hoàn (phiếu)', key: 'pending', width: 24 },
+  ];
+  refunds.getRow(1).eachCell(styleHeaderCell);
+  for (const invoice of invoices) {
+    for (const event of invoice.serviceLifecycle?.events || []) {
+      refunds.addRow({ code: invoice.code, customer: invoice.customerName, time: `${event.date} ${event.time}`, actor: event.actorName,
+        kind: event.kind === 'USE' ? 'Sử dụng vé' : event.kind === 'CANCEL' ? 'Hủy vé' : 'Hoàn tiền',
+        detail: event.kind === 'REFUND' ? event.notes : event.items.map(item => `${invoice.services?.find(usage => usage.id === item.usageId)?.name} × ${item.quantity}`).join(' · ') + (event.kind === 'CANCEL' ? ` · ${event.requestedBy === 'HOTEL' ? 'Khách sạn' : 'Khách'} yêu cầu · ${event.reason}` : ''),
+        fee: event.kind === 'CANCEL' ? event.fee : 0, amount: event.kind === 'REFUND' ? event.amount : 0,
+        method: event.kind === 'REFUND' ? getPaymentMethodName(event.method) : '', pending: pendingSaleRefund(invoice),
+      });
+    }
+  }
+  for (const column of ['fee', 'amount', 'pending']) refunds.getColumn(column).numFmt = '#,##0';
   await saveWorkbook(wb, fileName);
 };
 

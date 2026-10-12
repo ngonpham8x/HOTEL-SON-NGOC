@@ -1,3 +1,4 @@
+import { pendingSaleRefund } from './serviceSaleLifecycle';
 import type { DebtRecord, Invoice, PaymentMethod, Reservation, Room, StayRecord } from '../types/hotel';
 
 export function newId() {
@@ -37,7 +38,7 @@ export function invoiceRevenue(invoice: Invoice) {
 }
 export function invoiceCollected(invoice: Invoice) {
   if (invoice.status === 'CANCELLED') return 0;
-  return invoice.paidAmount + Math.min(invoice.depositDeducted, invoiceRevenue(invoice));
+  return invoice.paidAmount + pendingSaleRefund(invoice) + Math.min(invoice.depositDeducted, invoiceRevenue(invoice));
 }
 export function isInvoiceActive(invoice: Invoice): boolean {
   return invoice.status !== 'CANCELLED';
@@ -63,8 +64,9 @@ export function paymentBreakdown(invoices: Invoice[], debts: DebtRecord[]) {
   for (const invoice of invoices) {
     if (invoice.status === 'CANCELLED') continue;
     const payments = debts.filter(d => d.invoiceId === invoice.id).flatMap(d => d.paymentHistory);
-    add(invoice.paymentMethod, Math.max(0, invoice.paidAmount - payments.reduce((sum, p) => sum + p.amount, 0)));
+    add(invoice.paymentMethod, Math.max(0, invoice.paidAmount + (invoice.serviceLifecycle?.refundDue || 0) - payments.reduce((sum, p) => sum + p.amount, 0)));
     payments.forEach(p => add(p.method, p.amount));
+    for (const event of invoice.serviceLifecycle?.events || []) if (event.kind === 'REFUND') add(event.method, -event.amount);
     result.deposit += Math.min(invoice.depositDeducted, invoiceRevenue(invoice));
   }
   return result;

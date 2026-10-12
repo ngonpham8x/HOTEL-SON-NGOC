@@ -1,3 +1,4 @@
+import { applySaleEvent, adjustSaleDebts } from './serviceSaleLifecycle.ts';
 import type { AccessActor, ActionId } from './access.ts';
 import type { HotelData } from './hotelStorage.ts';
 import type { Invoice, ServiceUsage } from './hotel.ts';
@@ -35,9 +36,9 @@ function visibleRow(actor: AccessActor, field: keyof HotelData, row: Row, data: 
   if (field === 'rooms') return operational || canView(actor, 'services') || hasFinancialView(actor);
   if (field === 'services') return operational || canView(actor, 'services') || canView(actor, 'sales') || hasFinancialView(actor);
   if (field === 'stays' || field === 'reservations') return operational || hasFinancialView(actor);
-  if (field === 'debts') return canView(actor, 'debt');
+  if (field === 'debts') return canView(actor, 'debt') || (canView(actor, 'sales') && (canAct(actor, 'sale.cancel') || canAct(actor, 'sale.refund')) && data.invoices.some(invoice => invoice.id === (row as HotelData['debts'][number]).invoiceId && invoice.kind === 'SERVICE'));
   const invoice = row as Invoice;
-  return hasFinancialView(actor) || (canView(actor, 'debt') && data.debts.some(debt => debt.invoiceId === invoice.id)) || (canView(actor, 'sales') && invoice.kind === 'SERVICE' && invoice.createdBy === actor.id);
+  return hasFinancialView(actor) || (canView(actor, 'debt') && data.debts.some(debt => debt.invoiceId === invoice.id)) || (canView(actor, 'sales') && invoice.kind === 'SERVICE' && (invoice.createdBy === actor.id || canAct(actor, 'sale.cancel') || canAct(actor, 'sale.refund')));
 }
 
 /** Filter on the server before returning a snapshot; permission claims come from the session. */
@@ -80,6 +81,12 @@ export function authorizeHotelMutation(actor: AccessActor, before: HotelData, ne
   if (action === 'data.export') deny('Xuất dữ liệu không phải thao tác ghi dữ liệu.');
   const d = { rooms: changes(before.rooms, next.rooms), services: changes(before.services, next.services), stays: changes(before.stays, next.stays), reservations: changes(before.reservations, next.reservations), invoices: changes(before.invoices, next.invoices), debts: changes(before.debts, next.debts) };
   if (Object.values(d).every(emptyChange)) return; // Idempotent network retry.
+  // A receipt with fulfillment/refund history cannot be rewritten by ordinary edit/cancel operations.
+  if (d.invoices.added.some(invoice => invoice.serviceLifecycle)) deny('Phiếu mới không được mang lịch sử hoàn tiền.');
+  for (const { old, next: invoice } of d.invoices.updated) {
+    if ((old.serviceLifecycle || invoice.serviceLifecycle) && !['sale.create', 'sale.cancel', 'sale.refund', 'debt.collect'].includes(action)) deny();
+    if (action === 'debt.collect' && !equal(old.serviceLifecycle, invoice.serviceLifecycle)) deny();
+  }
   if (d.stays.removed.length || d.reservations.removed.length || d.invoices.removed.length || d.debts.removed.length) deny('Không được xóa lịch sử khách, đặt phòng, phiếu thu hoặc công nợ.');
   const scope = (...fields: (keyof HotelData)[]) => { for (const field of Object.keys(d) as (keyof HotelData)[]) if (!fields.includes(field) && !emptyChange(d[field])) deny(); };
   const updatesOnly = (value: ReturnType<typeof changes>) => { if (value.added.length || value.removed.length) deny(); };
@@ -236,8 +243,25 @@ export function authorizeHotelMutation(actor: AccessActor, before: HotelData, ne
       roomUpdates([old.roomId], ['status', 'cleanStatus', 'currentStayId', 'currentGuestName']); const room = next.rooms.find(row => row.id === old.roomId); if (!room || room.status !== 'CLEANING' || room.cleanStatus !== 'DIRTY' || room.currentStayId || room.currentGuestName) deny();
       break;
     }
+    case 'sale.cancel':
+    case 'sale.refund':
     case 'sale.create': {
       scope('invoices', 'debts');
+      if (!d.invoices.added.length && d.invoices.updated.length === 1 && d.invoices.updated[0].next.serviceLifecycle) {
+        const { old, next: invoice } = d.invoices.updated[0];
+        const previous = old.serviceLifecycle?.events || [];
+        const events = invoice.serviceLifecycle!.events;
+        if (events.length !== previous.length + 1 || !equal(events.slice(0, -1), previous)) deny('Không được sửa lịch sử xử lý vé.');
+        const event = events[events.length - 1];
+        if (event.actorId !== actor.id || event.actorName !== actor.displayName || action !== (event.kind === 'CANCEL' ? 'sale.cancel' : event.kind === 'REFUND' ? 'sale.refund' : 'sale.create') || event.kind === 'USE' && actor.role !== 'ADMIN' && old.createdBy !== actor.id) deny('Bạn chưa được cấp quyền xử lý vé theo thao tác này.');
+        if (Math.abs(dateTime(event.date, event.time) - Date.now()) > 300000) deny('Thời gian xử lý không hợp lệ.');
+        const expected = applySaleEvent(old, event);
+        const byId = (rows: HotelData['debts']) => [...rows].sort((left, right) => left.id.localeCompare(right.id));
+        if (!equal(expected, invoice) || !equal(byId(adjustSaleDebts(before.debts, expected)), byId(next.debts))) deny('Thông tin hoàn tiền/công nợ không khớp.');
+        break;
+      }
+      if (action !== 'sale.create') deny();
+      if (d.invoices.updated.some(item => item.old.serviceLifecycle)) deny('Không được ghi đè lịch sử xử lý vé.');
       if (d.invoices.added.length === 1 && !d.invoices.updated.length) {
         const invoice = newInvoice('SERVICE');
         if (invoice.roomCharge || invoice.depositDeducted || invoice.surcharge || invoice.refundAmount || !invoice.services?.length || invoice.services.some(usage => !validUsage(usage, before)) || invoice.serviceCharge !== invoice.services.reduce((sum, usage) => sum + usage.totalPrice, 0)) deny();
@@ -267,4 +291,3 @@ export function authorizeHotelMutation(actor: AccessActor, before: HotelData, ne
     default: deny();
   }
 }
-

@@ -1,3 +1,4 @@
+import { pendingSaleRefund } from '../../utils/serviceSaleLifecycle';
 import { AccessGuard } from '../common/AccessGuard';
 import { useAccess } from '../../context/AccessContext';
 import { useState } from 'react';
@@ -77,6 +78,7 @@ export function ServiceSalesView({ onPrint }: { onPrint: (invoice: Invoice) => v
       <div className="flex flex-col sm:flex-row gap-3 justify-between sm:items-center pt-3 border-t"><strong className="text-teal-900">Cần thanh toán: {formatCurrency(total)}</strong><button type="submit" disabled={busy || !items.length} className="px-4 py-3 rounded-xl bg-teal-700 text-white font-bold disabled:opacity-50">{busy ? 'Đang lưu…' : 'Lưu phiếu thu bán lẻ'}</button></div>
     </form></AccessGuard>
     {lastInvoice && <div role="status" className="rounded-xl bg-teal-50 border border-teal-200 p-3 flex flex-wrap items-center justify-between gap-2"><span>Đã lưu {lastInvoice.code} · {formatCurrency(lastInvoice.totalAmount)}</span><button type="button" onClick={() => onPrint(lastInvoice)} className="flex items-center gap-2 font-semibold text-teal-800"><Printer className="w-4 h-4" />Xem / In phiếu thu</button></div>}
+    {sales.some(invoice => pendingSaleRefund(invoice) > 0) && <div role="status" className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">Có <strong>{sales.filter(invoice => pendingSaleRefund(invoice) > 0).length}</strong> phiếu chờ hoàn · Tổng tiền cần hoàn <strong>{formatCurrency(sales.reduce((sum, invoice) => sum + pendingSaleRefund(invoice), 0))}</strong>. Mở “Sử dụng / Hủy / Hoàn” tại phiếu để ghi nhận tiền trả khách.</div>}
     <section className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-2xs space-y-0">
       <div className="px-5 py-3.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
         <h2 className="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center gap-2">

@@ -1,3 +1,4 @@
+import { validateSaleLifecycle } from './serviceSaleLifecycle';
 import type { Room, ServiceItem, StayRecord, Reservation, Invoice, DebtRecord } from '../types/hotel';
 import { roomDefaults, sortRooms } from './hotelLogic';
 
@@ -31,6 +32,7 @@ export function validateHotelData(input: unknown): HotelData {
       if (field === 'stays' || (field === 'invoices' && row.services !== undefined)) {
         if (!Array.isArray(row.services) || row.services.some(s => !s || typeof s.id !== 'string' || typeof s.name !== 'string' || typeof s.serviceId !== 'string' || !Number.isInteger(s.quantity) || s.quantity < 1 || !Number.isSafeInteger(s.unitPrice) || s.unitPrice < 0 || s.totalPrice !== s.unitPrice * s.quantity)) throw new Error('Chi tiết dịch vụ không hợp lệ.');
       }
+      if (field === 'invoices') validateSaleLifecycle(row as unknown as Invoice);
       if (field === 'debts' && (row.paymentHistory as Record<string, unknown>[]).some(p => !p || typeof p.date !== 'string' || typeof p.time !== 'string' || typeof p.method !== 'string' || typeof p.amount !== 'number' || !Number.isSafeInteger(p.amount) || p.amount <= 0)) throw new Error('Lịch sử thu nợ không hợp lệ.');
       if ((field === 'stays' || field === 'reservations') && row.companionGuests !== undefined && (!Array.isArray(row.companionGuests) || row.companionGuests.some(g => !g || typeof g.id !== 'string' || typeof g.name !== 'string'))) throw new Error('Danh sách khách không hợp lệ.');
     }

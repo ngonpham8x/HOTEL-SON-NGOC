@@ -6,6 +6,8 @@ import { btree_gist } from '@electric-sql/pglite/contrib/btree_gist';
 import { fixtureCredential, initialPassword } from './authFixture';
 import { INITIAL_INVOICES, INITIAL_DEBTS, INITIAL_STAYS, INITIAL_RESERVATIONS } from '../src/data/initialData';
 import { prepareServiceSale } from '../src/utils/serviceSale';
+import { applySaleEvent, adjustSaleDebts, pendingSaleRefund } from '../src/utils/serviceSaleLifecycle';
+import { localDate, localTime } from '../src/utils/hotelLogic';
 import type { HotelData } from '../src/utils/hotelStorage';
 
 test('staff cloud API enforces private credentials, data scopes, safe operations and immediate version revocation in PostgreSQL', async () => {
@@ -146,6 +148,40 @@ test('staff cloud API enforces private credentials, data scopes, safe operations
     assert.deepEqual(afterCollection.invoices.find(invoice => invoice.id === sale.invoice.id), beforeDebtCollection.invoices.find(invoice => invoice.id === sale.invoice.id));
     assert.equal(afterCollection.debts.find(debt => debt.id === targetDebt.id)!.remainingAmount, targetDebt.remainingAmount - amount);
     const collectedView = await collectedResponse.json(); assert.equal(collectedView.data.invoices.length, 1); assert.deepEqual(collectedView.data.stays, []);
+    // Start a new test login window for the additional role scenarios.
+    await pg.exec("update hotel_login_limits set minute = now() - interval '2 minutes', attempts = 0");
+    const cancelAccount = await request('staff.save', { username: 'cancel-only', displayName: 'Lễ tân hủy vé', active: true, password: 'Cancel Staff@2026', permissions: { views: ['sales'], actions: ['sale.cancel'] } }, admin.token);
+    assert.equal(cancelAccount.status, 200, 'database accepts the new explicit cancellation permission');
+    const cancelLoginResponse = await request('login', { username: 'cancel-only', password: 'Cancel Staff@2026' }); assert.equal(cancelLoginResponse.status, 200);
+    const cancelLogin = await cancelLoginResponse.json();
+    const cancelView = await (await request('read', {}, cancelLogin.token)).json();
+    const crossShiftInvoice = cancelView.data.invoices.find((invoice: any) => invoice.id === sale.invoice.id);
+    assert.ok(crossShiftInvoice, 'a granted receptionist can process a sale from another shift');
+    assert.equal(cancelView.data.invoices.some((invoice: any) => invoice.kind !== 'SERVICE'), false, 'room receipts remain hidden');
+    assert.equal(cancelView.data.debts.some((debt: any) => debt.invoiceId === INITIAL_INVOICES[0].id), false, 'unrelated room debt remains hidden');
+    const cancelledSale = applySaleEvent(crossShiftInvoice, { id: 'staff-cancel-event', date: localDate(), time: localTime(), actorId: cancelLogin.actor.id, actorName: cancelLogin.actor.displayName, kind: 'CANCEL', items: [{ usageId: crossShiftInvoice.services[0].id, quantity: 1 }], fee: 0, reason: 'Khách đổi ý', requestedBy: 'CUSTOMER' });
+    const cancellationData = { ...cancelView.data, invoices: cancelView.data.invoices.map((invoice: any) => invoice.id === cancelledSale.id ? cancelledSale : invoice), debts: adjustSaleDebts(cancelView.data.debts, cancelledSale) };
+    assert.equal((await request('write', { operation: 'sale.create', revision: cancelView.revision, requestId: 'a1'.repeat(16), data: cancellationData }, cancelLogin.token)).status, 403);
+    const cancelResponse = await request('write', { operation: 'sale.cancel', revision: cancelView.revision, requestId: 'a2'.repeat(16), data: cancellationData }, cancelLogin.token);
+    assert.equal(cancelResponse.status, 200);
+    const afterCancelView = await cancelResponse.json();
+    const pending = pendingSaleRefund(cancelledSale);
+    assert.equal(pending, service.price);
+    const refundAccount = await request('staff.save', { username: 'refund-only', displayName: 'Lễ tân hoàn tiền', active: true, password: 'Refund Staff@2026', permissions: { views: ['sales'], actions: ['sale.refund'] } }, admin.token);
+    assert.equal(refundAccount.status, 200, 'database accepts the independent refund permission');
+    const refundAccountData = await refundAccount.json();
+    const refundLoginResponse = await request('login', { username: 'refund-only', password: 'Refund Staff@2026' }); assert.equal(refundLoginResponse.status, 200);
+    const refundLogin = await refundLoginResponse.json();
+    const refundView = await (await request('read', {}, refundLogin.token)).json();
+    const storedCancelled = refundView.data.invoices.find((invoice: any) => invoice.id === cancelledSale.id);
+    const refundedSale = applySaleEvent(storedCancelled, { id: 'staff-refund-event', date: localDate(), time: localTime(), actorId: refundLogin.actor.id, actorName: refundLogin.actor.displayName, kind: 'REFUND', amount: pending, method: 'TRANSFER', notes: 'QA refund' });
+    const refundData = { ...refundView.data, invoices: refundView.data.invoices.map((invoice: any) => invoice.id === refundedSale.id ? refundedSale : invoice) };
+    assert.equal((await request('write', { operation: 'sale.refund', revision: afterCancelView.revision, requestId: 'a3'.repeat(16), data: refundData }, cancelLogin.token)).status, 403, 'cancellation grant does not permit refunds');
+    assert.equal((await request('write', { operation: 'sale.cancel', revision: refundView.revision, requestId: 'a4'.repeat(16), data: refundData }, refundLogin.token)).status, 403, 'refund grant does not permit cancellation');
+    assert.equal((await request('write', { operation: 'sale.refund', revision: refundView.revision, requestId: 'a5'.repeat(16), data: refundData }, refundLogin.token)).status, 200);
+    const revokeRefund = await request('staff.save', { id: refundAccountData.account.id, username: 'refund-only', displayName: 'Lễ tân hoàn tiền', active: true, expectedVersion: 1, permissions: { views: ['sales'], actions: [] } }, admin.token);
+    assert.equal(revokeRefund.status, 200);
+    assert.equal((await request('read', {}, refundLogin.token)).status, 401, 'revoking refund permissions immediately ends the old session');
     const rpcDefinitions = await scalar("select bool_and(prosecdef = false) as value from pg_proc where proname in ('hotel_save_authorized','hotel_staff_save','hotel_open_staff_session','hotel_staff_change_password')"); assert.equal(rpcDefinitions, true);
   } finally { globalThis.fetch = originalFetch; Reflect.deleteProperty(globalThis, 'Deno'); await pg.close(); }
 });

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useHotel } from '../../context/HotelContext';
 import { PlusCircle, CalendarPlus, PhoneCall, Menu, X, Ticket } from 'lucide-react';
 import { HotelLogo } from '../common/HotelLogo';
@@ -16,6 +16,13 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenQuickBooking,
   onOpenAddRoom,
 }) => {
+  const [desktop, setDesktop] = useState(() => window.matchMedia('(min-width: 1024px)').matches);
+  useEffect(() => {
+    const media = window.matchMedia('(min-width: 1024px)');
+    const update = () => setDesktop(media.matches);
+    media.addEventListener('change', update);
+    return () => media.removeEventListener('change', update);
+  }, []);
   const { actor, canView, canAct } = useAccess();
   const homeModule = firstAllowedModule(actor);
   const {
@@ -25,6 +32,7 @@ export const Header: React.FC<HeaderProps> = ({
     isMobileMenuOpen,
     setIsMobileMenuOpen,
     toggleSidebar,
+    isSidebarCollapsed,
   } = useHotel();
 
   const occupiedCount = rooms.filter(r => r.status === 'OCCUPIED').length;
@@ -39,7 +47,7 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Menu Toggle (Mobile & Desktop) */}
         <button
           onClick={() => {
-            if (typeof window !== 'undefined' && window.innerWidth >= 1024) {
+            if (desktop) {
               toggleSidebar();
             } else {
               setIsMobileMenuOpen(!isMobileMenuOpen);
@@ -47,6 +55,8 @@ export const Header: React.FC<HeaderProps> = ({
           }}
           className="p-1.5 -ml-1 text-teal-300 hover:text-white hover:bg-teal-900/60 rounded-lg transition-colors focus:outline-none cursor-pointer"
           aria-label="Ẩn hiện menu"
+          aria-controls="hotel-navigation"
+          aria-expanded={desktop ? !isSidebarCollapsed : isMobileMenuOpen}
           title="Ẩn hiện thanh menu (tăng diện tích màn hình)"
         >
           {isMobileMenuOpen ? <X className="w-5 h-5 text-amber-300" /> : <Menu className="w-5 h-5 text-teal-300" />}
@@ -96,6 +106,7 @@ export const Header: React.FC<HeaderProps> = ({
       {/* Right: Actions (Sleek, Compact, Never Wraps) */}
       <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
         {canView('sales') && <button
+          aria-label="Bán vé / khách ngoài"
           onClick={() => { setActiveTab('sales'); setIsMobileMenuOpen(false); }}
           title="Bán vé massage / dịch vụ khách ngoài"
           className="px-2 sm:px-2.5 py-1.5 text-xs font-semibold text-amber-100 bg-amber-900/40 hover:bg-amber-800/60 border border-amber-700/60 hover:text-white rounded-lg flex items-center gap-1 transition-colors"
@@ -104,6 +115,7 @@ export const Header: React.FC<HeaderProps> = ({
           <span className="hidden sm:inline">Bán vé</span>
         </button>}
         {canAct('booking.create') && <button
+          aria-label="Đặt phòng"
           onClick={onOpenQuickBooking}
           title="Đặt phòng trước cho khách"
           className="px-2 sm:px-2.5 py-1.5 text-xs font-semibold text-teal-100 bg-teal-900/40 hover:bg-teal-800/60 border border-teal-700/60 hover:text-white rounded-lg flex items-center gap-1 transition-colors"

@@ -187,7 +187,7 @@ function StaffAccessEditor() {
             <div className="mt-3 grid min-w-0 gap-2 sm:grid-cols-2">{MODULE_IDS.map(module => <label key={module} className={`flex min-w-0 cursor-pointer items-center gap-2.5 rounded-xl border p-3 text-xs ${form.permissions.views.includes(module) ? 'border-teal-200 bg-teal-50 text-teal-900' : 'border-slate-200 text-slate-600'}`}><input type="checkbox" checked={form.permissions.views.includes(module)} onChange={() => toggleView(module)} className="h-4 w-4 shrink-0 accent-teal-700" /><span className="min-w-0 leading-5">{MODULE_LABELS[module]}</span></label>)}</div>
           </div>
           <div>
-            <h4 className="text-xs font-semibold text-slate-800">2. Thao tác được phép</h4><p className="mt-1 text-[11px] leading-5 text-slate-500">Chọn quyền xem mục tương ứng trước. Bỏ quyền xem sẽ bỏ các thao tác không còn sử dụng được.</p>
+            <h4 className="text-xs font-semibold text-slate-800">2. Thao tác được phép</h4><p className="mt-1 text-[11px] leading-5 text-slate-500">Chọn quyền xem mục tương ứng trước. Bỏ quyền xem sẽ bỏ các thao tác không còn sử dụng được. Quyền hủy/hoàn vé cho phép xem phiếu dịch vụ của các ca và công nợ liên quan để xử lý cho khách. Hai quyền này được cấp riêng.</p>
             <div className="mt-3 grid min-w-0 gap-2 sm:grid-cols-2">{staffActions.map(action => {
               const available = ACTION_VIEWS[action].some(view => form.permissions.views.includes(view));
               const selected = form.permissions.actions.includes(action);

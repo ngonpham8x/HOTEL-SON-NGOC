@@ -20,6 +20,7 @@
     "test:flows": "node scripts/browser-flow.mjs",
     "test:prices": "node scripts/browser-prices.mjs",
     "test:booking-sales": "node scripts/browser-booking-sales.mjs",
+    "test:refunds": "node scripts/browser-service-refunds.mjs",
     "test:staff": "node scripts/browser-staff.mjs",
     "supabase:prepare": "node scripts/prepare-supabase.mjs",
     "supabase:seed": "tsx scripts/seed-supabase.ts",

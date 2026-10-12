@@ -1,4 +1,5 @@
-import React, { lazy, Suspense, useState } from 'react';
+import React, { lazy, Suspense, useState, useEffect } from 'react';
+import { useDialogFocus } from '../../hooks/useDialogFocus';
 import { useHotel } from '../../context/HotelContext';
 import { useAccess } from '../../context/AccessContext';
 import {
@@ -39,6 +40,15 @@ export const Sidebar: React.FC<{ onLogout: () => void; onPasswordChanged: () => 
     isSidebarCollapsed,
     toggleSidebar,
   } = useHotel();
+  const [desktop, setDesktop] = useState(() => window.matchMedia('(min-width: 1024px)').matches);
+  useEffect(() => {
+    const media = window.matchMedia('(min-width: 1024px)');
+    const update = () => { setDesktop(media.matches); if (media.matches) setIsMobileMenuOpen(false); };
+    media.addEventListener('change', update);
+    return () => media.removeEventListener('change', update);
+  }, [setIsMobileMenuOpen]);
+  const menuRef = useDialogFocus(!desktop && isMobileMenuOpen, () => setIsMobileMenuOpen(false));
+  const menuHidden = desktop ? isSidebarCollapsed : !isMobileMenuOpen;
 
   const occupiedRooms = rooms.filter(r => r.status === 'OCCUPIED').length;
   const pendingReservations = reservations.filter(r => r.status === 'CONFIRMED').length;
@@ -111,6 +121,10 @@ export const Sidebar: React.FC<{ onLogout: () => void; onPasswordChanged: () => 
 
       {/* Sidebar Container: Slide drawer on mobile, collapsible sidebar on desktop */}
       <aside
+        id="hotel-navigation"
+        aria-label="Menu quản lý khách sạn"
+        aria-hidden={menuHidden}
+        inert={menuHidden}
         className={`no-print fixed top-0 bottom-0 left-0 z-50 w-[min(18rem,90vw)] lg:z-20 ${
           isSidebarCollapsed ? 'lg:w-0 lg:border-r-0 lg:overflow-hidden' : 'lg:w-64 lg:overflow-visible'
         } lg:sticky lg:top-0 lg:h-full bg-[#092228] border-r border-teal-900/60 flex flex-col shrink-0 text-teal-100 shadow-2xl lg:shadow-none transition-[width,transform] duration-300 ease-in-out h-dvh ${
@@ -131,7 +145,7 @@ export const Sidebar: React.FC<{ onLogout: () => void; onPasswordChanged: () => 
         )}
 
         {/* Khung nội dung giữ nguyên kích thước để hiệu ứng thu gọn trượt mượt mà */}
-        <div className="w-[min(18rem,90vw)] lg:w-[255px] h-full flex flex-col shrink-0 overflow-hidden">
+        <div ref={menuRef} role={!desktop && isMobileMenuOpen ? 'dialog' : undefined} aria-modal={!desktop && isMobileMenuOpen ? true : undefined} aria-label="Menu quản lý khách sạn" tabIndex={-1} className="w-[min(18rem,90vw)] lg:w-[255px] h-full flex flex-col shrink-0 overflow-hidden">
         {/* Mobile-only Header inside drawer */}
         <div className="lg:hidden flex items-center justify-between p-3.5 border-b border-teal-900/60 bg-[#071b20]">
           <div className="flex items-center gap-2.5">
@@ -159,20 +173,23 @@ export const Sidebar: React.FC<{ onLogout: () => void; onPasswordChanged: () => 
             </div>
           </div>
           <p className="px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-teal-400/80">
-            Chức năng nghiệp vụ
+            Điều hành khách sạn
           </p>
           <nav className="space-y-1">
             {navItems.map(item => {
               const Icon = item.icon;
               const isActive = activeTab === item.id;
               return (
+                <React.Fragment key={item.id}>
+                {['debt', 'services'].includes(item.id) && <p className="px-3 pt-4 pb-2 text-[10px] font-bold uppercase tracking-widest text-teal-400/80">{item.id === 'debt' ? 'Tài chính & báo cáo' : 'Thiết lập'}</p>}
                 <button
                   key={item.id}
+                  aria-current={isActive ? 'page' : undefined}
                   onClick={() => {
                     setActiveTab(item.id);
                     setIsMobileMenuOpen(false);
                   }}
-                  className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
+                  className={`w-full min-h-11 flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${
                     isActive
                       ? 'bg-gradient-to-r from-teal-600 to-cyan-700 text-white shadow-sm font-bold border border-teal-400/40'
                       : 'text-teal-200/90 hover:text-white hover:bg-teal-900/50'
@@ -190,6 +207,7 @@ export const Sidebar: React.FC<{ onLogout: () => void; onPasswordChanged: () => 
                     </span>
                   )}
                 </button>
+                </React.Fragment>
               );
             })}
           </nav>

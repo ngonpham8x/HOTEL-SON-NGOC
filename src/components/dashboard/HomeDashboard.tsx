@@ -1,5 +1,7 @@
+import { remainingSaleServices } from '../../utils/serviceSaleLifecycle';
 import { localDate, periodKeys, invoiceRevenue, invoiceCollected, invoiceRoomCharge, invoiceMassageCharge, invoiceDebtAmount, isInvoiceActive, sortRooms } from '../../utils/hotelLogic';
 import React, { useState, useMemo } from 'react';
+import { useDialogFocus } from '../../hooks/useDialogFocus';
 import { useHotel } from '../../context/HotelContext';
 import { Room, RoomStatus, Invoice } from '../../types/hotel';
 import { formatCurrency, formatDate, getRoomStatusMeta } from '../../utils/formatters';
@@ -69,6 +71,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
   const lastMonthLabel = keys.lastMonth.split('-').reverse().join('/');
   const [roomFilter, setRoomFilter] = useState<RoomStatus | 'ALL'>('ALL');
   const [detailModal, setDetailModal] = useState<DetailModalType>(null);
+  const detailRef = useDialogFocus(detailModal !== null, () => setDetailModal(null));
   const [splitPeriod, setSplitPeriod] = useState<PeriodScope>('DAY');
 
   // Today's invoice statistics.
@@ -208,7 +211,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
 
     // Count from invoices (chỉ tính phiếu thu hợp lệ, bỏ qua phiếu đã hủy)
     thisMonthInvoices.filter(isInvoiceActive).forEach(inv => {
-      (inv.services || []).forEach(s => {
+      remainingSaleServices(inv).forEach(s => {
         const item = list.find(l => l.name === s.name || l.id === s.serviceId);
         if (item) {
           item.count += s.quantity;
@@ -772,11 +775,11 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
       {/* ========================================================= */}
       {detailModal !== null && (detailModal !== 'DEBT_LIST' || canView('debt')) && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs animate-in fade-in duration-200">
-          <div className="bg-white rounded-2xl shadow-2xl border border-teal-200 w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
+          <div ref={detailRef} role="dialog" aria-modal="true" aria-labelledby="dashboard-detail-title" tabIndex={-1} className="dashboard-detail bg-white rounded-2xl shadow-2xl border border-teal-200 w-full max-w-4xl max-h-[90dvh] flex flex-col overflow-hidden">
             {/* Modal Header */}
             <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-gradient-to-r from-teal-900 to-slate-900 text-white">
               <div>
-                <h3 className="text-base font-bold flex items-center gap-2">
+                <h3 id="dashboard-detail-title" className="text-base font-bold flex items-center gap-2">
                   {detailModal === 'TODAY_REVENUE' && `💵 Doanh thu hôm nay (${formatDate(today)})`}
                   {detailModal === 'WEEK_REVENUE' && `📊 Doanh thu tuần này (${weekRange.label})`}
                   {detailModal === 'MONTH_REVENUE' && `📈 Doanh thu tháng ${thisMonthLabel}`}
@@ -969,7 +972,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
                     </div>
                   </div>
 
-                  <div className="border border-slate-200 rounded-xl overflow-hidden">
+                  <div className="border border-slate-200 rounded-xl overflow-x-auto">
                     <table className="w-full text-left border-collapse">
                       <thead className="bg-slate-100 text-[11px] font-bold text-slate-700 uppercase">
                         <tr>
@@ -1033,7 +1036,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
                     </div>
                   </div>
 
-                  <div className="border border-slate-200 rounded-xl overflow-hidden">
+                  <div className="border border-slate-200 rounded-xl overflow-x-auto">
                     <table className="w-full text-left border-collapse">
                       <thead className="bg-slate-100 text-[11px] font-bold text-slate-700 uppercase">
                         <tr>
@@ -1089,7 +1092,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
                     <strong className="text-xl font-mono text-rose-800">{formatCurrency(totalRemainingDebt)}</strong>
                   </div>
 
-                  <div className="border border-slate-200 rounded-xl overflow-hidden">
+                  <div className="border border-slate-200 rounded-xl overflow-x-auto">
                     <table className="w-full text-left border-collapse">
                       <thead className="bg-slate-100 text-[11px] font-bold text-slate-700 uppercase">
                         <tr>

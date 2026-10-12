@@ -139,3 +139,19 @@ Menu thay đổi theo phiên bản trình duyệt. Hướng dẫn dựa trên t�
 Mỗi thiết bị cần mở cùng đường dẫn HTTPS và xác nhận cài riêng; website không thể tự tạo biểu tượng trên thiết bị khác. Hướng dẫn có nút sao chép link khi app chạy trên HTTPS. `localhost` chỉ dùng trên máy đang chạy app. Biểu tượng cài sẽ dùng logo Sơn Ngọc; app yêu cầu đăng nhập khi hết phiên. Cài app không đồng bộ dữ liệu giữa các thiết bị.
 
 Service worker cần HTTPS hoặc localhost. Bản build lưu các tệp ứng dụng để mở offline sau lần truy cập đầu tiên. Icon trình duyệt, iPhone/iPad (152/167/180px), PWA (192/512px) và icon maskable Android cùng được tạo từ `public/icon.svg` bằng `npm run icons`. App hỗ trợ xoay ngang/dọc theo thiết bị.
+
+## Sử dụng vé massage, hủy và hoàn tiền
+
+Trong **Bán vé / khách ngoài**, mở **Sử dụng / Hủy / Hoàn** tại phiếu thu:
+
+- **Ghi nhận đã dùng**: nhập số vé thực tế đã sử dụng. Phiếu cũ cần ghi nhận phần đã dùng trước khi hủy.
+- **Hủy vé chưa dùng**: quản lý hoặc lễ tân được cấp quyền **Hủy vé chưa dùng và điều chỉnh công nợ** chọn số vé hủy, bên yêu cầu, lý do và phí giữ lại theo thỏa thuận. Nếu khách sạn không cung cấp được dịch vụ, phí hủy bằng 0. Không có mức phạt mặc định.
+- **Ghi nhận hoàn tiền**: quản lý hoặc lễ tân được cấp quyền **Ghi nhận hoàn tiền vé cho khách** chỉ xác nhận sau khi trả tiền thực tế. Có thể hoàn nhiều lần, bằng tiền mặt, chuyển khoản hoặc thẻ; mỗi lần lưu thời gian, người xử lý và ghi chú.
+
+Vào **Phân quyền lễ tân**, bật quyền xem **Bán vé / khách ngoài** rồi chọn từng quyền hủy/hoàn. Hai quyền này không có trong mẫu lễ tân mặc định; tài khoản cũ giữ nguyên quyền. Người được cấp quyền được xem phiếu dịch vụ của các ca và công nợ dịch vụ liên quan, không mở dữ liệu phòng hoặc công nợ không liên quan. Thay đổi quyền làm hết hiệu lực phiên cũ. Mỗi thao tác ghi đúng tên người xử lý.
+
+Giá vé dùng đơn giá lúc bán. Giảm giá được phân bổ theo giá trị phần hủy, làm tròn lũy kế đến đồng. Phần chưa thu được giảm công nợ trước; phần đã thu vượt giá trị còn phải trả trở thành **Chờ hoàn tiền**. Doanh thu giảm khi hủy, tiền thực giữ chỉ giảm khi ghi nhận hoàn. Vé đã dùng không được hủy. Phiếu và lịch sử thu nợ được giữ lại; phiếu có lịch sử xử lý vé không thể sửa/hủy giao dịch gốc.
+
+Phiếu in có vé gốc, lịch sử xử lý và tiền chờ hoàn. Excel doanh thu bổ sung sheet **Hủy Vé và Hoàn Tiền**. Chạy `npm run test:refunds` trên dev server cục bộ để kiểm tra sử dụng một vé, hủy hai vé, hoàn từng phần, tải lại và bố cục mobile. Kiểm thử dùng dữ liệu/mật khẩu giả trong profile riêng, không chạy với API thật.
+
+Mã kiểm tra Supabase được chuẩn bị bằng `npm run supabase:prepare`; cần triển khai Edge Function `hotel-api` cùng phiên bản frontend để dùng tính năng này trên cloud. Việc chuẩn bị mã không tự triển khai.

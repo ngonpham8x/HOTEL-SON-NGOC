@@ -109,9 +109,23 @@ export interface StayRecord {
 export type PaymentMethod = 'CASH' | 'TRANSFER' | 'CARD' | 'DEBT' | 'MIXED';
 export type InvoiceStatus = 'PAID' | 'PARTIAL' | 'DEBT' | 'CANCELLED';
 
+export type ServiceSaleEvent = {
+  id: string; date: string; time: string; actorId: string; actorName: string;
+} & (
+  | { kind: 'USE'; items: { usageId: string; quantity: number }[] }
+  | { kind: 'CANCEL'; items: { usageId: string; quantity: number }[]; fee: number; reason: string; requestedBy: 'CUSTOMER' | 'HOTEL' }
+  | { kind: 'REFUND'; amount: number; method: 'CASH' | 'TRANSFER' | 'CARD'; notes: string }
+);
+export interface ServiceSaleLifecycle {
+  original: { serviceCharge: number; massageCharge: number; discount: number; totalAmount: number };
+  refundDue: number;
+  events: ServiceSaleEvent[];
+}
+
 export interface Invoice {
   createdBy?: string;
   kind?: 'ROOM' | 'SERVICE';
+  serviceLifecycle?: ServiceSaleLifecycle;
   id: string;
   code: string;
   stayId: string;
