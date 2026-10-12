@@ -1,4 +1,5 @@
 import { AccessGuard } from '../common/AccessGuard';
+import { MobileTableToggle } from '../common/MobileTableToggle';
 import { useAccess } from '../../context/AccessContext';
 import React, { useState } from 'react';
 import { useHotel } from '../../context/HotelContext';
@@ -25,6 +26,7 @@ export const DebtManagement: React.FC = () => {
   const { debts, recordDebtPayment, showToast } = useHotel();
   const [filterStatus, setFilterStatus] = useState<string>('ACTIVE_DEBT');
   const [search, setSearch] = useState<string>('');
+  const [mobileView, setMobileView] = useState<'COMPACT' | 'TABLE'>('TABLE');
 
   // Selected debt for collecting payment modal
   const [collectingDebt, setCollectingDebt] = useState<DebtRecord | null>(null);
@@ -210,6 +212,7 @@ export const DebtManagement: React.FC = () => {
       </div>
 
       {/* Debt Records Table */}
+      <MobileTableToggle mode={mobileView} onChange={setMobileView} />
       <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-2xs">
         {filteredDebts.length === 0 ? (
           <div className="p-12 text-center text-slate-500">
@@ -218,8 +221,8 @@ export const DebtManagement: React.FC = () => {
             <p className="text-xs text-slate-400 mt-1">Toàn bộ khách hàng đã thanh toán đầy đủ</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
+          <div className="overflow-x-auto overscroll-x-contain" role="region" aria-label="Danh sách công nợ" tabIndex={0}>
+            <table className={`mobile-table ${mobileView === 'TABLE' ? 'mobile-table-wide' : ''} w-full text-left text-xs sm:min-w-[1000px]`} style={mobileView === 'TABLE' ? { minWidth: 1000 } : undefined}>
               <thead className="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold border-b border-slate-200">
                 <tr>
                   <th className="px-4 py-3">Mã PT & Ngày lập</th>
@@ -240,8 +243,8 @@ export const DebtManagement: React.FC = () => {
 
                   return (
                     <tr key={debt.id} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="px-4 py-3">
-                        <span className="font-mono font-bold text-slate-900 block">
+                      <td data-label="Mã PT & Ngày lập" className="px-4 py-3">
+                        <span className="font-mono font-bold text-slate-900 block whitespace-nowrap">
                           {debt.invoiceCode}
                         </span>
                         <span className="text-[10px] text-slate-400">
@@ -249,7 +252,7 @@ export const DebtManagement: React.FC = () => {
                         </span>
                       </td>
 
-                      <td className="px-4 py-3">
+                      <td data-label="Khách hàng / Đơn vị" className="px-4 py-3">
                         <div className="font-semibold text-slate-900 flex items-center gap-1.5">
                           <User className="w-3.5 h-3.5 text-slate-400" />
                           <span>{debt.customerName}</span>
@@ -260,14 +263,14 @@ export const DebtManagement: React.FC = () => {
                         </div>
                       </td>
 
-                      <td className="px-4 py-3 font-medium text-slate-700">
+                      <td data-label="Phòng đã ở" className="px-4 py-3 font-medium text-slate-700">
                         {debt.roomNumber}
                       </td>
 
-                      <td className="px-4 py-3">
+                      <td data-label="Hạn thanh toán" className="px-4 py-3">
                         <div className="flex items-center gap-1.5 font-medium text-slate-800">
                           <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                          <span>{formatDate(debt.dueDate)}</span>
+                          <span className="whitespace-nowrap">{formatDate(debt.dueDate)}</span>
                         </div>
                         {debt.status === 'OVERDUE' && (
                           <span className="text-[10px] text-rose-600 font-semibold block">
@@ -276,19 +279,19 @@ export const DebtManagement: React.FC = () => {
                         )}
                       </td>
 
-                      <td className="px-4 py-3 text-right font-mono text-slate-600">
+                      <td data-label="Tổng nợ ban đầu" className="px-4 py-3 text-right font-mono text-slate-600 whitespace-nowrap">
                         {formatCurrency(debt.originalDebt)}
                       </td>
 
-                      <td className="px-4 py-3 text-right font-mono text-emerald-700 font-semibold">
+                      <td data-label="Đã thu hồi" className="px-4 py-3 text-right font-mono text-emerald-700 font-semibold whitespace-nowrap">
                         {formatCurrency(debt.paidAmount)}
                       </td>
 
-                      <td className="px-4 py-3 text-right font-mono font-extrabold text-sm text-rose-700">
+                      <td data-label="Còn phải thu" className="px-4 py-3 text-right font-mono font-extrabold text-sm text-rose-700 whitespace-nowrap">
                         {formatCurrency(debt.remainingAmount)}
                       </td>
 
-                      <td className="px-4 py-3 text-center">
+                      <td data-label="Trạng thái" className="px-4 py-3 text-center">
                         <span
                           className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${meta.color}`}
                         >
@@ -296,7 +299,7 @@ export const DebtManagement: React.FC = () => {
                         </span>
                       </td>
 
-                      <td className="px-4 py-3 text-right">
+                      <td data-label="Hành động" className="px-4 py-3 text-right">
                         <div className="flex items-center justify-end gap-1.5">
                           {debt.paymentHistory.length > 0 && (
                             <button
