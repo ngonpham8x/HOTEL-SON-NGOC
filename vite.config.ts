@@ -11,6 +11,7 @@ function offlineApp(): Plugin {
       const cache = `son-ngoc-${Date.now()}`;
       this.emitFile({ type: 'asset', fileName: 'sw.js', source: `
 const CACHE = ${JSON.stringify(cache)};
+const FILES = ${JSON.stringify(assets)};
 self.addEventListener('install', event => {
   self.skipWaiting();
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(FILES)));

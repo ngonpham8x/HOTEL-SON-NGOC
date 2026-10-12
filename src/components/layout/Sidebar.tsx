@@ -131,7 +131,7 @@ export const Sidebar: React.FC<{ onLogout: () => void; onPasswordChanged: () => 
         )}
 
         {/* Khung nội dung giữ nguyên kích thước để hiệu ứng thu gọn trượt mượt mà */}
-        <div className="w-[min(18rem,90vw)] lg:w-64 h-full flex flex-col shrink-0">
+        <div className="w-[min(18rem,90vw)] lg:w-[255px] h-full flex flex-col shrink-0 overflow-hidden">
         {/* Mobile-only Header inside drawer */}
         <div className="lg:hidden flex items-center justify-between p-3.5 border-b border-teal-900/60 bg-[#071b20]">
           <div className="flex items-center gap-2.5">
@@ -150,15 +150,15 @@ export const Sidebar: React.FC<{ onLogout: () => void; onPasswordChanged: () => 
           </button>
         </div>
 
-        <div className="p-3 min-h-0 flex-1 space-y-1 overflow-y-auto">
-          <div className="mx-1 mb-3 flex items-center gap-2 rounded-xl border border-teal-800/60 bg-teal-950/50 px-3 py-2.5">
+        <div className="p-3 min-h-0 flex-1 space-y-1 overflow-y-auto sidebar-scroll">
+          <div className="mx-1 mb-2.5 flex items-center gap-2 rounded-xl border border-teal-800/60 bg-teal-950/50 px-3 py-2">
             <ShieldCheck className="h-4 w-4 shrink-0 text-teal-400" />
             <div className="min-w-0">
               <p className="truncate text-xs font-semibold text-white" title={actor.displayName}>{actor.displayName}</p>
               <p className="mt-0.5 text-[10px] text-teal-300">{isAdmin ? 'Quản lý hệ thống' : 'Lễ tân'}{!isAdmin && ` · ${actor.username}`}</p>
             </div>
           </div>
-          <p className="px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-teal-400/80">
+          <p className="px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-teal-400/80">
             Chức năng nghiệp vụ
           </p>
           <nav className="space-y-1">
@@ -172,13 +172,13 @@ export const Sidebar: React.FC<{ onLogout: () => void; onPasswordChanged: () => 
                     setActiveTab(item.id);
                     setIsMobileMenuOpen(false);
                   }}
-                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                  className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
                     isActive
                       ? 'bg-gradient-to-r from-teal-600 to-cyan-700 text-white shadow-sm font-bold border border-teal-400/40'
                       : 'text-teal-200/90 hover:text-white hover:bg-teal-900/50'
                   }`}
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2.5">
                     <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-teal-400/90'}`} />
                     <span>{item.label}</span>
                   </div>
@@ -196,7 +196,7 @@ export const Sidebar: React.FC<{ onLogout: () => void; onPasswordChanged: () => 
         </div>
 
         {/* Quick summary footer in sidebar */}
-        <div className="sidebar-footer p-2 shrink-0 border-t border-teal-900/60 bg-[#06181d] space-y-1.5">
+        <div className="sidebar-footer px-3 py-2.5 shrink-0 border-t border-teal-900/60 bg-[#06181d] space-y-1.5">
           {/* Compact 3-item status row */}
           {(canView('rooms') || canView('dashboard')) && <div className="grid grid-cols-3 gap-1 text-center text-[9px]">
             <div className="bg-teal-950/60 border border-teal-800/60 py-0.5 px-1 rounded-md">
@@ -218,14 +218,14 @@ export const Sidebar: React.FC<{ onLogout: () => void; onPasswordChanged: () => 
           </div>}
 
           {/* Action buttons: Cài app, Đổi mật khẩu, Đăng xuất chung 1 hàng */}
-          <div className="flex items-center gap-1.5">
+          <div className="grid grid-cols-3 gap-1">
             <PWAInstallButton variant="sidebar" />
             <button
               type="button"
               aria-label="Đổi mật khẩu"
               title="Đổi mật khẩu"
               onClick={() => { setChangingPassword(true); setIsMobileMenuOpen(false); }}
-              className="min-h-10 flex-1 min-w-0 flex items-center justify-center gap-1 px-1.5 py-2 rounded-lg text-[11px] font-semibold text-teal-200 hover:bg-teal-900/60 hover:text-white border border-teal-900/70 focus-visible:outline-2 focus-visible:outline-teal-400"
+              className="min-h-9 min-w-0 flex items-center justify-center gap-1 px-1 py-1.5 rounded-lg text-[10.5px] font-semibold text-teal-200 hover:bg-teal-900/60 hover:text-white border border-teal-900/70 focus-visible:outline-2 focus-visible:outline-teal-400"
             >
               <KeyRound className="w-3.5 h-3.5 shrink-0" />
               <span className="truncate">Đổi MK</span>
@@ -235,7 +235,7 @@ export const Sidebar: React.FC<{ onLogout: () => void; onPasswordChanged: () => 
               aria-label="Đăng xuất"
               title="Đăng xuất"
               onClick={onLogout}
-              className="min-h-10 flex-1 min-w-0 flex items-center justify-center gap-1 px-1.5 py-2 rounded-lg text-[11px] font-semibold text-teal-200 hover:bg-teal-900/60 hover:text-white border border-teal-900/70 focus-visible:outline-2 focus-visible:outline-teal-400"
+              className="min-h-9 min-w-0 flex items-center justify-center gap-1 px-1 py-1.5 rounded-lg text-[10.5px] font-semibold text-teal-200 hover:bg-teal-900/60 hover:text-white border border-teal-900/70 focus-visible:outline-2 focus-visible:outline-teal-400"
             >
               <LogOut className="w-3.5 h-3.5 shrink-0" />
               <span className="truncate">Đăng xuất</span>

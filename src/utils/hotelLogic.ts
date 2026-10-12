@@ -127,7 +127,7 @@ export function purgeCancelledInvoicesAndSync<T extends { rooms: Room[]; stays: 
 
   // 2. Debts: Remove debts referencing cancelled or non-existent invoices
   const activeDebts = db.debts.filter(d => {
-    if (!activeInvoiceIds.has(d.invoiceId) || d.status === 'CANCELLED') {
+    if (!activeInvoiceIds.has(d.invoiceId)) {
       cleaned = true;
       return false;
     }

@@ -2,7 +2,7 @@ import { cloudEnabled, cloudLogin, cloudRequest } from './cloudHotel';
 import { verifyLoginPassword, changeLoginPassword, PasswordChangeError } from './authSession';
 import type { AccessActor, StaffAccount, StaffAccountInput } from '../types/access';
 import { ADMIN_ACTOR } from './permissions';
-import { changeStaffPassword, listStaffAccounts, saveStaffAccount, verifyStaffLogin } from './staffAccounts';
+import { changeStaffPassword, deleteStaffAccount, listStaffAccounts, saveStaffAccount, verifyStaffLogin } from './staffAccounts';
 export { PasswordChangeError } from './authSession';
 export async function loginSystem(password: string, username?: string): Promise<AccessActor | null> {
   if (cloudEnabled) return cloudLogin(password, username);

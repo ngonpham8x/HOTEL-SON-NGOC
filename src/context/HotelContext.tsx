@@ -61,6 +61,7 @@ export interface ConfirmOptions {
   confirmLabel?: string;
   cancelLabel?: string;
   isDangerous?: boolean;
+  isDanger?: boolean;
   onConfirm: () => void | Promise<unknown>;
 }
 

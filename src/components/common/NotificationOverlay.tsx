@@ -62,10 +62,10 @@ export const NotificationOverlay: React.FC = () => {
           <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-md w-full overflow-hidden animate-in zoom-in-95 duration-150">
             <div
               className={`px-6 py-4 flex items-center gap-3 text-white ${
-                confirmModal.isDangerous ? 'bg-rose-700' : 'bg-slate-900'
+                (confirmModal.isDangerous || confirmModal.isDanger) ? 'bg-rose-700' : 'bg-slate-900'
               }`}
             >
-              {confirmModal.isDangerous ? (
+              {(confirmModal.isDangerous || confirmModal.isDanger) ? (
                 <AlertTriangle className="w-5 h-5 text-rose-200 shrink-0" />
               ) : (
                 <HelpCircle className="w-5 h-5 text-emerald-400 shrink-0" />
@@ -96,7 +96,7 @@ export const NotificationOverlay: React.FC = () => {
                     try { await cb(); } catch (error) { showToast(error instanceof Error ? error.message : 'Không thực hiện được thao tác.', 'error'); }
                   }}
                   className={`px-5 py-2 text-white font-bold rounded-lg transition-colors shadow-sm ${
-                    confirmModal.isDangerous
+                    (confirmModal.isDangerous || confirmModal.isDanger)
                       ? 'bg-rose-600 hover:bg-rose-700'
                       : 'bg-emerald-700 hover:bg-emerald-800'
                   }`}

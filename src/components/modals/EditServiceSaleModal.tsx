@@ -27,7 +27,7 @@ export const EditServiceSaleModal: React.FC<EditServiceSaleModalProps> = ({
   const { services, updateServiceSale, cancelServiceSale, requestConfirm, showToast, today } = useHotel();
 
   const [customerName, setCustomerName] = useState(invoice.customerName || '');
-  const [phone, setPhone] = useState(invoice.customerPhone || '');
+  const [phone, setPhone] = useState(invoice.phone || '');
   const [items, setItems] = useState<{ serviceId: string; quantity: number }[]>(() => {
     if (invoice.services && invoice.services.length > 0) {
       return invoice.services.map(s => ({
@@ -40,7 +40,9 @@ export const EditServiceSaleModal: React.FC<EditServiceSaleModalProps> = ({
   const [serviceIdToAdd, setServiceIdToAdd] = useState(() => services[0]?.id || '');
   const [discount, setDiscount] = useState<number>(invoice.discount || 0);
   const [paidAmount, setPaidAmount] = useState<number>(invoice.paidAmount ?? invoice.totalAmount);
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(invoice.paymentMethod || 'CASH');
+  const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'TRANSFER' | 'CARD'>(() => {
+    return (invoice.paymentMethod === 'CARD' || invoice.paymentMethod === 'TRANSFER') ? invoice.paymentMethod : 'CASH';
+  });
   const [dueDate, setDueDate] = useState<string>(today);
   const [notes, setNotes] = useState(invoice.notes || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -328,7 +330,7 @@ export const EditServiceSaleModal: React.FC<EditServiceSaleModalProps> = ({
                 <label className="block text-slate-600 font-medium mb-1">Phương thức</label>
                 <select
                   value={paymentMethod}
-                  onChange={e => setPaymentMethod(e.target.value as PaymentMethod)}
+                  onChange={e => setPaymentMethod(e.target.value as 'CASH' | 'TRANSFER' | 'CARD')}
                   className={inputClass}
                 >
                   <option value="CASH">Tiền mặt</option>

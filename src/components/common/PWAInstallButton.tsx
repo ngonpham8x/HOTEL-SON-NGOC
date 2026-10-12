@@ -38,7 +38,7 @@ export const PWAInstallButton: React.FC<{ variant?: 'header' | 'sidebar' | 'bann
           title="Cài app ra màn hình"
           onClick={handleClick}
           disabled={installing}
-          className="min-h-10 flex-1 min-w-0 flex items-center justify-center gap-1 px-1.5 py-2 rounded-lg text-[11px] font-semibold text-teal-200 hover:bg-teal-900/60 hover:text-white border border-teal-900/70 focus-visible:outline-2 focus-visible:outline-teal-400 disabled:opacity-60"
+          className="min-h-9 min-w-0 flex items-center justify-center gap-1 px-1 py-1.5 rounded-lg text-[10.5px] font-semibold text-teal-200 hover:bg-teal-900/60 hover:text-white border border-teal-900/70 focus-visible:outline-2 focus-visible:outline-teal-400 disabled:opacity-60"
         >
           <Download className="w-3.5 h-3.5 text-teal-300 shrink-0" />
           <span className="truncate">{installing ? 'Đang mở…' : 'Cài app'}</span>
