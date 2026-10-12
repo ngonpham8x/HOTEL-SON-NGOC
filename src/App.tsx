@@ -25,6 +25,7 @@ const ExportReportView = lazy(() => import('./components/reports/ExportReportVie
 const ServiceCatalogView = lazy(() => import('./components/services/ServiceCatalogView').then(m => ({ default: m.ServiceCatalogView })));
 const ServiceSalesView = lazy(() => import('./components/services/ServiceSalesView').then(m => ({ default: m.ServiceSalesView })));
 const StaffAccessManager = lazy(() => import('./components/auth/StaffAccessManager').then(m => ({ default: m.StaffAccessManager })));
+const AuditLogsView = lazy(() => import('./components/audit/AuditLogsView').then(m => ({ default: m.AuditLogsView })));
 
 const MainLayout: React.FC<{ onLogout: () => void; onPasswordChanged: () => void }> = ({ onLogout, onPasswordChanged }) => {
   const { activeTab, storageError, rooms, isSidebarCollapsed } = useHotel();
@@ -61,6 +62,7 @@ const MainLayout: React.FC<{ onLogout: () => void; onPasswordChanged: () => void
           <div role="alert" className={storageError ? "no-print mb-4 p-3 bg-rose-50 border border-rose-300 rounded-xl text-sm text-rose-800" : "hidden"}>{storageError}</div>
           {activeTab === 'none' && <p role="status" className="rounded-xl bg-white p-5 border text-slate-700">Tài khoản chưa được cấp quyền xem mục nào. Vui lòng liên hệ quản lý.</p>}
           {activeTab === 'staff' && isAdmin && <StaffAccessManager />}
+          {activeTab === 'audit' && isAdmin && <AuditLogsView />}
           {activeTab === 'dashboard' && canView('dashboard') && (
             <HomeDashboard
               onSelectRoom={r => setDetailRoom(r)}

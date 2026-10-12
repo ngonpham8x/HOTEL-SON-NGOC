@@ -36,7 +36,7 @@ test('staff cloud API enforces private credentials, data scopes, safe operations
         assert.equal((options?.headers as Record<string, string>).apikey, 'private-test-key');
         if (path.startsWith('rpc/')) {
           const name = path.slice(4);
-          assert.ok(['hotel_rate_limit','hotel_open_session','hotel_open_staff_session','hotel_staff_save','hotel_save_authorized','hotel_change_password','hotel_staff_change_password'].includes(name));
+          assert.ok(['hotel_logout','hotel_staff_delete','hotel_audit_list','hotel_rate_limit','hotel_open_session','hotel_open_staff_session','hotel_staff_save','hotel_save_authorized','hotel_change_password','hotel_staff_change_password'].includes(name));
           const entries = Object.entries(body);
           const args = entries.map(([key], index) => `${key} => $${index + 1}`).join(',');
           return reply(await scalar(`select ${name}(${args}) as value`, entries.map(([, value]) => typeof value === 'object' && value !== null ? JSON.stringify(value) : value)));
@@ -182,6 +182,15 @@ test('staff cloud API enforces private credentials, data scopes, safe operations
     const revokeRefund = await request('staff.save', { id: refundAccountData.account.id, username: 'refund-only', displayName: 'Lễ tân hoàn tiền', active: true, expectedVersion: 1, permissions: { views: ['sales'], actions: [] } }, admin.token);
     assert.equal(revokeRefund.status, 200);
     assert.equal((await request('read', {}, refundLogin.token)).status, 401, 'revoking refund permissions immediately ends the old session');
+    const auditRead = await request('audit.list', { actorId: cancelLogin.actor.id, operation: 'sale.cancel' }, admin.token);
+    assert.equal(auditRead.status, 200);
+    const audit = await auditRead.json(); assert.equal(audit.entries.length,1); assert.equal(audit.entries[0].actorName,'Lễ tân hủy vé');
+    assert.equal(audit.entries[0].action,'sale.cancel'); assert.equal(audit.entries[0].metadata.counts.invoices,1);
+    assert.equal(audit.entries[0].details.find((detail: any) => detail.collection==='invoices').after.lastTicketEvent.items[0].quantity,1);
+    assert.equal((await request('audit.list', {}, cancelLogin.token)).status,403,'receptionists cannot access the management journal');
+    assert.equal((await request('audit.list', { fromDate:'2026-02-30' }, admin.token)).status,400);
+    assert.equal((await request('audit.list', { fromDate:'2026-10-13',toDate:'2026-10-12' }, admin.token)).status,400);
+    assert.equal((await request('audit.list', { beforeId:'0 OR 1=1' }, admin.token)).status,400);
     const rpcDefinitions = await scalar("select bool_and(prosecdef = false) as value from pg_proc where proname in ('hotel_save_authorized','hotel_staff_save','hotel_open_staff_session','hotel_staff_change_password')"); assert.equal(rpcDefinitions, true);
   } finally { globalThis.fetch = originalFetch; Reflect.deleteProperty(globalThis, 'Deno'); await pg.close(); }
 });

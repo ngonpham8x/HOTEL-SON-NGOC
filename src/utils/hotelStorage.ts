@@ -1,8 +1,9 @@
 import { validateSaleLifecycle } from './serviceSaleLifecycle';
 import type { Room, ServiceItem, StayRecord, Reservation, Invoice, DebtRecord } from '../types/hotel';
+import type { AuditEntry } from '../types/audit';
 import { roomDefaults, sortRooms } from './hotelLogic';
 
-export interface HotelData { rooms: Room[]; services: ServiceItem[]; stays: StayRecord[]; reservations: Reservation[]; invoices: Invoice[]; debts: DebtRecord[] }
+export interface HotelData { rooms: Room[]; services: ServiceItem[]; stays: StayRecord[]; reservations: Reservation[]; invoices: Invoice[]; debts: DebtRecord[]; auditLogs?: AuditEntry[] }
 export const DATA_KEY = 'son_ngoc_hotel_data_v3';
 const fields = ['rooms', 'services', 'stays', 'reservations', 'invoices', 'debts'] as const;
 const required: Record<typeof fields[number], string[]> = {
@@ -20,6 +21,13 @@ const amounts: Record<typeof fields[number], string[]> = {
 export function validateHotelData(input: unknown): HotelData {
   if (!input || typeof input !== 'object') throw new Error('Tệp dữ liệu không hợp lệ.');
   const data = input as Record<string, unknown>;
+  if (data.auditLogs !== undefined && (!Array.isArray(data.auditLogs) || data.auditLogs.some(entry =>
+    !entry || typeof entry.id !== 'string' || typeof entry.createdAt !== 'string' || !Number.isFinite(Date.parse(entry.createdAt)) ||
+    ['actorId','actorName','actorUsername','actorRole','action'].some(key => typeof entry[key] !== 'string') || !Array.isArray(entry.details) ||
+    entry.details.some((detail: Record<string, unknown> | null) => !detail || ['collection','id','reference'].some(key => typeof detail[key] !== 'string') || !['CREATED','UPDATED','DELETED'].includes(String(detail.kind)) ||
+      !detail.before || typeof detail.before !== 'object' || Array.isArray(detail.before) || !detail.after || typeof detail.after !== 'object' || Array.isArray(detail.after)) ||
+    !entry.metadata || typeof entry.metadata !== 'object' || Array.isArray(entry.metadata) || entry.metadata.counts && (typeof entry.metadata.counts !== 'object' || Object.values(entry.metadata.counts).some(amount => !Number.isSafeInteger(amount) || (amount as number) < 0))
+  ))) throw new Error('Nhật ký cục bộ không hợp lệ.');
   for (const field of fields) {
     if (!Array.isArray(data[field])) throw new Error(`Dữ liệu ${field} không hợp lệ.`);
     const ids = new Set<string>();

@@ -1,4 +1,5 @@
 import { applySaleEvent, adjustSaleDebts, sameSaleSnapshot, type SaleEventInput } from '../utils/serviceSaleLifecycle';
+import { createLocalAuditEntry } from '../utils/auditLogs';
 import { newId, localDate, localTime, dateTime, validatePeriod, stayDuration, money, roomDefaults, findBookingConflict, bookingConflictMessage, sortRooms, purgeCancelledInvoicesAndSync } from '../utils/hotelLogic';
 import { DATA_KEY, readHotelData, serializeHotelData, validateHotelData, type HotelData } from '../utils/hotelStorage';
 import React, { useContext, useState, useEffect, useRef, useMemo } from 'react';
@@ -231,6 +232,8 @@ export const HotelProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       savedRef.current = saved;
       throw new Error('Dữ liệu vừa được cập nhật ở cửa sổ khác. Kiểm tra lại rồi thực hiện thao tác.');
     }
+    const audit = createLocalAuditEntry(actor, dataRef.current, normalizedNext, operation);
+    normalizedNext.auditLogs = [...(dataRef.current.auditLogs || []), ...(audit ? [audit] : [])];
     const serialized = serializeHotelData(normalizedNext);
     try {
       localStorage.setItem(DATA_KEY, serialized);

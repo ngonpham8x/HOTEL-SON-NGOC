@@ -21,7 +21,8 @@ function changes<T extends Row>(old: T[], next: T[]) {
 }
 const emptyChange = (value: ReturnType<typeof changes>) => !value.added.length && !value.removed.length && !value.updated.length;
 const hasFinancialView = (actor: AccessActor) => ['dashboard', 'analytics', 'reports'].some(view => canView(actor, view));
-const collectionFields: (keyof HotelData)[] = ['rooms', 'services', 'stays', 'reservations', 'invoices', 'debts'];
+type HotelCollection = Exclude<keyof HotelData, 'auditLogs'>;
+const collectionFields: (HotelCollection)[] = ['rooms', 'services', 'stays', 'reservations', 'invoices', 'debts'];
 /** Historical group bills can name several rooms in one label. Match whole
  * room codes so N01 is retained for "Đoàn N01, N02", without matching N010. */
 export function roomNumberReferenced(label: string, roomNumber: string): boolean {
@@ -30,7 +31,7 @@ export function roomNumberReferenced(label: string, roomNumber: string): boolean
   const escaped = number.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   return new RegExp(`(^|[^\\p{L}\\p{N}_])${escaped}(?=$|[^\\p{L}\\p{N}_])`, 'iu').test(label);
 }
-function visibleRow(actor: AccessActor, field: keyof HotelData, row: Row, data: HotelData): boolean {
+function visibleRow(actor: AccessActor, field: HotelCollection, row: Row, data: HotelData): boolean {
   if (actor.role === 'ADMIN') return true;
   const operational = ['rooms', 'reservations', 'stays'].some(view => canView(actor, view));
   if (field === 'rooms') return operational || canView(actor, 'services') || hasFinancialView(actor);
@@ -52,7 +53,7 @@ export function mergeProjectedHotelData(actor: AccessActor, before: HotelData, s
   return Object.fromEntries(collectionFields.map(field => {
     const hidden = before[field].filter(row => !visibleRow(actor, field, row, before));
     const hiddenIds = new Set(hidden.map((row: Row) => row.id));
-    const submittedRows = submitted[field as keyof HotelData];
+    const submittedRows = submitted[field as HotelCollection];
     for (const row of submittedRows) if (hiddenIds.has(row.id)) deny('Không được sửa bản ghi ngoài phạm vi được xem.');
     return [field, [...submittedRows, ...hidden]];
   })) as unknown as HotelData;
@@ -88,7 +89,7 @@ export function authorizeHotelMutation(actor: AccessActor, before: HotelData, ne
     if (action === 'debt.collect' && !equal(old.serviceLifecycle, invoice.serviceLifecycle)) deny();
   }
   if (d.stays.removed.length || d.reservations.removed.length || d.invoices.removed.length || d.debts.removed.length) deny('Không được xóa lịch sử khách, đặt phòng, phiếu thu hoặc công nợ.');
-  const scope = (...fields: (keyof HotelData)[]) => { for (const field of Object.keys(d) as (keyof HotelData)[]) if (!fields.includes(field) && !emptyChange(d[field])) deny(); };
+  const scope = (...fields: (HotelCollection)[]) => { for (const field of Object.keys(d) as (HotelCollection)[]) if (!fields.includes(field) && !emptyChange(d[field])) deny(); };
   const updatesOnly = (value: ReturnType<typeof changes>) => { if (value.added.length || value.removed.length) deny(); };
   const roomUpdates = (ids: string[], fields: string[]) => { updatesOnly(d.rooms); for (const item of d.rooms.updated) if (!ids.includes(item.old.id) || !onlyFields(item.old, item.next, fields)) deny(); };
   const newInvoice = (kind: 'ROOM' | 'SERVICE') => {

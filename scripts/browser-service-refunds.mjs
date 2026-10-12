@@ -69,6 +69,21 @@ try {
   check(`Array.from(document.querySelectorAll('[role="dialog"] [aria-pressed]')).map(e=>e.textContent).join('|')==='Ghi nhận hoàn tiền'`, 'refund-only receptionist cannot cancel tickets');
   fill('[role="dialog"] input[type="number"]',400000);click('Xác nhận đã hoàn tiền cho khách');
   check(`JSON.parse(localStorage.getItem('son_ngoc_hotel_data_v3')).data.invoices[0].serviceLifecycle.events[1].actorName==='QA Lễ tân hủy hoàn'`, 'refund records the granted receptionist');
+  check(`!Array.from(document.querySelectorAll('aside nav button')).some(button=>button.textContent.includes('Nhật ký hệ thống'))`, 'receptionists cannot open the audit journal');
+  run('press','Escape');settle();
+  evaluate(`(()=>{const now=Date.now();sessionStorage.removeItem('son_ngoc_staff_session_v1');sessionStorage.setItem('son_ngoc_login_session_v1',JSON.stringify({version:1,issuedAt:now,expiresAt:now+43200000,credentialId:'${salt}'}));return true;})()`);
+  run('reload');run('wait','header');click('Nhật ký hệ thống');settle();
+  run('wait','select[aria-label="Lọc người thực hiện"]');
+  check(`document.querySelector('main').textContent.includes('QA Lễ tân hủy hoàn') && document.querySelector('main').textContent.includes('Quản lý')`, 'journal records both managers and granted receptionists');
+  evaluate(`(()=>{const staff=JSON.parse(localStorage.getItem('son_ngoc_staff_accounts_v1')).accounts.find(account=>account.username==='refund.qa');const select=document.querySelector('select[aria-label="Lọc người thực hiện"]');Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value').set.call(select,staff.id);select.dispatchEvent(new Event('change',{bubbles:true}));return true;})()`);settle();
+  check(`document.querySelectorAll('main article').length===2 && Array.from(document.querySelectorAll('main article')).every(entry=>entry.textContent.includes('QA Lễ tân hủy hoàn'))`, 'actor filter only shows the selected receptionist');
+  run('select','select[aria-label="Lọc loại thao tác"]','sale.cancel');settle();
+  check(`document.querySelectorAll('main article').length===1`, 'actor and cancellation filters combine');
+  click('Xem chi tiết');
+  check(`document.querySelector('[role="dialog"]').textContent.includes('Tổng thanh toán') && document.querySelector('[role="dialog"]').textContent.includes('600.000') && document.querySelector('[role="dialog"]').textContent.includes('200.000')`, 'audit detail shows before and after cancellation amounts');
+  for (const width of [320,375,1440]) { run('set','viewport',String(width),'850');settle();check(`document.documentElement.scrollWidth===innerWidth`, `audit detail fits ${width}px`); }
+  run('press','Escape');settle();
+  run('set','viewport','375','850');settle();check(`document.documentElement.scrollWidth===innerWidth`, 'audit filters and list fit mobile');
   assert.equal(run('errors'), '', 'no runtime errors');
   console.log(run('screenshot','.review/service-refunds.png'));
 } finally { run('close'); }

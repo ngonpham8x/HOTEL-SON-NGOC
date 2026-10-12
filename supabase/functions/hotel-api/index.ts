@@ -1,5 +1,5 @@
 import { validateHotelData } from '../_shared/hotelStorage.ts';
-import { validatePeriod, bookingConflict } from '../_shared/hotelLogic.ts';
+import { validatePeriod, bookingConflict, dateTime } from '../_shared/hotelLogic.ts';
 import { ADMIN_ACTOR, canAct, validatePermissions } from '../_shared/permissions.ts';
 import type { AccessActor, ActionId, StaffAccount } from '../_shared/access.ts';
 import { authorizeHotelMutation, projectHotelData, mergeProjectedHotelData, HotelPermissionError } from '../_shared/authorizeHotelMutation.ts';
@@ -81,7 +81,21 @@ Deno.serve(async (request: Request) => {
     }
     const actor: AccessActor = account ? staffActor(account) : { ...ADMIN_ACTOR, version: credential.version };
     if (action === 'session') return response({ expiresAt: session.expires_at, actor });
-    if (action === 'logout') { await db(`hotel_sessions?token_hash=eq.${hash}`, undefined, 'DELETE'); return response({}); }
+    if (action === 'logout') { await db('rpc/hotel_logout', { p_hash: hash }); return response({}); }
+    if (action === 'audit.list') {
+      if (actor.role !== 'ADMIN') return response({ error: 'Chỉ quản lý được xem nhật ký hệ thống.' }, 403);
+      const { actorId, operation, fromDate, toDate, beforeId } = input;
+      if ([actorId, operation].some(value => value !== undefined && (typeof value !== 'string' || value.length > 100)) || beforeId !== undefined && (typeof beforeId !== 'string' || !/^[1-9][0-9]{0,17}$/.test(beforeId))) return response({ error: 'Bộ lọc nhật ký không hợp lệ.' }, 400);
+      const from = fromDate ? dateTime(fromDate, '00:00') : undefined;
+      const to = toDate ? dateTime(toDate, '00:00') : undefined;
+      if (fromDate !== undefined && typeof fromDate !== 'string' || toDate !== undefined && typeof toDate !== 'string' || fromDate && !Number.isFinite(from) || toDate && !Number.isFinite(to) || from !== undefined && to !== undefined && from > to) return response({ error: 'Khoảng ngày lọc nhật ký không hợp lệ.' }, 400);
+      return response(await db('rpc/hotel_audit_list', {
+        p_hash: hash, p_actor_id: actorId || null, p_action: operation || null,
+        p_from: from === undefined ? null : new Date(from).toISOString(),
+        p_to: to === undefined ? null : new Date(to + 86400000).toISOString(),
+        p_before_id: beforeId || null, p_limit: 50,
+      }));
+    }
     if (action === 'staff.list') {
       if (actor.role !== 'ADMIN') return response({ error: 'Chỉ quản lý được cấp quyền cho tài khoản lễ tân.' }, 403);
       return response({ accounts: (await db('hotel_staff?order=created_at.asc')).map(publicStaff) });
@@ -99,7 +113,7 @@ Deno.serve(async (request: Request) => {
     if (action === 'staff.delete') {
       if (actor.role !== 'ADMIN') return response({ error: 'Chỉ quản lý được xóa tài khoản lễ tân.' }, 403);
       if (typeof input.id !== 'string') return response({ error: 'Mã tài khoản không hợp lệ.' }, 400);
-      await db(`hotel_staff?id=eq.${encodeURIComponent(input.id)}`, undefined, 'DELETE');
+      await db('rpc/hotel_staff_delete', { p_hash: hash, p_id: input.id });
       return response({ success: true });
     }
     if (action === 'read') { const state = (await db('hotel_state?id=eq.true&select=revision,data'))[0]; if (!state) return response({ error: 'Dữ liệu chưa khởi tạo.' }, 503); return response({ revision: state.revision, data: projectHotelData(actor, validateHotelData(state.data)) }); }
@@ -115,6 +129,7 @@ Deno.serve(async (request: Request) => {
       if ((await db(`hotel_mutations?request_id=eq.${input.requestId}&select=request_id`)).length) return response({ revision: state.revision, data: projectHotelData(actor, before) });
       if (state.revision !== input.revision) return response({ error: 'Dữ liệu vừa thay đổi trên thiết bị khác. Hãy tải lại rồi thử lại; thao tác chưa được ghi nhận.' }, 409);
       const submitted = validateHotelData(input.data);
+      delete submitted.auditLogs; // Local journals are never accepted as server evidence.
       const beforeInvoiceIds = new Set(before.invoices.map(invoice => invoice.id));
       if (input.operation !== 'data.restore') submitted.invoices = submitted.invoices.map(invoice => beforeInvoiceIds.has(invoice.id) ? invoice : { ...invoice, createdBy: actor.id });
       const data = mergeProjectedHotelData(actor, before, submitted);

@@ -155,3 +155,13 @@ Giá vé dùng đơn giá lúc bán. Giảm giá được phân bổ theo giá t
 Phiếu in có vé gốc, lịch sử xử lý và tiền chờ hoàn. Excel doanh thu bổ sung sheet **Hủy Vé và Hoàn Tiền**. Chạy `npm run test:refunds` trên dev server cục bộ để kiểm tra sử dụng một vé, hủy hai vé, hoàn từng phần, tải lại và bố cục mobile. Kiểm thử dùng dữ liệu/mật khẩu giả trong profile riêng, không chạy với API thật.
 
 Mã kiểm tra Supabase được chuẩn bị bằng `npm run supabase:prepare`; cần triển khai Edge Function `hotel-api` cùng phiên bản frontend để dùng tính năng này trên cloud. Việc chuẩn bị mã không tự triển khai.
+
+## Nhật ký hệ thống
+
+Quản lý mở **Menu → Nhật ký hệ thống** để lọc người thực hiện, loại thao tác và khoảng ngày theo giờ Việt Nam. **Xem chi tiết** hiển thị thông tin trước/sau; danh sách tải theo từng trang 50 dòng. Người đã xóa tài khoản vẫn có thể lọc và xem lại lịch sử.
+
+Bản Supabase ghi nhật ký ngay trong giao dịch PostgreSQL khi thay đổi dữ liệu, đăng nhập/đăng xuất, thay đổi tài khoản/quyền hoặc mật khẩu. Ghi dữ liệu thất bại thì không có nhật ký thành công; gửi lại cùng mã thao tác không tạo nhật ký trùng. Bảng nhật ký bật RLS, chỉ API của quản lý được đọc và không có thao tác sửa/xóa nhật ký. Không ghi mật khẩu, giá trị băm, token, giấy tờ, số điện thoại hay ghi chú cá nhân. Thông tin tiền, trạng thái, thời gian phòng và quyền được cấp được ghi để đối chiếu.
+
+Nhật ký bắt đầu khi triển khai tính năng, không khôi phục lịch sử trước đó. Bản cục bộ ghi nhật ký nghiệp vụ cùng bản dữ liệu trong một lần lưu trình duyệt; nhật ký tài khoản/đăng nhập tập trung chỉ có ở Supabase. Khôi phục sao lưu cục bộ giữ nhật ký hiện có và ghi thêm thao tác khôi phục, không ghi đè nhật ký bằng nội dung sao lưu. Máy chủ không nhận nhật ký do client gửi lên.
+
+Migration `20261012150000_hotel_audit_logs.sql` thêm bảng, trigger và RPC nhật ký; cần triển khai trước API/giao diện mới. `npm run test:refunds` có kiểm tra quyền xem nhật ký, bộ lọc người thực hiện, loại thao tác và chi tiết trước/sau trên mobile.

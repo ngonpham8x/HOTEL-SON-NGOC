@@ -19,6 +19,7 @@ import {
   ShieldCheck,
   ChevronLeft,
   ChevronRight,
+  ClipboardList,
 } from 'lucide-react';
 import { HotelLogo } from '../common/HotelLogo';
 import { PWAInstallButton } from '../common/PWAInstallButton';
@@ -106,7 +107,8 @@ export const Sidebar: React.FC<{ onLogout: () => void; onPasswordChanged: () => 
       icon: Coffee,
     },
     { id: 'staff', label: 'Phân quyền lễ tân', icon: ShieldCheck },
-  ].filter(item => item.id === 'staff' ? isAdmin : canView(item.id));
+    { id: 'audit', label: 'Nhật ký hệ thống', icon: ClipboardList },
+  ].filter(item => ['staff', 'audit'].includes(item.id) ? isAdmin : canView(item.id));
 
   return (
     <>

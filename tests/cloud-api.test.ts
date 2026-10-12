@@ -27,6 +27,7 @@ test('cloud API authenticates server sessions, rejects stale writes and invalida
       if (options?.method === 'DELETE') { sessions.delete(hash); return reply([]); }
       const session = sessions.get(hash); return reply(session?.auth_version === auth.version ? [session] : []);
     }
+    if (path === 'rpc/hotel_logout') { sessions.delete(body.p_hash); return reply(true); }
     if (path === 'rpc/hotel_rate_limit') return reply(true);
     if (path === 'rpc/hotel_open_session') { sessions.set(body.p_hash, { auth_version: auth.version, expires_at: new Date(Date.now()+43200000).toISOString() }); return reply(body.p_version === auth.version); }
     if (path === 'rpc/hotel_save_authorized') {
