@@ -26,7 +26,7 @@ export const DebtManagement: React.FC = () => {
   const { debts, recordDebtPayment, showToast } = useHotel();
   const [filterStatus, setFilterStatus] = useState<string>('ACTIVE_DEBT');
   const [search, setSearch] = useState<string>('');
-  const [mobileView, setMobileView] = useState<'COMPACT' | 'TABLE'>('TABLE');
+  const [mobileView, setMobileView] = useState<'COMPACT' | 'TABLE'>('COMPACT');
 
   // Selected debt for collecting payment modal
   const [collectingDebt, setCollectingDebt] = useState<DebtRecord | null>(null);
