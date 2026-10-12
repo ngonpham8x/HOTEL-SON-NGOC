@@ -11,3 +11,5 @@ coverage/
 .vercel/
 .wrangler/
 supabase/.temp/
+
+.vercel
