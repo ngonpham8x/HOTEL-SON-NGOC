@@ -11,6 +11,7 @@ import { BookingModal } from './components/modals/BookingModal';
 import { CheckOutModal } from './components/checkout/CheckOutModal';
 import { InvoicePrintView } from './components/checkout/InvoicePrintView';
 import { NotificationOverlay } from './components/common/NotificationOverlay';
+import { SecurityAlerts } from './components/common/SecurityAlerts';
 import { ReservationList } from './components/reservations/ReservationList';
 import { ActiveStayManager } from './components/stays/ActiveStayManager';
 import { DebtManagement } from './components/debt/DebtManagement';
@@ -117,6 +118,7 @@ const MainLayout: React.FC<{ onLogout: () => void; onPasswordChanged: () => void
 
       {/* Global Notifications and Confirmations */}
       <NotificationOverlay />
+      <SecurityAlerts />
 
       {/* Modals */}
       {detailRoom && (

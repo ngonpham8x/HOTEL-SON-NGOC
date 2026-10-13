@@ -50,6 +50,11 @@ Deno.serve(async (request: Request) => {
     if (action === 'login') {
       const bucket = await digest('ip:' + (request.headers.get('x-forwarded-for')?.split(',')[0] || 'unknown'));
       if (!await db('rpc/hotel_rate_limit', { p_bucket: bucket })) return response({ error: 'Đã thử nhiều lần. Vui lòng đợi một phút.' }, 429);
+      const recordDevice = async (token: string) => {
+        const device = (request.headers.get('user-agent') || 'Unknown browser').slice(0,300);
+        const id = typeof input.deviceId === 'string' && /^[a-zA-Z0-9-]{16,80}$/.test(input.deviceId) ? input.deviceId : crypto.randomUUID();
+        await db('rpc/hotel_record_device', { p_hash: await digest(token), p_device_hash: await digest(id), p_device: device });
+      };
       const credential = (await db('hotel_auth?id=eq.true'))[0];
       if (!credential) return response({ error: 'Hệ thống chưa khởi tạo.' }, 503);
       if (input.username !== undefined) {
@@ -61,12 +66,14 @@ Deno.serve(async (request: Request) => {
         if (!account?.active || !valid) return response({ error: 'Tên đăng nhập hoặc mật khẩu chưa đúng.' }, 400);
         const token = hex(crypto.getRandomValues(new Uint8Array(32)));
         if (!await db('rpc/hotel_open_staff_session', { p_id: account.id, p_version: account.version, p_auth_version: credential.version, p_hash: await digest(token) })) return response({ error: 'Tài khoản vừa thay đổi. Hãy đăng nhập lại.' }, 409);
+        await recordDevice(token);
         return response({ token, actor: staffActor(account) });
       }
       const [primary, fixed] = await Promise.all([matches(input.password, credential.primary_credential), matches(input.password, credential.fixed_credential)]);
       if (!primary && !fixed) return response({ error: 'Mật khẩu chưa đúng. Vui lòng nhập lại.' }, 400);
       const token = hex(crypto.getRandomValues(new Uint8Array(32)));
       if (!await db('rpc/hotel_open_session', { p_version: credential.version, p_hash: await digest(token) })) return response({ error: 'Mật khẩu vừa thay đổi. Hãy đăng nhập lại.' }, 409);
+      await recordDevice(token);
       return response({ token, actor: { ...ADMIN_ACTOR, version: credential.version } });
     }
     const token = request.headers.get('authorization')?.replace(/^Bearer /, '') || '';
@@ -82,6 +89,11 @@ Deno.serve(async (request: Request) => {
     const actor: AccessActor = account ? staffActor(account) : { ...ADMIN_ACTOR, version: credential.version };
     if (action === 'session') return response({ expiresAt: session.expires_at, actor });
     if (action === 'logout') { await db('rpc/hotel_logout', { p_hash: hash }); return response({}); }
+    if (action === 'security.alerts') {
+      if (actor.role !== 'ADMIN') return response({ error: 'Permission denied' }, 403);
+      if (input.ack !== undefined && (typeof input.ack !== 'string' || !/^[1-9][0-9]{0,17}$/.test(input.ack))) return response({ error: 'Invalid alert' },400);
+      return response(await db('rpc/hotel_security_alerts', { p_hash: hash, p_ack: input.ack || null }));
+    }
     if (action === 'audit.list') {
       if (actor.role !== 'ADMIN') return response({ error: 'Chỉ quản lý được xem nhật ký hệ thống.' }, 403);
       const { actorId, operation, fromDate, toDate, beforeId } = input;

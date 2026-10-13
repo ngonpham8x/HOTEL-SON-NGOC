@@ -22,6 +22,16 @@ test('audit records share transactions, reject edits, preserve actors, filter an
     const saveStaff = (version: number | null, name: string) => scalar('select hotel_staff_save($1,$2,$3,$4,$5,$6::jsonb,true,$7::jsonb,$8) as value',[admin,id,version === null,'audit.staff',name,JSON.stringify(permissions),version === null ? JSON.stringify(fixtureCredential) : null,version]);
     await saveStaff(null,'Lễ tân trước đổi tên');
     await scalar('select hotel_open_staff_session($1,1,1,$2) as value',[id,staff]);
+    await scalar('select hotel_record_device($1,$2,$3) as value',[staff,'device-one','Test browser']);
+    await scalar('select hotel_record_device($1,$2,$3) as value',[staff,'device-one','Test browser']);
+    assert.equal(await scalar('select count(*)::integer as value from hotel_login_alerts'),1,'known device does not duplicate alerts');
+    await assert.rejects(scalar('select hotel_security_alerts($1) as value',[staff]), /PERMISSION_DENIED/);
+    await assert.rejects(scalar('select hotel_record_device($1,$2,$3) as value',['invalid','device-two','Browser']), /SESSION_EXPIRED/);
+    const alerts = await scalar('select hotel_security_alerts($1) as value',[admin]);
+    assert.equal(alerts.length,1);
+    assert.equal(alerts[0].device,'Test browser');
+    assert.deepEqual(await scalar('select hotel_security_alerts($1,$2) as value',[admin,alerts[0].id]),[]);
+    assert.equal(await scalar("select has_table_privilege('anon','hotel_login_alerts','select') as value"),false);
     const initial = await scalar('select data as value from hotel_state');
     const next = structuredClone(initial); next.rooms[0].cleanStatus = 'DIRTY';
     const request = 'c'.repeat(32);

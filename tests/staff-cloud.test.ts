@@ -36,7 +36,7 @@ test('staff cloud API enforces private credentials, data scopes, safe operations
         assert.equal((options?.headers as Record<string, string>).apikey, 'private-test-key');
         if (path.startsWith('rpc/')) {
           const name = path.slice(4);
-          assert.ok(['hotel_logout','hotel_staff_delete','hotel_audit_list','hotel_rate_limit','hotel_open_session','hotel_open_staff_session','hotel_staff_save','hotel_save_authorized','hotel_change_password','hotel_staff_change_password'].includes(name));
+          assert.ok(['hotel_record_device','hotel_security_alerts','hotel_logout','hotel_staff_delete','hotel_audit_list','hotel_rate_limit','hotel_open_session','hotel_open_staff_session','hotel_staff_save','hotel_save_authorized','hotel_change_password','hotel_staff_change_password'].includes(name));
           const entries = Object.entries(body);
           const args = entries.map(([key], index) => `${key} => $${index + 1}`).join(',');
           return reply(await scalar(`select ${name}(${args}) as value`, entries.map(([, value]) => typeof value === 'object' && value !== null ? JSON.stringify(value) : value)));

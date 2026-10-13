@@ -16,7 +16,9 @@ export async function cloudRequest<T = unknown>(action: string, payload: Record<
   return result as T;
 }
 export async function cloudLogin(password: string, username?: string) {
-  const session = await cloudRequest<{ token: string; actor: AccessActor }>('login', { password, ...(username !== undefined ? { username } : {}) });
+  let deviceId = '';
+  try { deviceId = localStorage.getItem('son_ngoc_device_v1') || crypto.randomUUID(); localStorage.setItem('son_ngoc_device_v1', deviceId); } catch { /* A new device alert is safer than silently trusting this browser. */ }
+  const session = await cloudRequest<{ token: string; actor: AccessActor }>('login', { password, deviceId, ...(username !== undefined ? { username } : {}) });
   sessionStorage.setItem(TOKEN_KEY, session.token);
   return session.actor;
 }
